@@ -96,6 +96,15 @@ Colours and typefaces are carried over unchanged from the live site.
 | Display face | Poppins |
 | Body face | Open Sans |
 
+## Deployment
+
+Vercel builds **only from `main`**. The `ignoreCommand` in `vercel.json` exits 0 on any other
+branch, which tells Vercel to skip the build, so feature branches and pull requests do not produce
+preview deployments. Merging to `main` triggers the production deploy.
+
+Client-side routes are served by the SPA rewrite in the same file, so deep links like
+`/product/embroidered-cushion-cover` resolve instead of 404ing.
+
 ## Not yet built
 
 The prototype stops at the boundary of the backend. Still to come: a real API and catalogue
