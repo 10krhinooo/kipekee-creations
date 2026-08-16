@@ -1,0 +1,134 @@
+import type { PatternKind } from '../data/types'
+
+/**
+ * Procedural textile swatches.
+ *
+ * The prototype ships without the client's photography, so every product image
+ * is generated as an SVG data URI keyed on the product's pattern and accent
+ * colour. This keeps the layout honest about real image proportions and colour
+ * weight, and each of these is a one-for-one drop-in slot for a real photo.
+ */
+
+const shade = (hex: string, amount: number) => {
+  const n = parseInt(hex.slice(1), 16)
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)))
+  const r = clamp(((n >> 16) & 255) + amount)
+  const g = clamp(((n >> 8) & 255) + amount)
+  const b = clamp((n & 255) + amount)
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}
+
+const readable = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16)
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+  return lum > 0.6 ? '#17181a' : '#ffffff'
+}
+
+const patternBody = (kind: PatternKind, base: string): string => {
+  const light = shade(base, 26)
+  const dark = shade(base, -26)
+  const ink = readable(base)
+
+  switch (kind) {
+    case 'weave':
+      return `
+        <pattern id="p" width="8" height="8" patternUnits="userSpaceOnUse">
+          <rect width="8" height="8" fill="${base}"/>
+          <rect width="4" height="4" fill="${light}"/>
+          <rect x="4" y="4" width="4" height="4" fill="${dark}"/>
+        </pattern>`
+    case 'embroidery':
+      return `
+        <pattern id="p" width="56" height="56" patternUnits="userSpaceOnUse">
+          <rect width="56" height="56" fill="${base}"/>
+          <g stroke="${ink}" stroke-opacity="0.5" fill="none" stroke-width="1.6">
+            <circle cx="28" cy="28" r="13"/>
+            <path d="M28 8 L34 22 L48 28 L34 34 L28 48 L22 34 L8 28 L22 22 Z"/>
+          </g>
+        </pattern>`
+    case 'geometric':
+      return `
+        <pattern id="p" width="48" height="48" patternUnits="userSpaceOnUse">
+          <rect width="48" height="48" fill="${base}"/>
+          <path d="M0 24 L24 0 L48 24 L24 48 Z" fill="${light}"/>
+          <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="${dark}"/>
+        </pattern>`
+    case 'damask':
+      return `
+        <pattern id="p" width="64" height="64" patternUnits="userSpaceOnUse">
+          <rect width="64" height="64" fill="${base}"/>
+          <g fill="${light}">
+            <path d="M32 6 C44 18 44 28 32 34 C20 28 20 18 32 6 Z"/>
+            <path d="M32 58 C20 46 20 36 32 30 C44 36 44 46 32 58 Z"/>
+          </g>
+          <circle cx="4" cy="32" r="3" fill="${dark}"/>
+          <circle cx="60" cy="32" r="3" fill="${dark}"/>
+        </pattern>`
+    case 'stripe':
+      return `
+        <pattern id="p" width="24" height="24" patternUnits="userSpaceOnUse">
+          <rect width="24" height="24" fill="${base}"/>
+          <rect width="9" height="24" fill="${light}"/>
+          <rect x="16" width="3" height="24" fill="${dark}"/>
+        </pattern>`
+    case 'sheer':
+      return `
+        <pattern id="p" width="10" height="10" patternUnits="userSpaceOnUse">
+          <rect width="10" height="10" fill="${base}"/>
+          <path d="M0 0 H10 M0 5 H10" stroke="${light}" stroke-width="1"/>
+          <path d="M0 0 V10 M5 0 V10" stroke="${dark}" stroke-opacity="0.35" stroke-width="0.8"/>
+        </pattern>`
+    case 'iron':
+      return `
+        <pattern id="p" width="72" height="72" patternUnits="userSpaceOnUse">
+          <rect width="72" height="72" fill="${base}"/>
+          <g stroke="${light}" fill="none" stroke-width="3" stroke-linecap="round">
+            <path d="M36 4 V68"/>
+            <path d="M36 20 C18 26 18 44 36 50"/>
+            <path d="M36 20 C54 26 54 44 36 50"/>
+          </g>
+        </pattern>`
+    case 'ceramic':
+      return `
+        <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect width="40" height="40" fill="${base}"/>
+          <circle cx="20" cy="20" r="14" fill="${light}"/>
+          <circle cx="20" cy="20" r="6" fill="${dark}" fill-opacity="0.4"/>
+        </pattern>`
+    default:
+      return `
+        <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="${light}"/>
+          <stop offset="1" stop-color="${dark}"/>
+        </linearGradient>`
+  }
+}
+
+/**
+ * Build a swatch as an inline data URI.
+ * @param seed shifts the fold highlights so sibling images do not look cloned.
+ */
+export const swatch = (kind: PatternKind, accent: string, seed = 0): string => {
+  const folds = Array.from({ length: 5 }, (_, i) => {
+    const x = 40 + i * 96 + ((seed * 17) % 40)
+    return `<rect x="${x}" y="0" width="26" height="600" fill="#000" opacity="${
+      i % 2 === 0 ? 0.07 : 0.03
+    }"/>`
+  }).join('')
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" preserveAspectRatio="xMidYMid slice">
+    <defs>${patternBody(kind, accent)}</defs>
+    <rect width="480" height="600" fill="url(#p)"/>
+    ${folds}
+    <rect width="480" height="600" fill="url(#g)"/>
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+        <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000000" stop-opacity="0.14"/>
+      </linearGradient>
+    </defs>
+  </svg>`
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
