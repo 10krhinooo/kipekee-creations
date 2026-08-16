@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { categories } from '../data/catalogue'
-import { Button, Container, WhatsAppIcon, whatsappLink } from './ui'
+import { Button, Container, MAP_URL, WhatsAppIcon, whatsappLink } from './ui'
 
 export function Footer() {
   return (
@@ -13,7 +13,7 @@ export function Footer() {
           </span>
           <p className="max-w-xs text-sm leading-relaxed">
             Interior decor and made-to-measure soft furnishings for homes, hotels, architects and
-            property managers across Kenya. Sewing on Mombasa Road since 2012.
+            property managers across Kenya. Sewing on Katani Road, off Mombasa Road, since 2012.
           </p>
           <Button
             variant="whatsapp"
@@ -73,7 +73,16 @@ export function Footer() {
         <div>
           <h3 className="mb-4 text-sm font-semibold text-white">Visit the showroom</h3>
           <address className="space-y-2.5 text-sm not-italic">
-            <p>Mombasa Road, Nairobi</p>
+            <p>
+              <a
+                href={MAP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block py-1 hover:text-white"
+              >
+                Katani Road, off Mombasa Road, Nairobi
+              </a>
+            </p>
             <p>Mon–Fri 8.30am–5.30pm · Sat 9am–3pm</p>
             <p>
               <a href="tel:+254721527797" className="inline-block py-1 hover:text-white">

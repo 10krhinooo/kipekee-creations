@@ -14,7 +14,7 @@ export function About() {
               We are a workshop, not an importer
             </h1>
             <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-ink-soft">
-              Kipekee Creations has been cutting and sewing soft furnishings on Mombasa Road since
+              Kipekee Creations has been cutting and sewing soft furnishings on Katani Road, off Mombasa Road, since
               2012. Everything made-to-measure that we sell is made by our own team, on our own
               machines, and hung by the people who sewed it.
             </p>
@@ -35,7 +35,7 @@ export function About() {
         <Container>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { n: '2012', l: 'Sewing on Mombasa Road' },
+              { n: '2012', l: 'Sewing on Katani Road' },
               { n: '340+', l: 'Homes fitted in Nairobi' },
               { n: '28', l: 'Hospitality properties supplied' },
               { n: '10 days', l: 'Average made-to-measure turnaround' },

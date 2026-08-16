@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     q: 'Can I see the fabric before committing?',
-    a: `Yes. We post 15 × 15 cm cuttings anywhere in Kenya for ${money(200)}, refunded against your order. Or visit the Mombasa Road showroom and handle the full rolls.`,
+    a: `Yes. We post 15 × 15 cm cuttings anywhere in Kenya for ${money(200)}, refunded against your order. Or visit the Katani Road showroom and handle the full rolls.`,
   },
   {
     q: 'How do I pay?',
@@ -57,7 +57,7 @@ const steps = [
   {
     n: '04',
     title: 'We sew it',
-    body: 'Cut and sewn on Mombasa Road. Ten working days on average. You get a photo when it comes off the machine.',
+    body: 'Cut and sewn on Katani Road. Ten working days on average. You get a photo when it comes off the machine.',
   },
   {
     n: '05',
