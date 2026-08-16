@@ -382,7 +382,7 @@ export function ProductPage() {
                   <Tick />
                   <span>
                     <strong>{leadTime(product.leadTimeDays)}</strong>, {product.stock} in stock at
-                    the Mombasa Road workshop
+                    the Katani Road workshop
                   </span>
                 </li>
                 <li className="flex gap-2">

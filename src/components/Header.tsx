@@ -93,7 +93,7 @@ export function Header() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur">
       {/* Announcement bar carries a real, verifiable promise instead of "$200". */}
       <div className="bg-ink text-white">
-        <Container className="flex h-9 items-center justify-between text-[12px]">
+        <Container wide className="flex h-9 items-center justify-between text-[12px]">
           <p className="truncate">
             Free delivery in Nairobi over <strong>{money(10000)}</strong> · Free window measure
           </p>
@@ -109,7 +109,7 @@ export function Header() {
         </Container>
       </div>
 
-      <Container className="border-b border-line">
+      <Container wide className="border-b border-line">
         <div className="flex h-18 items-center gap-4 py-3">
           <button
             onClick={() => setOpen((v) => !v)}
@@ -240,7 +240,7 @@ export function Header() {
 
       {open && (
         <div className="border-b border-line bg-white lg:hidden">
-          <Container className="space-y-1 py-4">
+          <Container wide className="space-y-1 py-4">
             <div className="mb-3">
               <Search onDone={() => setOpen(false)} />
             </div>

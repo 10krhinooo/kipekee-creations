@@ -1,4 +1,4 @@
-import { Button, Container, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { Button, Container, MAP_URL, WhatsAppIcon, whatsappLink } from '../components/ui'
 
 export function Contact() {
   return (
@@ -7,7 +7,7 @@ export function Contact() {
         <h1 className="font-display text-3xl font-semibold sm:text-4xl">Get in touch</h1>
         <p className="mt-3 text-[16px] leading-relaxed text-muted">
           WhatsApp is the fastest way to reach us. We usually reply within the hour during working
-          hours. Or come to the showroom on Mombasa Road and handle the fabrics yourself.
+          hours. Or come to the showroom on Katani Road, off Mombasa Road, and handle the fabrics yourself.
         </p>
       </header>
 
@@ -47,7 +47,7 @@ export function Contact() {
               </li>
               <li>
                 <span className="block text-[12px] tracking-wide text-muted uppercase">Showroom</span>
-                <p className="font-medium">Mombasa Road, Nairobi</p>
+                <p className="font-medium">Katani Road, off Mombasa Road, Nairobi</p>
                 <p className="mt-1 text-muted">Mon–Fri 8.30am–5.30pm</p>
                 <p className="text-muted">Sat 9am–3pm · Sun closed</p>
               </li>
@@ -109,8 +109,13 @@ export function Contact() {
             </p>
           </div>
 
-          {/* Map placeholder, the live site gives an address with no map at all. */}
-          <div className="flex aspect-21/9 items-center justify-center rounded-2xl border border-line bg-sand">
+          {/* The live site gives an address with no map and no directions link. */}
+          <a
+            href={MAP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="flex aspect-21/9 items-center justify-center rounded-2xl border border-line bg-sand transition-colors hover:border-brand"
+          >
             <div className="text-center">
               <svg
                 viewBox="0 0 24 24"
@@ -122,10 +127,10 @@ export function Contact() {
                 <path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" />
                 <circle cx="12" cy="10" r="2.5" />
               </svg>
-              <p className="text-sm font-medium">Mombasa Road, Nairobi</p>
-              <p className="text-[13px] text-muted">Google Map embeds here in the live build</p>
+              <p className="text-sm font-medium">Katani Road, off Mombasa Road, Nairobi</p>
+              <p className="text-[13px] text-brand underline">Open in Google Maps</p>
             </div>
-          </div>
+          </a>
         </div>
       </div>
     </Container>

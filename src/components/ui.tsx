@@ -152,18 +152,39 @@ export function SectionHeading({
   )
 }
 
+/**
+ * Page gutter. Capped at 1600px rather than Tailwind's 1280px default so the
+ * layout keeps filling a large monitor instead of stranding the content in a
+ * narrow column down the middle.
+ */
 export function Container({
   children,
   className,
+  wide,
 }: {
   children: ReactNode
   className?: string
+  /** Edge to edge with gutters only, for full-bleed bars like the header. */
+  wide?: boolean
 }) {
-  return <div className={cx('mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8', className)}>{children}</div>
+  return (
+    <div
+      className={cx(
+        'mx-auto w-full px-4 sm:px-6 lg:px-10',
+        wide ? 'max-w-none' : 'max-w-[1600px]',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
 }
 
 /** Kipekee's WhatsApp line, the fastest conversion path for a Kenyan shopper. */
 export const WHATSAPP = '254721527797'
+
+/** The workshop and showroom, on Katani Road just off Mombasa Road. */
+export const MAP_URL = 'https://share.google/gXSFZvROvKJS8LonS'
 
 export const whatsappLink = (message: string) =>
   `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`

@@ -9,7 +9,7 @@ export const categories: Category[] = [
   {
     slug: 'curtains',
     name: 'Curtains & Blinds',
-    blurb: 'Made to your window, sewn in our Mombasa Road workshop.',
+    blurb: 'Made to your window, sewn in our Katani Road workshop.',
     mode: 'quote',
     pattern: 'damask',
     accent: '#8d6f52',

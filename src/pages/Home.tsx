@@ -20,7 +20,7 @@ const promises = [
     ),
   },
   {
-    title: 'Sewn on Mombasa Road',
+    title: 'Sewn on Katani Road',
     body: 'Our own workshop, not an importer. Come and see the machines.',
     icon: (
       <>
@@ -116,9 +116,9 @@ export function Home() {
             </h1>
 
             <p className="mt-5 max-w-lg text-[17px] leading-relaxed text-ink-soft">
-              We sew made-to-measure curtains, blinds and canopies on Mombasa Road, and stock the
-              cushions, fabrics and linen that finish the room. Homes, hotels and architects, since
-              2012.
+              We sew made-to-measure curtains, blinds and canopies at our Katani Road workshop off
+              Mombasa Road, and stock the cushions, fabrics and linen that finish the room. Homes,
+              hotels and architects, since 2012.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">

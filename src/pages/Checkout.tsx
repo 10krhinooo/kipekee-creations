@@ -30,7 +30,7 @@ export function Checkout() {
         </div>
         <h1 className="font-display text-3xl font-semibold">Order received</h1>
         <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
-          We've sent a confirmation to your phone. Your order leaves the Mombasa Road workshop this
+          We've sent a confirmation to your phone. Your order leaves the Katani Road workshop this
           afternoon and you'll get a tracking SMS when the rider is on the way.
         </p>
         <Button to="/shop" size="lg">Continue shopping</Button>
