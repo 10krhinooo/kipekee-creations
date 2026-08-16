@@ -4,6 +4,8 @@ A React rebuild of [kipekeecreations.co.ke](https://kipekeecreations.co.ke), the
 Nairobi interior decor business that sews made-to-measure curtains on Mombasa Road and stocks the
 cushions, fabrics and linen that finish a room.
 
+**Live demo: [kipekee-creations.vercel.app](https://kipekee-creations.vercel.app)**
+
 This repository is a **clickable UX prototype**. Every page is real and interactive, but the
 catalogue is mock data and no form or payment is wired to a backend yet.
 
