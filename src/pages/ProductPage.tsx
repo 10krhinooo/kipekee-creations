@@ -7,6 +7,14 @@ import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
 import {
+  RoomPreview,
+  type Finial,
+  type Heading,
+  type SceneKind,
+  type SceneVariant,
+  sceneTabLabel,
+} from '../components/RoomPreview'
+import {
   Badge,
   Button,
   Container,
@@ -19,8 +27,18 @@ import {
 
 type Tab = 'overview' | 'specs' | 'care' | 'delivery' | 'reviews'
 
+/**
+ * Keyed on the slug so every product gets a clean slate. Navigating between
+ * products reuses this route, and without the key the previously chosen colour
+ * and heading leak into the next product, which can select a style it does not
+ * even offer.
+ */
 export function ProductPage() {
   const { slug = '' } = useParams()
+  return <ProductDetail key={slug} slug={slug} />
+}
+
+function ProductDetail({ slug }: { slug: string }) {
   const product = bySlug(slug)
   const { addToCart, addToQuote } = useBasket()
 
@@ -29,6 +47,9 @@ export function ProductPage() {
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState<Tab>('overview')
   const [activeImage, setActiveImage] = useState(0)
+  const [view, setView] = useState<'room' | 'fabric'>('room')
+  const [drawn, setDrawn] = useState(true)
+  const [night, setNight] = useState(false)
 
   // Quote-mode measurement inputs, the data a real quote actually needs.
   const [room, setRoom] = useState(product?.rooms[0] ?? 'Living room')
@@ -66,6 +87,76 @@ export function ProductPage() {
     ? unitPrice * (Number(width || 0) / 100 || 1) * windows
     : unitPrice * qty
 
+  /**
+   * Every product gets shown where it actually lives. A towel on a window tells
+   * you nothing, so the scene follows the category, with two overrides for
+   * products filed under a category they do not visually belong to.
+   */
+  const sceneBySlug: Record<string, SceneKind> = {
+    'hotel-pool-towels': 'bath',
+    'decor-towel-pair': 'bath',
+  }
+
+  const sceneByCategory: Record<string, SceneKind> = {
+    curtains: 'window',
+    fabrics: 'window',
+    'wrought-iron': 'window',
+    'bed-canopies': 'bed',
+    'hotel-linen': 'bed',
+    'cushion-covers': 'sofa',
+    towels: 'bath',
+    household: 'dining',
+  }
+
+  const scene: SceneKind = sceneBySlug[product.slug] ?? sceneByCategory[product.category] ?? 'sofa'
+
+  const variant: SceneVariant =
+    product.category === 'wrought-iron'
+      ? 'rail'
+      : product.category === 'bed-canopies'
+        ? 'canopy'
+        : product.pattern === 'sheer'
+          ? 'sheer'
+          : product.category === 'curtains' || product.category === 'fabrics'
+            ? 'curtains'
+            : 'default'
+
+  /** Only a window scene with real panels can be opened and closed. */
+  const canDraw = scene === 'window' && variant !== 'rail'
+
+  /**
+   * Bed scenes resize with the selected size, so a king reads as wider than a
+   * single instead of the size buttons only changing the price.
+   */
+  const bedScale = size.includes('king')
+    ? 1.14
+    : size.includes('queen')
+      ? 1.0
+      : size.includes('four-poster')
+        ? 1.08
+        : size.includes('double')
+          ? 0.9
+          : size.includes('single')
+            ? 0.76
+            : 1.0
+
+  /**
+   * The style selector drives the scene. Picking wave heading should change the
+   * silhouette in the room, not just the price, because the heading is the
+   * hardest part of a curtain to picture from words alone.
+   */
+  const heading: Heading = size.includes('wave')
+    ? 'wave'
+    : size.includes('eyelet')
+      ? 'eyelet'
+      : 'pencil'
+
+  const finial: Finial = size.includes('scroll')
+    ? 'scroll'
+    : size.includes('spear')
+      ? 'spear'
+      : 'ball'
+
   const gallery = [
     swatch(product.pattern, selectedColour.swatch || product.accent, 0),
     swatch(product.pattern, selectedColour.swatch || product.accent, 5),
@@ -98,38 +189,109 @@ export function ProductPage() {
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
         {/* GALLERY */}
         <div>
-          <div className="relative overflow-hidden rounded-2xl bg-sand">
-            <img
-              src={gallery[activeImage]}
-              alt={`${product.name} in ${selectedColour.label}`}
-              className="aspect-4/5 w-full object-cover"
-            />
-            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-              {isQuote ? <Badge tone="quote">Made to measure</Badge> : null}
-              {product.compareAt && (
-                <Badge tone="brand">Save {money(product.compareAt - product.price)}</Badge>
-              )}
-              {product.badges?.map((b) => (
-                <Badge key={b}>{b}</Badge>
-              ))}
+          {/* For anything that hangs at a window, seeing it hung beats seeing a
+              flat swatch, so the room view is the default where it applies. */}
+          {scene && (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <div className="flex gap-1 rounded-full bg-shell p-1">
+                {([
+                  { id: 'room' as const, label: sceneTabLabel[scene] },
+                  { id: 'fabric' as const, label: 'Fabric' },
+                ]).map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setView(v.id)}
+                    className={cx(
+                      'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                      view === v.id ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink',
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div className="relative overflow-hidden rounded-2xl bg-sand">
+            {scene && view === 'room' ? (
+              <div className="aspect-4/5 w-full">
+                <RoomPreview
+                  colour={selectedColour.swatch || product.accent}
+                  pattern={product.pattern}
+                  scene={scene}
+                  variant={variant}
+                  heading={heading}
+                  finial={finial}
+                  drawn={drawn}
+                  night={night}
+                  bedScale={bedScale}
+                  hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
+                />
+              </div>
+            ) : (
+              <img
+                src={gallery[activeImage]}
+                alt={`${product.name} in ${selectedColour.label}`}
+                className="aspect-4/5 w-full object-cover"
+              />
+            )}
+
+            {/*
+              Only the saving stays on the image. The service badges said the
+              same thing as the panel beside them and covered the very corner of
+              the room the customer is trying to look at.
+            */}
+            {product.compareAt && (
+              <div className="absolute top-4 left-4">
+                <Badge tone="brand">Save {money(product.compareAt - product.price)}</Badge>
+              </div>
+            )}
+
+            {/* Scene controls. Drawing them closed at night is the clearest way
+                to show what a blockout lining actually buys you, so both
+                controls belong to the curtain scene and nowhere else. */}
+            {canDraw && view === 'room' && (
+              <div className="absolute right-4 bottom-4 left-4 flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => setDrawn((d) => !d)}
+                  className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
+                >
+                  {drawn ? 'Open the curtains' : 'Close the curtains'}
+                </button>
+                <button
+                  onClick={() => setNight((n) => !n)}
+                  className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
+                >
+                  {night ? 'Daytime' : 'See it at night'}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {gallery.map((src, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImage(i)}
-                className={cx(
-                  'overflow-hidden rounded-xl border-2 transition-colors',
-                  i === activeImage ? 'border-brand' : 'border-transparent hover:border-line',
-                )}
-                aria-label={`View image ${i + 1}`}
-              >
-                <img src={src} alt="" className="aspect-square w-full object-cover" />
-              </button>
-            ))}
-          </div>
+          {scene && view === 'room' ? (
+            <p className="mt-3 text-center text-[12px] text-muted">
+              Showing {selectedColour.label}
+              {product.sizes && selectedSize ? `, ${selectedSize.label.toLowerCase()}` : ''}. Change
+              the colour or style to update the room.
+            </p>
+          ) : (
+            <div className="mt-3 grid grid-cols-4 gap-3">
+              {gallery.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImage(i)}
+                  className={cx(
+                    'overflow-hidden rounded-xl border-2 transition-colors',
+                    i === activeImage ? 'border-brand' : 'border-transparent hover:border-line',
+                  )}
+                  aria-label={`View image ${i + 1}`}
+                >
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* BUY / QUOTE PANEL */}
@@ -403,7 +565,8 @@ export function ProductPage() {
         </div>
       </div>
 
-      {/* TABS, the old product page had these headings but no content behind them. */}
+      {/* TABS. Specs, care and delivery terms, so the detail is there without
+          burying the buy panel. */}
       <div className="mt-16">
         <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line">
           {tabs.map((t) => (

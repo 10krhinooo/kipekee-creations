@@ -1,6 +1,6 @@
 /**
  * The catalogue splits into two commercial modes, which is the core fix for the
- * old site: ready-made stock can be bought outright, made-to-measure work is
+ * business: ready-made stock can be bought outright, made-to-measure work is
  * quoted. Every surface in the app branches on `mode`.
  */
 export type SellMode = 'buy' | 'quote'
@@ -28,7 +28,7 @@ export type PatternKind =
 export interface Category {
   slug: string
   name: string
-  /** Shown on the category tile, the old site gave shoppers no context at all. */
+  /** Shown on the category tile, so a shopper knows what is behind it. */
   blurb: string
   parent?: string
   mode: SellMode

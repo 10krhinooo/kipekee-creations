@@ -6,9 +6,9 @@ import { Button, Container, WhatsAppIcon, cx, whatsappLink } from './ui'
 import { money } from '../lib/format'
 
 /*
- * The live site repeats its navigation three times over, a mega menu, a
- * sidebar tree and a top bar, with 16 flat categories. This is one menu,
- * grouped by how people actually shop: by room, then by product.
+ * One menu, grouped by how people actually shop: by room, then by product.
+ * Eight categories rather than a long flat list, so the choice stays small
+ * enough to make.
  */
 const primary = [
   { to: '/shop', label: 'Shop' },
@@ -91,7 +91,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur">
-      {/* Announcement bar carries a real, verifiable promise instead of "$200". */}
+      {/* Announcement bar carries the two promises worth repeating everywhere. */}
       <div className="bg-ink text-white">
         <Container wide className="flex h-9 items-center justify-between text-[12px]">
           <p className="truncate">

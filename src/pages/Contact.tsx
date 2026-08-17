@@ -109,7 +109,7 @@ export function Contact() {
             </p>
           </div>
 
-          {/* The live site gives an address with no map and no directions link. */}
+          {/* The address is a link, so a visitor gets directions in one tap. */}
           <a
             href={MAP_URL}
             target="_blank"

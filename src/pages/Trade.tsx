@@ -5,9 +5,9 @@ import { ProductCard } from '../components/ProductCard'
 import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
 
 /**
- * The live site's About text names "hoteliers, architects and property
- * management companies" as customers, but gives them nowhere to go. This is
- * their landing page: volume pricing, contract specs and a trade account form.
+ * Hoteliers, architects and property managers buy on volume, specs and terms
+ * rather than on styling, so they get their own landing page: volume pricing,
+ * contract specs and a trade account form.
  */
 export function Trade() {
   const contract = products.filter((p) => p.rooms.includes('Hotel & hospitality'))
