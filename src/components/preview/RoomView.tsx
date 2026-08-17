@@ -1,4 +1,6 @@
+import { Suspense, lazy } from 'react'
 import { RoomPreview } from '../RoomPreview'
+import { Preview3DBoundary } from './Preview3DBoundary'
 import { useRenderTier } from './TierProvider'
 import type { PreviewProps } from './types'
 
@@ -10,18 +12,36 @@ import type { PreviewProps } from './types'
  * call site, and it means a device that cannot run WebGL is served by the same
  * element as one that can.
  *
- * Today every tier resolves to the SVG renderer, because the 3D one does not
- * exist yet. Standing the switcher up first is deliberate: it proves the
- * fallback path is a real path before anything depends on it, rather than
- * retrofitting a fallback onto a 3D-only component later and hoping.
+ * Both renderers take exactly `PreviewProps`. That shared type is the contract:
+ * if a prop arrives that only one tier can honour, the tiers have diverged and
+ * the fallback has quietly started lying about what the customer would receive.
  */
+
+// Lazy so the three/drei chunk is fetched only once a device has been scored as
+// capable. A 2D-tier visitor must never download a byte of it.
+const RoomScene3D = lazy(() => import('./RoomScene3D'))
+
 export function RoomView(props: PreviewProps) {
-  const { tier } = useRenderTier()
+  const { tier, canvasReady, demote } = useRenderTier()
 
-  // The 3D branch lands here next, behind React.lazy. Until then this is not a
-  // placeholder so much as the whole point: '2d' and 'probing' are permanent
-  // states that must always render something complete.
-  void tier
+  // 'probing' renders the SVG too, so the first paint is never blocked on a
+  // capability check. There is no spinner state and nothing to wait for.
+  //
+  // `canvasReady` is the other half: a <View> that mounts before <View.Port />
+  // exists never connects to it and renders a correctly-sized empty box
+  // forever. Both arrive on lazy chunks, so without this gate the order is a
+  // race and the preview is blank roughly half the time.
+  if (tier !== '3d' || !canvasReady) return <RoomPreview {...props} />
 
-  return <RoomPreview {...props} />
+  const flat = <RoomPreview {...props} />
+
+  return (
+    <Preview3DBoundary fallback={flat} onError={(reason) => demote(`3d preview failed: ${reason}`)}>
+      {/* The SVG scene is the Suspense fallback as well as the error fallback,
+          so a slow chunk shows the real room rather than an empty box. */}
+      <Suspense fallback={flat}>
+        <RoomScene3D {...props} />
+      </Suspense>
+    </Preview3DBoundary>
+  )
 }
