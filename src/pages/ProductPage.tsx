@@ -8,6 +8,7 @@ import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
 import { sceneTabLabel } from '../components/RoomPreview'
 import { RoomView } from '../components/preview/RoomView'
+import { TierToggle } from '../components/preview/TierToggle'
 import type {
   Finial,
   Heading,
@@ -210,6 +211,9 @@ function ProductDetail({ slug }: { slug: string }) {
                   </button>
                 ))}
               </div>
+              {/* Only meaningful while the room is on screen. Offering a
+                  renderer choice next to a flat swatch would be noise. */}
+              {view === 'room' && <TierToggle />}
             </div>
           )}
 

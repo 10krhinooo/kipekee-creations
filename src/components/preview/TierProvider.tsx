@@ -20,6 +20,16 @@ import { probeTier, storeTier, type RenderTier } from '../../lib/capability'
 
 interface TierApi {
   tier: RenderTier
+  /**
+   * Whether the shared Canvas has been created.
+   *
+   * A drei `<View>` only connects to `<View.Port />` if the Port is already
+   * mounted when the view appears. Both arrive on lazy chunks, so their order
+   * is a race, and a view that loses it renders a correctly-sized but
+   * permanently empty box. Gating on this makes the order deterministic.
+   */
+  canvasReady: boolean
+  setCanvasReady: (ready: boolean) => void
   /** A human choosing. Persisted, because they meant it. */
   setTier: (tier: '2d' | '3d') => void
   /**
@@ -36,6 +46,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
   // Starts at 'probing' so the first paint is never blocked on a WebGL context
   // creation. The 2D tier renders during it, so there is nothing to wait for.
   const [tier, setTierState] = useState<RenderTier>('probing')
+  const [canvasReady, setCanvasReady] = useState(false)
 
   useEffect(() => {
     setTierState(probeTier())
@@ -47,6 +58,7 @@ export function TierProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const demote = useCallback((reason: string) => {
+    setCanvasReady(false)
     setTierState((current) => {
       if (current === '2d') return current
       // Worth a breadcrumb: a demotion in the wild is the signal that the probe
@@ -56,7 +68,10 @@ export function TierProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const value = useMemo(() => ({ tier, setTier, demote }), [tier, setTier, demote])
+  const value = useMemo(
+    () => ({ tier, canvasReady, setCanvasReady, setTier, demote }),
+    [tier, canvasReady, setTier, demote],
+  )
 
   return <TierContext.Provider value={value}>{children}</TierContext.Provider>
 }
