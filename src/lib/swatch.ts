@@ -24,7 +24,20 @@ const readable = (hex: string) => {
   return lum > 0.6 ? '#17181a' : '#ffffff'
 }
 
-const patternBody = (kind: PatternKind, base: string): string => {
+/**
+ * The pattern definitions, as raw SVG markup for a `<defs>` block.
+ *
+ * Exported because two consumers need the identical fabric: `swatch()` bakes it
+ * into a data URI for the product gallery, and `RoomPreview` drops it straight
+ * into a live scene so the curtain on the window is the same cloth as the
+ * swatch. Keeping one definition is what stops the two drifting apart.
+ */
+export const patternDefs = (kind: PatternKind, rawBase: string, rawId = 'p'): string => {
+  // These strings are interpolated into markup, so both are constrained to a
+  // safe shape here rather than trusted. Today they come from our own
+  // catalogue; tomorrow the colour could arrive from the API.
+  const base = /^#[0-9a-fA-F]{6}$/.test(rawBase) ? rawBase : '#888888'
+  const id = rawId.replace(/[^A-Za-z0-9_-]/g, '')
   const light = shade(base, 26)
   const dark = shade(base, -26)
   const ink = readable(base)
@@ -32,14 +45,14 @@ const patternBody = (kind: PatternKind, base: string): string => {
   switch (kind) {
     case 'weave':
       return `
-        <pattern id="p" width="8" height="8" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">
           <rect width="8" height="8" fill="${base}"/>
           <rect width="4" height="4" fill="${light}"/>
           <rect x="4" y="4" width="4" height="4" fill="${dark}"/>
         </pattern>`
     case 'embroidery':
       return `
-        <pattern id="p" width="56" height="56" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="56" height="56" patternUnits="userSpaceOnUse">
           <rect width="56" height="56" fill="${base}"/>
           <g stroke="${ink}" stroke-opacity="0.5" fill="none" stroke-width="1.6">
             <circle cx="28" cy="28" r="13"/>
@@ -48,14 +61,14 @@ const patternBody = (kind: PatternKind, base: string): string => {
         </pattern>`
     case 'geometric':
       return `
-        <pattern id="p" width="48" height="48" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="48" height="48" patternUnits="userSpaceOnUse">
           <rect width="48" height="48" fill="${base}"/>
           <path d="M0 24 L24 0 L48 24 L24 48 Z" fill="${light}"/>
           <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="${dark}"/>
         </pattern>`
     case 'damask':
       return `
-        <pattern id="p" width="64" height="64" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="64" height="64" patternUnits="userSpaceOnUse">
           <rect width="64" height="64" fill="${base}"/>
           <g fill="${light}">
             <path d="M32 6 C44 18 44 28 32 34 C20 28 20 18 32 6 Z"/>
@@ -66,21 +79,21 @@ const patternBody = (kind: PatternKind, base: string): string => {
         </pattern>`
     case 'stripe':
       return `
-        <pattern id="p" width="24" height="24" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="24" height="24" patternUnits="userSpaceOnUse">
           <rect width="24" height="24" fill="${base}"/>
           <rect width="9" height="24" fill="${light}"/>
           <rect x="16" width="3" height="24" fill="${dark}"/>
         </pattern>`
     case 'sheer':
       return `
-        <pattern id="p" width="10" height="10" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="10" height="10" patternUnits="userSpaceOnUse">
           <rect width="10" height="10" fill="${base}"/>
           <path d="M0 0 H10 M0 5 H10" stroke="${light}" stroke-width="1"/>
           <path d="M0 0 V10 M5 0 V10" stroke="${dark}" stroke-opacity="0.35" stroke-width="0.8"/>
         </pattern>`
     case 'iron':
       return `
-        <pattern id="p" width="72" height="72" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="72" height="72" patternUnits="userSpaceOnUse">
           <rect width="72" height="72" fill="${base}"/>
           <g stroke="${light}" fill="none" stroke-width="3" stroke-linecap="round">
             <path d="M36 4 V68"/>
@@ -90,14 +103,14 @@ const patternBody = (kind: PatternKind, base: string): string => {
         </pattern>`
     case 'ceramic':
       return `
-        <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
+        <pattern id="${id}" width="40" height="40" patternUnits="userSpaceOnUse">
           <rect width="40" height="40" fill="${base}"/>
           <circle cx="20" cy="20" r="14" fill="${light}"/>
           <circle cx="20" cy="20" r="6" fill="${dark}" fill-opacity="0.4"/>
         </pattern>`
     default:
       return `
-        <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="${light}"/>
           <stop offset="1" stop-color="${dark}"/>
         </linearGradient>`
@@ -117,7 +130,7 @@ export const swatch = (kind: PatternKind, accent: string, seed = 0): string => {
   }).join('')
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" preserveAspectRatio="xMidYMid slice">
-    <defs>${patternBody(kind, accent)}</defs>
+    <defs>${patternDefs(kind, accent)}</defs>
     <rect width="480" height="600" fill="url(#p)"/>
     ${folds}
     <rect width="480" height="600" fill="url(#g)"/>

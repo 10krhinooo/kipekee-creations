@@ -11,6 +11,8 @@ import {
   type Finial,
   type Heading,
   type SceneKind,
+  type SceneVariant,
+  sceneTabLabel,
 } from '../components/RoomPreview'
 import {
   Badge,
@@ -86,21 +88,57 @@ function ProductDetail({ slug }: { slug: string }) {
     : unitPrice * qty
 
   /**
-   * Which room scene suits this product, if any. Cushion covers and towels get
-   * no scene, because a window does not tell you anything about them.
+   * Every product gets shown where it actually lives. A towel on a window tells
+   * you nothing, so the scene follows the category, with two overrides for
+   * products filed under a category they do not visually belong to.
    */
-  const scene: SceneKind | null =
-    product.category === 'curtains'
-      ? product.pattern === 'sheer'
-        ? 'sheer'
-        : 'curtains'
+  const sceneBySlug: Record<string, SceneKind> = {
+    'hotel-pool-towels': 'bath',
+    'decor-towel-pair': 'bath',
+  }
+
+  const sceneByCategory: Record<string, SceneKind> = {
+    curtains: 'window',
+    fabrics: 'window',
+    'wrought-iron': 'window',
+    'bed-canopies': 'bed',
+    'hotel-linen': 'bed',
+    'cushion-covers': 'sofa',
+    towels: 'bath',
+    household: 'dining',
+  }
+
+  const scene: SceneKind = sceneBySlug[product.slug] ?? sceneByCategory[product.category] ?? 'sofa'
+
+  const variant: SceneVariant =
+    product.category === 'wrought-iron'
+      ? 'rail'
       : product.category === 'bed-canopies'
         ? 'canopy'
-        : product.category === 'wrought-iron'
-          ? 'rail'
-          : product.category === 'fabrics'
+        : product.pattern === 'sheer'
+          ? 'sheer'
+          : product.category === 'curtains' || product.category === 'fabrics'
             ? 'curtains'
-            : null
+            : 'default'
+
+  /** Only a window scene with real panels can be opened and closed. */
+  const canDraw = scene === 'window' && variant !== 'rail'
+
+  /**
+   * Bed scenes resize with the selected size, so a king reads as wider than a
+   * single instead of the size buttons only changing the price.
+   */
+  const bedScale = size.includes('king')
+    ? 1.14
+    : size.includes('queen')
+      ? 1.0
+      : size.includes('four-poster')
+        ? 1.08
+        : size.includes('double')
+          ? 0.9
+          : size.includes('single')
+            ? 0.76
+            : 1.0
 
   /**
    * The style selector drives the scene. Picking wave heading should change the
@@ -157,7 +195,7 @@ function ProductDetail({ slug }: { slug: string }) {
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <div className="flex gap-1 rounded-full bg-shell p-1">
                 {([
-                  { id: 'room' as const, label: 'In the room' },
+                  { id: 'room' as const, label: sceneTabLabel[scene] },
                   { id: 'fabric' as const, label: 'Fabric' },
                 ]).map((v) => (
                   <button
@@ -180,11 +218,14 @@ function ProductDetail({ slug }: { slug: string }) {
               <div className="aspect-4/5 w-full">
                 <RoomPreview
                   colour={selectedColour.swatch || product.accent}
-                  kind={scene}
+                  pattern={product.pattern}
+                  scene={scene}
+                  variant={variant}
                   heading={heading}
                   finial={finial}
                   drawn={drawn}
                   night={night}
+                  bedScale={bedScale}
                   hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
                 />
               </div>
@@ -207,17 +248,16 @@ function ProductDetail({ slug }: { slug: string }) {
             </div>
 
             {/* Scene controls. Drawing them closed at night is the clearest way
-                to show what a blockout lining actually buys you. */}
-            {scene && view === 'room' && (
+                to show what a blockout lining actually buys you, so both
+                controls belong to the curtain scene and nowhere else. */}
+            {canDraw && view === 'room' && (
               <div className="absolute right-4 bottom-4 left-4 flex flex-wrap justify-center gap-2">
-                {scene !== 'canopy' && scene !== 'rail' && (
-                  <button
-                    onClick={() => setDrawn((d) => !d)}
-                    className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
-                  >
-                    {drawn ? 'Open the curtains' : 'Close the curtains'}
-                  </button>
-                )}
+                <button
+                  onClick={() => setDrawn((d) => !d)}
+                  className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
+                >
+                  {drawn ? 'Open the curtains' : 'Close the curtains'}
+                </button>
                 <button
                   onClick={() => setNight((n) => !n)}
                   className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
