@@ -34,8 +34,8 @@ function ScrollToTop() {
 
 /**
  * A persistent WhatsApp button. For a Kenyan shopper this is the single
- * highest-converting control on the page, and the old site had no equivalent
- * anywhere.
+ * highest-converting control on the page, so it stays reachable from every
+ * screen.
  */
 function WhatsAppFab() {
   return (

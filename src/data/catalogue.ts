@@ -1,8 +1,7 @@
 import type { Category, Product, Review, Room, Variant } from './types'
 
 /*
- * Categories mirror the live site's taxonomy, but flattened from 16 flat
- * entries into 8 shoppable groups and tagged with the commercial mode so the
+ * Eight shoppable category groups, each tagged with its commercial mode so the
  * UI can promise the right next step ("Add to cart" vs "Request a quote").
  */
 export const categories: Category[] = [

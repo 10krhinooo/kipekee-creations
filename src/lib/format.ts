@@ -5,7 +5,7 @@ const kes = new Intl.NumberFormat('en-KE', {
 })
 
 /**
- * The old site quoted dollars to a Kenyan audience. Everything here is KES,
+ * Everything is priced in KES for a Kenyan audience,
  * normalised to the "KSh" spelling Kenyan retail actually uses, Intl emits
  * "Ksh" for en-KE and "KES" for other locales.
  */

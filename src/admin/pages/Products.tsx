@@ -9,7 +9,8 @@ type Filter = 'all' | 'buy' | 'quote' | 'low'
 /**
  * Catalogue and stock in one table. The mode column is the important one: it
  * decides whether the storefront shows "Add to cart" or "Get a quote", which
- * is the setting the old site effectively got wrong for every product.
+ * decides whether the storefront offers a price or a quote, so it is the most
+ * consequential field on the row.
  */
 export function Products() {
   const [filter, setFilter] = useState<Filter>('all')

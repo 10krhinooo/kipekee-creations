@@ -6,7 +6,7 @@ import { swatch } from '../lib/swatch'
 import { Button, Container, WhatsAppIcon, whatsappLink } from '../components/ui'
 
 /**
- * The quote request is the conversion path the old site had no equivalent of.
+ * The quote request is the conversion path for made-to-measure work.
  * Every measurement field is optional and editable here, because the point is
  * to capture the lead, not to interrogate the visitor.
  */

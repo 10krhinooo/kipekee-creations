@@ -2,7 +2,7 @@
 
 /*
   Brand tokens lifted from the existing kipekeecreations.co.ke stylesheet so the
-  rebuild stays visually continuous with the current site.
+  brand stays consistent across the storefront and the workshop app.
 */
 @theme {
   --color-brand-50: #fdf3f3;
@@ -47,7 +47,7 @@
     letter-spacing: -0.02em;
   }
 
-  /* Keyboard users get a visible, on-brand focus ring the old site never had. */
+  /* Keyboard users get a visible, on-brand focus ring. */
   :focus-visible {
     outline: 2px solid var(--color-brand);
     outline-offset: 2px;

@@ -210,7 +210,7 @@ export function RoomPreview({
   const outerL = 58
   const outerR = 422
   const centre = 240
-  // 6px of overlap at the centre. The previous build left a 60px hole here.
+  // 6px of overlap at the centre, so the closed panels meet with no gap.
   const panelW = centre - outerL + 6
 
   /**

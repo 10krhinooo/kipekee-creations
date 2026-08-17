@@ -5,9 +5,9 @@ import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
 import { Button, Container, SectionHeading, Stars, WhatsAppIcon, whatsappLink } from '../components/ui'
 
-/* The four claims below are the ones Kipekee can actually keep. The live site
- * promises "free delivery over $200", "24/7 technical support" and "member
- * gifts", theme filler that reads as untrustworthy to a Kenyan shopper. */
+/* The four claims below are the ones Kipekee can actually keep. Generic
+ * reassurance badges read as untrustworthy to a Kenyan shopper, so every one of
+ * these is specific and checkable. */
 const promises = [
   {
     title: 'Free measure & fit',
@@ -104,9 +104,8 @@ export function Home() {
 
   return (
     <>
-      {/* HERO, the old homepage opened on an empty slider with no value
-          proposition and no prices. This states what they do, for whom, and
-          gives both audiences a next step. */}
+      {/* HERO. States what they do, for whom, and gives both audiences a next
+          step, with a price on the page above the fold. */}
       <section className="relative overflow-hidden bg-shell">
         <Container className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:gap-16 lg:py-20">
           <div className="animate-rise">
@@ -167,7 +166,7 @@ export function Home() {
         </Container>
       </section>
 
-      {/* PROMISES, replaces the four fake theme badges. */}
+      {/* PROMISES. Four specific, checkable commitments. */}
       <section className="border-y border-line bg-white">
         <Container className="grid gap-6 py-10 sm:grid-cols-2 lg:grid-cols-4">
           {promises.map((p) => (
@@ -268,7 +267,7 @@ export function Home() {
         </Container>
       </section>
 
-      {/* BEST SELLERS with real prices, the single biggest change from the old site. */}
+      {/* BEST SELLERS, with the price on every card. */}
       <section className="py-14 sm:py-20">
         <Container>
           <SectionHeading
@@ -289,7 +288,8 @@ export function Home() {
         </Container>
       </section>
 
-      {/* MADE-TO-MEASURE PROCESS, the old site never explained how buying custom work works. */}
+      {/* MADE-TO-MEASURE PROCESS. Buying custom work is unfamiliar, so the
+          steps and the cost of each are spelled out. */}
       <section className="bg-ink py-16 text-white sm:py-24">
         <Container>
           <div className="mb-12 max-w-2xl">
@@ -353,8 +353,8 @@ export function Home() {
         </Container>
       </section>
 
-      {/* TRADE BAND, architects, hoteliers and property managers are named in
-          their own About text but had nowhere to go on the old site. */}
+      {/* TRADE BAND. Architects, hoteliers and property managers buy very
+          differently from homeowners, so they get their own entry point. */}
       <section className="bg-sand py-14 sm:py-20">
         <Container className="grid items-center gap-10 lg:grid-cols-2">
           <div>
@@ -401,7 +401,7 @@ export function Home() {
         </Container>
       </section>
 
-      {/* TESTIMONIALS, the old product pages all read "0 customer reviews". */}
+      {/* TESTIMONIALS. Proof from named customers in named places. */}
       <section className="py-14 sm:py-20">
         <Container>
           <SectionHeading eyebrow="Reviews" title="What our customers say" center />
@@ -422,7 +422,7 @@ export function Home() {
         </Container>
       </section>
 
-      {/* FINAL CTA, lead capture the old site had nowhere for. */}
+      {/* FINAL CTA. A low-commitment way in for anyone not ready to buy. */}
       <section className="pb-6">
         <Container>
           <div className="rounded-3xl bg-brand px-6 py-12 text-center text-white sm:px-12 sm:py-16">

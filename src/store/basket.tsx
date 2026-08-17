@@ -14,8 +14,8 @@ import { bySlug, priceOf } from '../data/catalogue'
 /*
  * Two baskets, deliberately. Ready-made stock goes in `cart` and is payable at
  * checkout; made-to-measure work goes in `quote` carrying the measurements a
- * quote actually needs. Mixing them into one basket is what forces sites like
- * the old one to either hide prices everywhere or fake them.
+ * quote actually needs. Mixing them into one basket forces a choice between
+ * hiding prices everywhere or inventing them.
  */
 
 interface State {

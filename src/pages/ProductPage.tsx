@@ -565,7 +565,8 @@ function ProductDetail({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {/* TABS, the old product page had these headings but no content behind them. */}
+      {/* TABS. Specs, care and delivery terms, so the detail is there without
+          burying the buy panel. */}
       <div className="mt-16">
         <div className="no-scrollbar flex gap-1 overflow-x-auto border-b border-line">
           {tabs.map((t) => (
