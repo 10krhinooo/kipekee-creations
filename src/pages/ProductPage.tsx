@@ -6,14 +6,14 @@ import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
-import {
-  RoomPreview,
-  type Finial,
-  type Heading,
-  type SceneKind,
-  type SceneVariant,
-  sceneTabLabel,
-} from '../components/RoomPreview'
+import { sceneTabLabel } from '../components/RoomPreview'
+import { RoomView } from '../components/preview/RoomView'
+import type {
+  Finial,
+  Heading,
+  SceneKind,
+  SceneVariant,
+} from '../components/preview/types'
 import {
   Badge,
   Button,
@@ -216,7 +216,7 @@ function ProductDetail({ slug }: { slug: string }) {
           <div className="relative overflow-hidden rounded-2xl bg-sand">
             {scene && view === 'room' ? (
               <div className="aspect-4/5 w-full">
-                <RoomPreview
+                <RoomView
                   colour={selectedColour.swatch || product.accent}
                   pattern={product.pattern}
                   scene={scene}

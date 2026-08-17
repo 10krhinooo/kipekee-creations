@@ -2,7 +2,21 @@ import { useEffect, useId, useMemo, useRef, type CSSProperties } from 'react'
 import { animate, utils } from 'animejs'
 import { cx } from './ui'
 import { patternDefs } from '../lib/swatch'
-import type { PatternKind } from '../data/types'
+import {
+  CURTAIN_EASE,
+  CURTAIN_MS,
+  GATHERED,
+  LIGHT_EASE,
+  LIGHT_MS,
+  reducedMotion,
+} from '../lib/motion'
+import type {
+  Finial,
+  Heading,
+  PreviewProps,
+  SceneKind,
+  SceneVariant,
+} from './preview/types'
 
 /**
  * Live product visualiser.
@@ -25,11 +39,6 @@ import type { PatternKind } from '../data/types'
  * set with `utils.set` so the scene does not animate itself open on load.
  */
 
-export type SceneKind = 'window' | 'bed' | 'sofa' | 'bath' | 'dining'
-export type SceneVariant = 'curtains' | 'sheer' | 'rail' | 'canopy' | 'default'
-export type Heading = 'pencil' | 'wave' | 'eyelet'
-export type Finial = 'ball' | 'scroll' | 'spear'
-
 /** What the room tab is called, per scene. */
 export const sceneTabLabel: Record<SceneKind, string> = {
   window: 'In the room',
@@ -37,38 +46,6 @@ export const sceneTabLabel: Record<SceneKind, string> = {
   sofa: 'On the sofa',
   bath: 'In the bathroom',
   dining: 'On the table',
-}
-
-/** Tune the feel of the whole visualiser from here. */
-const CURTAIN_MS = 900
-/** Light changes slower than fabric moves, which is what makes it read as light. */
-const LIGHT_MS = 1400
-/** Physical, not linear: eased at both ends, quick through the middle. */
-const CURTAIN_EASE = 'inOut(2.2)'
-const LIGHT_EASE = 'inOutQuad'
-
-/** How far a panel gathers when it is drawn back. */
-const GATHERED = 0.36
-
-const reducedMotion = () =>
-  typeof window !== 'undefined' &&
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
-interface RoomPreviewProps {
-  colour: string
-  pattern: PatternKind
-  scene: SceneKind
-  /** Window scene only. */
-  heading?: Heading
-  finial?: Finial
-  drawn?: boolean
-  /** Window scene shows a sheer only for curtains, not for a bare rail. */
-  variant?: SceneVariant
-  night?: boolean
-  /** Bed scenes only: relative bed width for the selected size. */
-  bedScale?: number
-  hardware?: string
-  className?: string
 }
 
 const shade = (hex: string, amount: number) => {
@@ -183,7 +160,7 @@ export function RoomPreview({
   bedScale = 1,
   hardware = '#2c2c2c',
   className,
-}: RoomPreviewProps) {
+}: PreviewProps) {
   const uid = useId().replace(/:/g, '')
   const id = useMemo(
     () => ({
@@ -433,7 +410,7 @@ function WindowScene({
   heading: Heading
   finial: Finial
   hardware: string
-  variant: string
+  variant: SceneVariant
   panelW: number
   outerL: number
   outerR: number
@@ -619,7 +596,7 @@ function WindowScene({
  * drapes over its front and sides. The fabric surfaces are the duvet, the
  * pillows and the valance, which is exactly what a linen set contains.
  */
-function BedScene({ id, variant }: { id: Ids; variant: string }) {
+function BedScene({ id, variant }: { id: Ids; variant: SceneVariant }) {
   // Perspective plate. Back edge is narrower and higher; front edge is wider
   // and lower, which is what sells the depth.
   const backL = 148
