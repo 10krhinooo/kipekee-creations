@@ -25,6 +25,41 @@ const readable = (hex: string) => {
 }
 
 /**
+ * The tile size, in user units, of each pattern below.
+ *
+ * Lives here rather than beside its consumer because it is not a choice, it is a
+ * fact about `patternDefs` — change a `<pattern>`'s width and this must change
+ * with it, in the same edit. The 3D renderer needs it to rasterise a whole
+ * number of tiles into a square texture; a texture holding 6.4 tiles has a hard
+ * seam down two of its edges.
+ *
+ * `plain` is a gradient rather than a pattern, so it has no tile and answers
+ * with the full span. It is the reason the 3D maps wrap mirrored.
+ */
+export const patternTile = (kind: PatternKind): number => {
+  switch (kind) {
+    case 'weave':
+      return 8
+    case 'sheer':
+      return 10
+    case 'stripe':
+      return 24
+    case 'ceramic':
+      return 40
+    case 'geometric':
+      return 48
+    case 'embroidery':
+      return 56
+    case 'damask':
+      return 64
+    case 'iron':
+      return 72
+    default:
+      return 0
+  }
+}
+
+/**
  * The pattern definitions, as raw SVG markup for a `<defs>` block.
  *
  * Exported because two consumers need the identical fabric: `swatch()` bakes it

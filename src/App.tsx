@@ -1,6 +1,11 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { BasketProvider } from './store/basket'
+import { TierProvider, useRenderTier } from './components/preview/TierProvider'
+
+// Lazy, and never imported from anywhere eager: this is the boundary that keeps
+// three, fiber and drei out of the entry chunk entirely.
+const SharedCanvas = lazy(() => import('./components/preview/SharedCanvas'))
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
 import { BasketDrawer } from './components/BasketDrawer'
@@ -55,8 +60,10 @@ function WhatsAppFab() {
  * a header, a footer or a basket drawer.
  */
 function StorefrontLayout() {
+  const { tier } = useRenderTier()
+
   return (
-    <>
+    <div>
       <Header />
       <main id="main">
         <Outlet />
@@ -64,47 +71,61 @@ function StorefrontLayout() {
       <Footer />
       <BasketDrawer />
       <WhatsAppFab />
-    </>
+
+      {/* Mounted once per session and deliberately out here, above the router
+          outlet: ProductPage remounts its subtree on every navigation, and a
+          Canvas inside that would burn a WebGL context each time. */}
+      {tier === '3d' && (
+        <Suspense fallback={null}>
+          <SharedCanvas />
+        </Suspense>
+      )}
+    </div>
   )
 }
 
 export default function App() {
   return (
     <BasketProvider>
-      <ScrollToTop />
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
-      >
-        Skip to content
-      </a>
+      {/* Above both shells: the storefront previews products in a room, and the
+          admin will preview materials in the same one, so the tier is a
+          property of the session rather than of either app. */}
+      <TierProvider>
+        <ScrollToTop />
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
+        >
+          Skip to content
+        </a>
 
-      <Routes>
-        <Route element={<StorefrontLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/product/:slug" element={<ProductPage />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/quote" element={<QuoteRequest />} />
-          <Route path="/custom-curtains" element={<CustomCurtains />} />
-          <Route path="/measure-guide" element={<MeasureGuide />} />
-          <Route path="/hotel-linen" element={<Trade />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="*" element={<Home />} />
-        </Route>
+        <Routes>
+          <Route element={<StorefrontLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/product/:slug" element={<ProductPage />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/quote" element={<QuoteRequest />} />
+            <Route path="/custom-curtains" element={<CustomCurtains />} />
+            <Route path="/measure-guide" element={<MeasureGuide />} />
+            <Route path="/hotel-linen" element={<Trade />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="*" element={<Home />} />
+          </Route>
 
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="quotes" element={<Quotes />} />
-          <Route path="quotes/:id" element={<QuoteBuilder />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="orders/:id" element={<OrderDetail />} />
-          <Route path="products" element={<Products />} />
-          <Route path="schedule" element={<Schedule />} />
-          <Route path="customers" element={<Customers />} />
-        </Route>
-      </Routes>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="quotes" element={<Quotes />} />
+            <Route path="quotes/:id" element={<QuoteBuilder />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="products" element={<Products />} />
+            <Route path="schedule" element={<Schedule />} />
+            <Route path="customers" element={<Customers />} />
+          </Route>
+        </Routes>
+      </TierProvider>
     </BasketProvider>
   )
 }

@@ -6,14 +6,15 @@ import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
-import {
-  RoomPreview,
-  type Finial,
-  type Heading,
-  type SceneKind,
-  type SceneVariant,
-  sceneTabLabel,
-} from '../components/RoomPreview'
+import { sceneTabLabel } from '../components/RoomPreview'
+import { RoomView } from '../components/preview/RoomView'
+import { TierToggle } from '../components/preview/TierToggle'
+import type {
+  Finial,
+  Heading,
+  SceneKind,
+  SceneVariant,
+} from '../components/preview/types'
 import {
   Badge,
   Button,
@@ -112,7 +113,7 @@ function ProductDetail({ slug }: { slug: string }) {
 
   const variant: SceneVariant =
     product.category === 'wrought-iron'
-      ? 'rail'
+      ? product.slug === 'wrought-iron-curtain-rail' ? 'rail' : 'bracket'
       : product.category === 'bed-canopies'
         ? 'canopy'
         : product.pattern === 'sheer'
@@ -122,7 +123,12 @@ function ProductDetail({ slug }: { slug: string }) {
             : 'default'
 
   /** Only a window scene with real panels can be opened and closed. */
-  const canDraw = scene === 'window' && variant !== 'rail'
+  const canDraw = scene === 'window' && variant !== 'rail' && variant !== 'bracket'
+  // Curtains remain a single, deliberately 2D experience. The other room
+  // products have a real 3D view and may offer the flat renderer as a lighter
+  // alternative or fallback.
+  const supports3D = scene !== 'window' || variant === 'rail' || variant === 'bracket'
+  const showTierToggle = supports3D && product.slug !== 'woven-table-mats'
 
   /**
    * Bed scenes resize with the selected size, so a king reads as wider than a
@@ -210,22 +216,27 @@ function ProductDetail({ slug }: { slug: string }) {
                   </button>
                 ))}
               </div>
+              {/* Only meaningful while the room is on screen. Offering a
+                  renderer choice next to a flat swatch would be noise. */}
+              {view === 'room' && showTierToggle && <TierToggle />}
             </div>
           )}
 
           <div className="relative overflow-hidden rounded-2xl bg-sand">
             {scene && view === 'room' ? (
               <div className="aspect-4/5 w-full">
-                <RoomPreview
+                <RoomView
                   colour={selectedColour.swatch || product.accent}
                   pattern={product.pattern}
                   scene={scene}
+                  productSlug={product.slug}
                   variant={variant}
                   heading={heading}
                   finial={finial}
                   drawn={drawn}
                   night={night}
                   bedScale={bedScale}
+                  sizeVariant={selectedSize?.id}
                   hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
                 />
               </div>
