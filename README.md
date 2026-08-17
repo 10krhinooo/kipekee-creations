@@ -102,6 +102,18 @@ Colours and typefaces are carried over unchanged from the live site.
 | Display face | Poppins |
 | Body face | Open Sans |
 
+## Room visualiser
+
+Products that hang at a window open on a room scene rather than a flat swatch. Picking a colour
+repaints the curtain in the room immediately, and the scene can be opened, closed and switched
+between day and night, which is how a blockout lining shows its value.
+
+`RoomPreview` draws the scene as three layers: a fixed base plate, a flat colour layer in the
+shape of the fabric, and a shading layer multiplied on top to put the pleats back. The colour layer
+is the only thing that changes. That is the same structure a photographic version uses, so
+replacing the procedural base with a real photograph and a clip path of the curtain area is a swap
+of two assets, not a rewrite.
+
 ## The admin side
 
 `/admin` is the staff view of the same two streams, and it has no login: this is a prototype, so

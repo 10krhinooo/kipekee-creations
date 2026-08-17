@@ -6,6 +6,7 @@ import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
+import { RoomPreview, type SceneKind } from '../components/RoomPreview'
 import {
   Badge,
   Button,
@@ -29,6 +30,9 @@ export function ProductPage() {
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState<Tab>('overview')
   const [activeImage, setActiveImage] = useState(0)
+  const [view, setView] = useState<'room' | 'fabric'>('room')
+  const [drawn, setDrawn] = useState(true)
+  const [night, setNight] = useState(false)
 
   // Quote-mode measurement inputs, the data a real quote actually needs.
   const [room, setRoom] = useState(product?.rooms[0] ?? 'Living room')
@@ -66,6 +70,23 @@ export function ProductPage() {
     ? unitPrice * (Number(width || 0) / 100 || 1) * windows
     : unitPrice * qty
 
+  /**
+   * Which room scene suits this product, if any. Cushion covers and towels get
+   * no scene, because a window does not tell you anything about them.
+   */
+  const scene: SceneKind | null =
+    product.category === 'curtains'
+      ? product.pattern === 'sheer'
+        ? 'sheer'
+        : 'curtains'
+      : product.category === 'bed-canopies'
+        ? 'canopy'
+        : product.category === 'wrought-iron'
+          ? 'rail'
+          : product.category === 'fabrics'
+            ? 'curtains'
+            : null
+
   const gallery = [
     swatch(product.pattern, selectedColour.swatch || product.accent, 0),
     swatch(product.pattern, selectedColour.swatch || product.accent, 5),
@@ -98,12 +119,49 @@ export function ProductPage() {
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
         {/* GALLERY */}
         <div>
+          {/* For anything that hangs at a window, seeing it hung beats seeing a
+              flat swatch, so the room view is the default where it applies. */}
+          {scene && (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <div className="flex gap-1 rounded-full bg-shell p-1">
+                {([
+                  { id: 'room' as const, label: 'In the room' },
+                  { id: 'fabric' as const, label: 'Fabric' },
+                ]).map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setView(v.id)}
+                    className={cx(
+                      'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+                      view === v.id ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink',
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="relative overflow-hidden rounded-2xl bg-sand">
-            <img
-              src={gallery[activeImage]}
-              alt={`${product.name} in ${selectedColour.label}`}
-              className="aspect-4/5 w-full object-cover"
-            />
+            {scene && view === 'room' ? (
+              <div className="aspect-4/5 w-full">
+                <RoomPreview
+                  colour={selectedColour.swatch || product.accent}
+                  kind={scene}
+                  drawn={drawn}
+                  night={night}
+                  hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
+                />
+              </div>
+            ) : (
+              <img
+                src={gallery[activeImage]}
+                alt={`${product.name} in ${selectedColour.label}`}
+                className="aspect-4/5 w-full object-cover"
+              />
+            )}
+
             <div className="absolute top-4 left-4 flex flex-wrap gap-2">
               {isQuote ? <Badge tone="quote">Made to measure</Badge> : null}
               {product.compareAt && (
@@ -113,23 +171,50 @@ export function ProductPage() {
                 <Badge key={b}>{b}</Badge>
               ))}
             </div>
+
+            {/* Scene controls. Drawing them closed at night is the clearest way
+                to show what a blockout lining actually buys you. */}
+            {scene && view === 'room' && (
+              <div className="absolute right-4 bottom-4 left-4 flex flex-wrap justify-center gap-2">
+                {scene !== 'canopy' && scene !== 'rail' && (
+                  <button
+                    onClick={() => setDrawn((d) => !d)}
+                    className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
+                  >
+                    {drawn ? 'Open the curtains' : 'Close the curtains'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setNight((n) => !n)}
+                  className="rounded-full bg-white/92 px-3.5 py-2 text-[12px] font-medium shadow-sm backdrop-blur transition-colors hover:bg-white"
+                >
+                  {night ? 'Daytime' : 'See it at night'}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {gallery.map((src, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImage(i)}
-                className={cx(
-                  'overflow-hidden rounded-xl border-2 transition-colors',
-                  i === activeImage ? 'border-brand' : 'border-transparent hover:border-line',
-                )}
-                aria-label={`View image ${i + 1}`}
-              >
-                <img src={src} alt="" className="aspect-square w-full object-cover" />
-              </button>
-            ))}
-          </div>
+          {scene && view === 'room' ? (
+            <p className="mt-3 text-center text-[12px] text-muted">
+              Showing {selectedColour.label}. Change the colour to repaint the room.
+            </p>
+          ) : (
+            <div className="mt-3 grid grid-cols-4 gap-3">
+              {gallery.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImage(i)}
+                  className={cx(
+                    'overflow-hidden rounded-xl border-2 transition-colors',
+                    i === activeImage ? 'border-brand' : 'border-transparent hover:border-line',
+                  )}
+                  aria-label={`View image ${i + 1}`}
+                >
+                  <img src={src} alt="" className="aspect-square w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* BUY / QUOTE PANEL */}
