@@ -81,6 +81,12 @@ real photo will, so swapping them out is a change to `ProductCard` and `ProductP
 | `/measure-guide` | Measuring guide with a live price calculator |
 | `/hotel-linen` | Trade and contract page |
 | `/about`, `/contact` | Company pages |
+| `/admin` | Admin dashboard, action queues and revenue |
+| `/admin/quotes`, `/admin/quotes/:id` | Quote queue and the quote builder |
+| `/admin/orders`, `/admin/orders/:id` | Shop orders and fulfilment |
+| `/admin/products` | Catalogue, pricing and stock levels |
+| `/admin/schedule` | Measure and fitting calendar |
+| `/admin/customers` | Customers derived from both streams |
 
 Filters live in the query string, so any filtered view is shareable and the back button behaves.
 
@@ -95,6 +101,21 @@ Colours and typefaces are carried over unchanged from the live site.
 | Muted | `#888888` |
 | Display face | Poppins |
 | Body face | Open Sans |
+
+## The admin side
+
+`/admin` is the staff view of the same two streams, and it has no login: this is a prototype, so
+the route is open.
+
+The screen that matters is the **quote builder** at `/admin/quotes/:id`. A request arrives from the
+storefront carrying the customer's measurements; staff price each window, add or waive fitting,
+apply a discount, and send a fixed total that splits into a 50% deposit and a 50% balance on
+fitting. Nothing can be sent until every line is priced. Without this screen, "request a quote" on
+the storefront is just an inbox.
+
+The dashboard leads with action queues rather than revenue, because an unanswered quote is the
+most expensive thing that happens in this business, and the storefront promises a written quote
+within one working day.
 
 ## Deployment
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { BasketProvider } from './store/basket'
 import { Header } from './components/Header'
 import { Footer } from './components/Footer'
@@ -15,6 +15,14 @@ import { MeasureGuide } from './pages/MeasureGuide'
 import { Trade } from './pages/Trade'
 import { About } from './pages/About'
 import { Contact } from './pages/Contact'
+import { AdminLayout } from './admin/AdminLayout'
+import { Dashboard } from './admin/pages/Dashboard'
+import { Quotes } from './admin/pages/Quotes'
+import { QuoteBuilder } from './admin/pages/QuoteBuilder'
+import { Orders, OrderDetail } from './admin/pages/Orders'
+import { Products } from './admin/pages/Products'
+import { Schedule } from './admin/pages/Schedule'
+import { Customers } from './admin/pages/Customers'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -42,6 +50,24 @@ function WhatsAppFab() {
   )
 }
 
+/**
+ * The storefront chrome. The admin runs its own shell, so the two never share
+ * a header, a footer or a basket drawer.
+ */
+function StorefrontLayout() {
+  return (
+    <>
+      <Header />
+      <main id="main">
+        <Outlet />
+      </main>
+      <Footer />
+      <BasketDrawer />
+      <WhatsAppFab />
+    </>
+  )
+}
+
 export default function App() {
   return (
     <BasketProvider>
@@ -52,9 +78,9 @@ export default function App() {
       >
         Skip to content
       </a>
-      <Header />
-      <main id="main">
-        <Routes>
+
+      <Routes>
+        <Route element={<StorefrontLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:slug" element={<ProductPage />} />
@@ -66,11 +92,19 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="*" element={<Home />} />
-        </Routes>
-      </main>
-      <Footer />
-      <BasketDrawer />
-      <WhatsAppFab />
+        </Route>
+
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="quotes" element={<Quotes />} />
+          <Route path="quotes/:id" element={<QuoteBuilder />} />
+          <Route path="orders" element={<Orders />} />
+          <Route path="orders/:id" element={<OrderDetail />} />
+          <Route path="products" element={<Products />} />
+          <Route path="schedule" element={<Schedule />} />
+          <Route path="customers" element={<Customers />} />
+        </Route>
+      </Routes>
     </BasketProvider>
   )
 }
