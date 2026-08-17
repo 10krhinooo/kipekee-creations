@@ -237,15 +237,16 @@ function ProductDetail({ slug }: { slug: string }) {
               />
             )}
 
-            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-              {isQuote ? <Badge tone="quote">Made to measure</Badge> : null}
-              {product.compareAt && (
+            {/*
+              Only the saving stays on the image. The service badges said the
+              same thing as the panel beside them and covered the very corner of
+              the room the customer is trying to look at.
+            */}
+            {product.compareAt && (
+              <div className="absolute top-4 left-4">
                 <Badge tone="brand">Save {money(product.compareAt - product.price)}</Badge>
-              )}
-              {product.badges?.map((b) => (
-                <Badge key={b}>{b}</Badge>
-              ))}
-            </div>
+              </div>
+            )}
 
             {/* Scene controls. Drawing them closed at night is the clearest way
                 to show what a blockout lining actually buys you, so both
