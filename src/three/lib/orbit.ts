@@ -41,7 +41,7 @@ const PITCH_PER_PX = 0.004
 
 const clamp = (v: number, limit: number) => (v < -limit ? -limit : v > limit ? limit : v)
 
-export function useOrbitDrag() {
+export function useOrbitDrag(invalidate: () => void) {
   const state = useRef<OrbitState>({ yaw: 0, pitch: 0, toYaw: 0, toPitch: 0 })
   const last = useRef<{ x: number; y: number } | null>(null)
 
@@ -50,10 +50,11 @@ export function useOrbitDrag() {
     // browser, and stealing it costs the visitor their context menu and scroll.
     if (event.button !== 0) return
     last.current = { x: event.clientX, y: event.clientY }
+    invalidate()
     // Capture, so a drag that leaves the preview still tracks and still ends.
     // Without it, releasing outside leaves the view stuck mid-swing.
     event.currentTarget.setPointerCapture(event.pointerId)
-  }, [])
+  }, [invalidate])
 
   const onPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const from = last.current
@@ -63,14 +64,16 @@ export function useOrbitDrag() {
     // Dragging right looks right, which means swinging the camera left.
     s.toYaw = clamp(s.toYaw - (event.clientX - from.x) * YAW_PER_PX, YAW_LIMIT)
     s.toPitch = clamp(s.toPitch + (event.clientY - from.y) * PITCH_PER_PX, PITCH_LIMIT)
-  }, [])
+    invalidate()
+  }, [invalidate])
 
   const onPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     last.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-  }, [])
+    invalidate()
+  }, [invalidate])
 
   const handlers = useMemo(
     () => ({ onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp }),
