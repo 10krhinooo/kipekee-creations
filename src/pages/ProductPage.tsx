@@ -6,7 +6,12 @@ import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { ProductCard } from '../components/ProductCard'
-import { RoomPreview, type SceneKind } from '../components/RoomPreview'
+import {
+  RoomPreview,
+  type Finial,
+  type Heading,
+  type SceneKind,
+} from '../components/RoomPreview'
 import {
   Badge,
   Button,
@@ -20,8 +25,18 @@ import {
 
 type Tab = 'overview' | 'specs' | 'care' | 'delivery' | 'reviews'
 
+/**
+ * Keyed on the slug so every product gets a clean slate. Navigating between
+ * products reuses this route, and without the key the previously chosen colour
+ * and heading leak into the next product, which can select a style it does not
+ * even offer.
+ */
 export function ProductPage() {
   const { slug = '' } = useParams()
+  return <ProductDetail key={slug} slug={slug} />
+}
+
+function ProductDetail({ slug }: { slug: string }) {
   const product = bySlug(slug)
   const { addToCart, addToQuote } = useBasket()
 
@@ -87,6 +102,23 @@ export function ProductPage() {
             ? 'curtains'
             : null
 
+  /**
+   * The style selector drives the scene. Picking wave heading should change the
+   * silhouette in the room, not just the price, because the heading is the
+   * hardest part of a curtain to picture from words alone.
+   */
+  const heading: Heading = size.includes('wave')
+    ? 'wave'
+    : size.includes('eyelet')
+      ? 'eyelet'
+      : 'pencil'
+
+  const finial: Finial = size.includes('scroll')
+    ? 'scroll'
+    : size.includes('spear')
+      ? 'spear'
+      : 'ball'
+
   const gallery = [
     swatch(product.pattern, selectedColour.swatch || product.accent, 0),
     swatch(product.pattern, selectedColour.swatch || product.accent, 5),
@@ -149,6 +181,8 @@ export function ProductPage() {
                 <RoomPreview
                   colour={selectedColour.swatch || product.accent}
                   kind={scene}
+                  heading={heading}
+                  finial={finial}
                   drawn={drawn}
                   night={night}
                   hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
@@ -196,7 +230,9 @@ export function ProductPage() {
 
           {scene && view === 'room' ? (
             <p className="mt-3 text-center text-[12px] text-muted">
-              Showing {selectedColour.label}. Change the colour to repaint the room.
+              Showing {selectedColour.label}
+              {product.sizes && selectedSize ? `, ${selectedSize.label.toLowerCase()}` : ''}. Change
+              the colour or style to update the room.
             </p>
           ) : (
             <div className="mt-3 grid grid-cols-4 gap-3">

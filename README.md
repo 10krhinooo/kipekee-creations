@@ -104,9 +104,15 @@ Colours and typefaces are carried over unchanged from the live site.
 
 ## Room visualiser
 
-Products that hang at a window open on a room scene rather than a flat swatch. Picking a colour
-repaints the curtain in the room immediately, and the scene can be opened, closed and switched
-between day and night, which is how a blockout lining shows its value.
+Products that hang at a window open on a furnished room rather than a flat swatch: wooden floor,
+rug, sofa, side table with a lamp, and a plant, so the curtain has a sense of scale and context.
+The sofa cushions pick up the curtain colour, which is how a room is actually put together.
+
+Picking a colour repaints the fabric immediately. Picking a **heading style** reshapes it: pencil
+pleat gathers into thirteen narrow folds on a pole, wave heading falls in seven deep S curves from
+a slim track, and eyelet slings between visible rings. Rail products swap the finial too. The scene
+can be opened, closed and switched between day and night, which is how a blockout lining shows its
+value.
 
 `RoomPreview` draws the scene as three layers: a fixed base plate, a flat colour layer in the
 shape of the fabric, and a shading layer multiplied on top to put the pleats back. The colour layer
