@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, PerformanceMonitor, View } from '@react-three/drei'
 import { ACESFilmicToneMapping, VSMShadowMap } from 'three'
-import { useCallback, useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useRenderTier } from './TierProvider'
 import { useInvalidateOnViewport } from '../../three/lib/invalidate'
 
@@ -43,20 +43,6 @@ function FrameDriver({ onReady }: { onReady: (ready: boolean) => void }) {
  */
 export default function SharedCanvas() {
   const { demote, setCanvasReady } = useRenderTier()
-
-  // Frames below budget are normal during a tween. Sustained starvation after
-  // AdaptiveDpr has already bottomed out is the real signal, so require a run
-  // of bad readings before giving up on 3D entirely.
-  const declines = useRef(0)
-
-  const onDecline = useCallback(() => {
-    declines.current += 1
-    if (declines.current >= 3) demote('sustained frame starvation')
-  }, [demote])
-
-  const onIncline = useCallback(() => {
-    declines.current = 0
-  }, [])
 
   return (
     <Canvas
@@ -121,9 +107,13 @@ export default function SharedCanvas() {
         })
       }}
     >
-      {/* Reduce quality before abandoning 3D. Dropping to DPR 1 is a far better
-          outcome for the customer than falling back to a flat image. */}
-      <PerformanceMonitor onDecline={onDecline} onIncline={onIncline} />
+      {/* Reduce quality rather than abandon 3D. Dropping to DPR 1 is a far
+          better outcome for the customer than being pulled to a flat image.
+          <PerformanceMonitor> used to demote the tier after a run of bad frame
+          readings; it no longer does. Nothing takes 3D away from a visitor who
+          asked for it because a few frames came in late, and a stutter they can
+          see is at least a stutter they can act on through the toggle. */}
+      <PerformanceMonitor />
       <AdaptiveDpr pixelated />
       <FrameDriver onReady={setCanvasReady} />
       <View.Port />

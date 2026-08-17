@@ -24,6 +24,14 @@ const RoomScene3D = lazy(() => import('./RoomScene3D'))
 export function RoomView(props: PreviewProps) {
   const { tier, canvasReady, demote } = useRenderTier()
 
+  // Curtains keep the existing SVG scene because its pleats, headings and
+  // open/close motion already communicate the product better than the current
+  // furniture renderer. Wrought iron shares the window layout but is a 3D
+  // object, so it remains in the WebGL path.
+  // Curtains stay on the established 2D renderer. Wrought-iron products use
+  // the window layout but are still real 3D hardware.
+  const use3D = props.scene !== 'window' || props.variant === 'rail' || props.variant === 'bracket'
+
   // 'probing' renders the SVG too, so the first paint is never blocked on a
   // capability check. There is no spinner state and nothing to wait for.
   //
@@ -31,15 +39,22 @@ export function RoomView(props: PreviewProps) {
   // exists never connects to it and renders a correctly-sized empty box
   // forever. Both arrive on lazy chunks, so without this gate the order is a
   // race and the preview is blank roughly half the time.
-  if (tier !== '3d' || !canvasReady) return <RoomPreview {...props} />
+  if (!use3D || tier !== '3d' || !canvasReady) return <RoomPreview {...props} />
 
   const flat = <RoomPreview {...props} />
+  const loading = (
+    <div className="relative h-full w-full animate-pulse bg-sand" aria-label="Loading room preview">
+      <div className="absolute top-[12%] left-[15%] h-3/5 w-[70%] rounded-[2rem] bg-white/45" />
+      <div className="absolute right-[12%] bottom-[15%] left-[12%] h-3 rounded-full bg-ink/10" />
+      <span className="sr-only">Loading room preview</span>
+    </div>
+  )
 
   return (
     <Preview3DBoundary fallback={flat} onError={(reason) => demote(`3d preview failed: ${reason}`)}>
       {/* The SVG scene is the Suspense fallback as well as the error fallback,
           so a slow chunk shows the real room rather than an empty box. */}
-      <Suspense fallback={flat}>
+      <Suspense fallback={loading}>
         <RoomScene3D {...props} />
       </Suspense>
     </Preview3DBoundary>

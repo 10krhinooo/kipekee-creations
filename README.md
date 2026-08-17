@@ -22,30 +22,32 @@ prices for work that genuinely varies by window, or hiding prices across the who
 
 ## Product visualiser
 
-Every product renders in the setting it belongs to, using its own colour and pattern data:
+The storefront uses a hybrid visualiser. Curtains stay on the established SVG renderer, while
+products whose depth and placement matter use a shared Three.js scene. Both renderers use the
+same catalogue colour and pattern definitions:
 
 | Category | Scene |
 | --- | --- |
-| Curtains, fabrics, wrought iron | At a window in a furnished room |
+| Curtains and fabrics | 2D window scene with pleats, headings, open/close and day/night controls |
+| Wrought-iron rails | 3D rod above a window with ball, scroll or spear finial |
+| Wrought-iron brackets | 3D forged bracket pair on a wall |
 | Hotel linen, bed canopies | Made up on a bed |
 | Cushion covers | On a sofa |
 | Towels, ceramics | In a bathroom |
 | Table mats, household | Laid on a dining table |
 
-Choosing a colour repaints the fabric. Choosing a **heading style** reshapes it: pencil pleat
-gathers into thirteen narrow folds on a pole, wave heading falls in seven deep S curves from a slim
-track, and eyelet threads through real holes punched in the cloth with the pole showing through
-each one. Rails swap the finial between ball, scroll and spear. Beds widen with the selected size,
-from single through to king.
-
-The window scene opens and closes, and switches between day and night, which is how a blockout
-lining shows what it is for.
+The 3D scenes are catalogue-driven rather than generic placeholders. Bed width and length follow
+the selected size; four-poster frames only appear for the four-poster option; canopy nets follow the
+bed footprint and drop toward the floor; sofa width follows cushion size; towels change between
+bath, pool, hand, decorative and towel-set layouts; and table mats render either six mats or six
+mats with two runners. Ceramic bathroom sets render a dispenser, tumbler, soap dish and brush
+holder as separate glazed pieces.
 
 ### How a scene is built
 
-Three layers, everywhere: a fixed base plate, a fabric layer filled with the product's pattern, and
-a shading layer multiplied on top to put folds and creases back. Only the fabric layer changes when
-the customer picks a colour.
+The SVG scene remains the lightweight fallback. The WebGL scene uses one persistent shared Canvas,
+lazy-loaded only for capable devices, with Drei geometry helpers, procedural materials, shadows,
+orbit inspection, and a flat fallback when WebGL is unavailable or loses its context.
 
 The pattern definitions live in `src/lib/swatch.ts` and are shared by both consumers, the gallery
 swatch and the live scene, so the cloth on the window is always the same cloth as the swatch.
@@ -55,11 +57,9 @@ and a clip path of the fabric area is a swap of two assets, not a rewrite of the
 
 ### Motion
 
-`anime.js` drives the animation. React owns the shape of the scene; anime owns exactly two things
-on top of it, `transform` on the curtain panels and `opacity` on everything tied to the light
-source. React never writes those two properties, so a re-render cannot fight a tween mid-flight.
-Elements opt in with `data-panel`, `data-night` and `data-bed`, and the first paint is seeded with
-`utils.set` so nothing animates itself on load.
+The 2D curtain renderer uses `anime.js` for pleat and lighting transitions. The 3D curtain panels
+use damped mesh transforms for opening and closing, while the shared light rig changes for day and
+night. Both paths respect `prefers-reduced-motion`.
 
 Durations are constants at the top of `RoomPreview.tsx`: curtains gather over 900ms, and the light
 changes over 1400ms, deliberately slower so it reads as light rather than a switch. Both respect
@@ -86,8 +86,8 @@ made-to-measure work.
 
 ## Stack
 
-React 19, TypeScript, Vite 8, Tailwind CSS v4, React Router 7, anime.js 4. No UI component library,
-no state management dependency, no runtime data fetching.
+React 19, TypeScript, Vite 8, Tailwind CSS v4, React Router 7, anime.js 4, Three.js 0.185,
+React Three Fiber 9, and Drei 10. No runtime data fetching.
 
 ## Running it
 

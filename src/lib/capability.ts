@@ -1,11 +1,22 @@
 /**
  * Which renderer this device should get.
  *
- * Kipekee sells into Kenya, where a large share of visitors arrive on mid-range
- * Android over a metered bundle. A WebGL room preview is the right experience
- * for a hotel buyer on a desktop and the wrong one for a shopper paying by the
- * megabyte, so the tier is decided before the 3D chunk is ever requested rather
- * than after it has already been downloaded.
+ * **3D is the default, and the visitor decides.** This used to score the device
+ * on connection type, core count and reported memory and quietly serve the flat
+ * renderer to anything that looked marginal. That guessed wrong in both
+ * directions: those signals are coarse and widely misreported, and the visible
+ * result was a WebGL-capable machine being handed a flat image with no
+ * explanation, which reads as the feature being broken rather than as a saving.
+ *
+ * So the only question asked here is whether WebGL2 exists at all, because that
+ * one is not a preference: without it there is no 3D to offer. Everything else
+ * is the visitor's call through the view toggle, and their choice is remembered.
+ *
+ * Kipekee still sells into Kenya, where a lot of visitors arrive on mid-range
+ * Android over a metered bundle, and that concern has not gone away. It is
+ * answered by the toggle being labelled with its real consequence ("uses less
+ * data") rather than by deciding on someone's behalf. If it turns out shoppers
+ * need the heuristics back, they are the block below marked as removed.
  */
 
 export type RenderTier = 'probing' | '2d' | '3d'
@@ -32,11 +43,6 @@ export const storeTier = (tier: '2d' | '3d') => {
   }
 }
 
-interface ProbeNavigator extends Navigator {
-  deviceMemory?: number
-  connection?: { saveData?: boolean; effectiveType?: string }
-}
-
 /**
  * Cached because the probe creates a real WebGL context to ask the driver about
  * itself. Browsers cap live contexts at around 16, so repeatedly creating
@@ -53,26 +59,13 @@ export function probeTier(): '2d' | '3d' {
 function runProbe(): '2d' | '3d' {
   if (typeof window === 'undefined') return '2d'
 
-  const nav = navigator as ProbeNavigator
+  // A remembered choice wins outright, in both directions.
+  const chosen = readStoredTier()
+  if (chosen) return chosen
 
-  // 1. Explicit human intent beats every heuristic, in both directions. Someone
-  //    who asked for 3D on a device we scored as weak gets 3D.
-  const forced = readStoredTier()
-  if (forced) return forced
-
-  // 2. Data cost, before capability. A device can be perfectly capable of 3D
-  //    and still be the wrong place to spend 600KB of someone's bundle.
-  if (nav.connection?.saveData) return '2d'
-  if (['slow-2g', '2g', '3g'].includes(nav.connection?.effectiveType ?? '')) return '2d'
-  try {
-    if (matchMedia('(prefers-reduced-data: reduce)').matches) return '2d'
-  } catch {
-    // Older browsers throw on an unknown media feature rather than returning
-    // false. Not knowing is not a reason to refuse 3D.
-  }
-
-  // 3. WebGL2 specifically. The material and texture setup assumes it, and
-  //    WebGL1-only devices are old enough to fail the headroom gate anyway.
+  // Can this browser do it at all? WebGL2 specifically: the material and texture
+  // setup assumes it. This is the one hard gate, because a device without it has
+  // no 3D to be offered rather than a slow version of it.
   let gl: WebGL2RenderingContext | null = null
   try {
     gl = document.createElement('canvas').getContext('webgl2')
@@ -81,16 +74,9 @@ function runProbe(): '2d' | '3d' {
   }
   if (!gl) return '2d'
 
-  // 4. Headroom. The scene runs below these floors but stutters, and a stutter
-  //    reads to a customer as broken rather than as slow.
-  const maxTexture = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number
-  const capable =
-    maxTexture >= 4096 &&
-    (nav.hardwareConcurrency ?? 2) >= 4 &&
-    (nav.deviceMemory ?? 1) >= 4
-
-  // Hand the context straight back rather than leaving it against the cap.
+  // Hand the context straight back rather than leaving it against the browser's
+  // live-context cap.
   gl.getExtension('WEBGL_lose_context')?.loseContext()
 
-  return capable ? '3d' : '2d'
+  return '3d'
 }

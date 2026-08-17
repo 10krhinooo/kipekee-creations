@@ -12,7 +12,7 @@ import type { PatternKind } from '../../data/types'
  */
 
 export type SceneKind = 'window' | 'bed' | 'sofa' | 'bath' | 'dining'
-export type SceneVariant = 'curtains' | 'sheer' | 'rail' | 'canopy' | 'default'
+export type SceneVariant = 'curtains' | 'sheer' | 'rail' | 'bracket' | 'canopy' | 'default'
 export type Heading = 'pencil' | 'wave' | 'eyelet'
 export type Finial = 'ball' | 'scroll' | 'spear'
 
@@ -20,6 +20,7 @@ export interface PreviewProps {
   colour: string
   pattern: PatternKind
   scene: SceneKind
+  productSlug?: string
   /** Window scene only. */
   heading?: Heading
   finial?: Finial
@@ -29,6 +30,8 @@ export interface PreviewProps {
   night?: boolean
   /** Bed scenes only: relative bed width for the selected size. */
   bedScale?: number
+  /** The selected catalogue size/style, when it changes the 3D silhouette. */
+  sizeVariant?: string
   hardware?: string
   className?: string
 }

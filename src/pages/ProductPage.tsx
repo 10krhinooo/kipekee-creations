@@ -113,7 +113,7 @@ function ProductDetail({ slug }: { slug: string }) {
 
   const variant: SceneVariant =
     product.category === 'wrought-iron'
-      ? 'rail'
+      ? product.slug === 'wrought-iron-curtain-rail' ? 'rail' : 'bracket'
       : product.category === 'bed-canopies'
         ? 'canopy'
         : product.pattern === 'sheer'
@@ -123,7 +123,12 @@ function ProductDetail({ slug }: { slug: string }) {
             : 'default'
 
   /** Only a window scene with real panels can be opened and closed. */
-  const canDraw = scene === 'window' && variant !== 'rail'
+  const canDraw = scene === 'window' && variant !== 'rail' && variant !== 'bracket'
+  // Curtains remain a single, deliberately 2D experience. The other room
+  // products have a real 3D view and may offer the flat renderer as a lighter
+  // alternative or fallback.
+  const supports3D = scene !== 'window' || variant === 'rail' || variant === 'bracket'
+  const showTierToggle = supports3D && product.slug !== 'woven-table-mats'
 
   /**
    * Bed scenes resize with the selected size, so a king reads as wider than a
@@ -213,7 +218,7 @@ function ProductDetail({ slug }: { slug: string }) {
               </div>
               {/* Only meaningful while the room is on screen. Offering a
                   renderer choice next to a flat swatch would be noise. */}
-              {view === 'room' && <TierToggle />}
+              {view === 'room' && showTierToggle && <TierToggle />}
             </div>
           )}
 
@@ -224,12 +229,14 @@ function ProductDetail({ slug }: { slug: string }) {
                   colour={selectedColour.swatch || product.accent}
                   pattern={product.pattern}
                   scene={scene}
+                  productSlug={product.slug}
                   variant={variant}
                   heading={heading}
                   finial={finial}
                   drawn={drawn}
                   night={night}
                   bedScale={bedScale}
+                  sizeVariant={selectedSize?.id}
                   hardware={product.category === 'wrought-iron' ? selectedColour.swatch : '#2c2c2c'}
                 />
               </div>
