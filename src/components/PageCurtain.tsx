@@ -70,6 +70,7 @@ const AUTH_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/change-password',
+  '/accept-invite',
   '/no-access',
 ])
 
@@ -157,7 +158,16 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
           // sight, and the scroll jump that comes with it goes unseen too.
           setShown(target.current)
           window.scrollTo(0, 0)
-          setPhase('opening')
+
+          // The open waits for that mount to be painted before it starts.
+          // Starting it in the same commit meant the first frames of the tween
+          // were competing with React building the destination - and the
+          // heavier the destination, the worse it looked. Signing out of the
+          // console was the clearest case: the whole admin tree unmounts and an
+          // auth screen with two full curtain SVGs mounts, and the cloth
+          // visibly stuttered on the way back. Two frames of a shut curtain
+          // sitting still is invisible; a stutter mid-travel is not.
+          requestAnimationFrame(() => requestAnimationFrame(() => setPhase('opening')))
           return
         }
 

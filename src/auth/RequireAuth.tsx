@@ -30,11 +30,6 @@ export function RequireAuth({
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
 
-  // An account on a temporary password can only be in one place, and it is not
-  // here. Checked before the role so an invited admin is sent to set a password
-  // rather than being told they lack access.
-  if (user.mustChangePassword) return <Navigate to="/change-password" replace />
-
   if (roles && !roles.includes(user.role)) {
     return <Navigate to="/no-access" replace />
   }

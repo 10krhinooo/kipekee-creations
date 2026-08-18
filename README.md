@@ -75,11 +75,12 @@ than a separate door. Signing in routes on that role: a customer lands on `/acco
 `/admin`. `/admin/accounts` is admin-only on top of that, so not everyone who can read the order
 queue can also promote themselves.
 
-Admins add staff from `/admin/accounts`. A new account is created on a temporary password that is
-emailed to them, and is refused every request except changing that password, so a temporary
-password cannot quietly become a permanent one. Suspending is the normal answer when somebody
-leaves: their name stays attached to the quotes and fittings they worked on, which deleting would
-take with it.
+Admins add staff from `/admin/accounts`. The new account is created with **no password on it** and
+the person is emailed a one-time invite link, good for a week, that lets them choose their own on
+`/accept-invite`. Nothing that opens the console is ever put in an email: until the link is
+followed there is nothing to sign in with, and a link that goes astray can be retired by sending
+another. Suspending is the normal answer when somebody leaves: their name stays attached to the
+quotes and fittings they worked on, which deleting would take with it.
 
 ### Signing in locally
 
@@ -177,7 +178,8 @@ emails/          React Email templates, rendered to Qute templates at build time
 | `/about`, `/contact` | Company pages |
 | `/login`, `/register` | Sign in and sign up, for staff and customers alike |
 | `/forgot-password`, `/reset-password` | Password reset, by emailed one-time link |
-| `/change-password` | Forced on first sign-in for an invited staff member |
+| `/accept-invite` | An invited staff member choosing their first password |
+| `/change-password` | Changing your own password, knowing the current one |
 | `/account` | Reorder, saved list, quotes |
 | `/account/orders`, `/account/saved` | Order and quote history, the saved list |
 | `/account/addresses`, `/account/profile` | Delivery addresses, personal details |

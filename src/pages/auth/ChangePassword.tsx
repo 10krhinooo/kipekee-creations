@@ -13,16 +13,15 @@ import { api } from '../../lib/api'
 import { MIN_PASSWORD_LENGTH, strengthOf } from '../../lib/password'
 
 /**
- * The forced first sign-in for an invited staff member.
+ * Changing your own password, knowing the current one.
  *
- * Their account is refused every other request until this is done, so this
- * screen is not a suggestion and does not offer a way past it. Changing the
- * password ends every session including this one, which is why it finishes by
- * signing out and sending them back to the login screen rather than pretending
- * the session survived.
+ * Not a forced screen any more - an invited account sets its first password
+ * from the invite link instead, and never holds one it did not choose. What is
+ * left is the voluntary change, which ends every session including this one,
+ * hence the sign-out at the end rather than pretending this session survived.
  */
 export function ChangePassword() {
-  const { status, user, logout } = useAuth()
+  const { status, logout } = useAuth()
   const navigate = useNavigate()
 
   const [current, setCurrent] = useState('')
@@ -34,14 +33,14 @@ export function ChangePassword() {
 
   const clearError = useCallback(() => setError(null), [])
 
-  const currentProblem = current ? undefined : 'Enter the password you just used'
+  const currentProblem = current ? undefined : 'Enter your current password'
   const passwordProblem =
     password.length === 0
       ? 'Choose a password'
       : password.length < MIN_PASSWORD_LENGTH
         ? `Use at least ${MIN_PASSWORD_LENGTH} characters`
         : password === current
-          ? 'Choose something different from the temporary one'
+          ? 'Choose something different from the current one'
           : strengthOf(password).score === 1
             ? 'Choose something harder to guess'
             : undefined
@@ -78,21 +77,15 @@ export function ChangePassword() {
     navigate('/login', { replace: true })
   }
 
-  const forced = user?.mustChangePassword ?? false
-
   return (
     <AuthScene>
       <AuthCard
-        title={forced ? 'Choose your own password' : 'Change your password'}
-        intro={
-          forced
-            ? 'You are signed in on a temporary password. Pick your own and the rest of the console opens up.'
-            : 'You will be signed out everywhere and can sign back in with the new one.'
-        }
+        title="Change your password"
+        intro="You will be signed out everywhere and can sign back in with the new one."
       >
         <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
           <PasswordField
-            label={forced ? 'Temporary password' : 'Current password'}
+            label="Current password"
             required
             autoComplete="current-password"
             autoFocus
@@ -101,7 +94,7 @@ export function ChangePassword() {
             onChange={(e) => setCurrent(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, current: true }))}
             error={touched.current ? currentProblem : undefined}
-            placeholder={forced ? 'The one from the email' : 'Your current password'}
+            placeholder="Your current password"
           />
 
           <PasswordField
@@ -138,26 +131,12 @@ export function ChangePassword() {
         </form>
 
         <AuthFooter>
-          {forced ? (
-            <>
-              Signed in as {user?.email}.{' '}
-              <button
-                onClick={() => {
-                  logout().then(() => navigate('/login', { replace: true }))
-                }}
-                className="text-ink underline underline-offset-2 hover:text-brand"
-              >
-                Not you?
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => navigate(-1)}
-              className="text-ink underline underline-offset-2 hover:text-brand"
-            >
-              Back
-            </button>
-          )}
+          <button
+            onClick={() => navigate(-1)}
+            className="text-ink underline underline-offset-2 hover:text-brand"
+          >
+            Back
+          </button>
         </AuthFooter>
       </AuthCard>
     </AuthScene>

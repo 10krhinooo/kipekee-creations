@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { orders, quotes, fittings, stock } from './data/operations'
@@ -62,6 +62,28 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const { user, logout, isAdmin } = useAuth()
   const adminName = user?.name ?? 'Admin'
+
+  // Escape closes the drawer, and while it is open the page behind it does not
+  // scroll. Both are what makes a slide-over feel like a panel rather than a
+  // second page: without the scroll lock, dragging the menu drags the console
+  // underneath it, which on a phone is the difference between "a drawer" and
+  // "something went wrong".
+  useEffect(() => {
+    if (!open) return
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [open])
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -172,20 +194,30 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-shell">
       {/* Fixed sidebar on desktop, slide-over on mobile. */}
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col bg-ink px-3 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto bg-ink px-3 py-5 lg:flex">
         {sidebar}
       </aside>
 
+      {/* The scrim fades over exactly as long as the panel takes to travel.
+          Left on the default 150ms it finished first, so the last third of the
+          slide happened against an already-bare page and read as a stutter. */}
       <div
         onClick={() => setOpen(false)}
+        aria-hidden
         className={cx(
-          'fixed inset-0 z-40 bg-ink/50 transition-opacity lg:hidden',
+          'fixed inset-0 z-40 bg-ink/50 transition-opacity duration-300 ease-out lg:hidden',
           open ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
+      {/* Kept mounted rather than conditionally rendered, because a panel that
+          only exists while open has nothing to slide in from. `inert` while
+          closed is what stops the off-screen copy of the whole menu from
+          collecting tab stops and being read out by a screen reader - the cost
+          of keeping it there. */}
       <aside
+        inert={!open}
         className={cx(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-ink px-3 py-5 transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-ink px-3 py-5 transition-transform duration-300 ease-out lg:hidden',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >

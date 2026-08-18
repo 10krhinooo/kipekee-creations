@@ -12,7 +12,7 @@ interface StaffAccount {
   phone: string | null
   role: Role
   isActive: boolean
-  mustChangePassword: boolean
+  invitePending: boolean
   invitedBy: string | null
   invitedAt: string | null
   createdAt: string
@@ -87,7 +87,7 @@ export function Accounts() {
     await load()
     setNotice({
       tone: 'good',
-      text: `${result.data.name} has been emailed a temporary password. They must change it before they can use the console.`,
+      text: `${result.data.name} has been emailed an invite link. Their account has no password on it until they follow it and choose one.`,
     })
   }
 
@@ -164,8 +164,8 @@ export function Accounts() {
           </label>
 
           <p className="self-end text-[12.5px] leading-relaxed text-muted sm:pb-3">
-            They get an email with a temporary password, and cannot do anything with the console
-            until they replace it.
+            They get a link that lets them choose their own password. The account cannot be signed
+            into until they do, and the link stops working after a week.
           </p>
 
           <div className="flex gap-2 sm:col-span-2">
@@ -215,7 +215,7 @@ export function Accounts() {
                           Suspended
                         </span>
                       )}
-                      {account.mustChangePassword && (
+                      {account.invitePending && (
                         <span className="rounded-full bg-[#fdf1dc] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#8a6512] uppercase">
                           Invite pending
                         </span>
@@ -276,20 +276,26 @@ export function Accounts() {
                         {account.isActive ? 'Suspend' : 'Reactivate'}
                       </button>
 
-                      <button
-                        disabled={busy}
-                        onClick={() =>
-                          act(
-                            account.id,
-                            () => api.post(`/api/admin/accounts/${account.id}/reset-password`),
-                            `A new temporary password is on its way to ${account.email}.`,
-                          )
-                        }
-                        title="Email a fresh temporary password"
-                        className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-sand hover:text-brand"
-                      >
-                        Resend invite
-                      </button>
+                      {/* Only while the invite is unspent. Once somebody has a
+                          password, the way to get them a new one is the reset
+                          link on the sign-in screen, which does not sign them
+                          out of work in progress. The backend refuses it too. */}
+                      {account.invitePending && (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            act(
+                              account.id,
+                              () => api.post(`/api/admin/accounts/${account.id}/resend-invite`),
+                              `A fresh invite link is on its way to ${account.email}. The old one has stopped working.`,
+                            )
+                          }
+                          title="Email a fresh invite link, and retire the old one"
+                          className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-sand hover:text-brand"
+                        >
+                          Resend invite
+                        </button>
+                      )}
 
                       <button
                         disabled={busy}

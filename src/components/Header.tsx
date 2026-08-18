@@ -334,38 +334,6 @@ export function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-1 md:ml-2">
-            {/* The way in to an account, and the way back to one. Left of
-                everything else because it is about who you are rather than what
-                you are carrying. `checking` renders nothing rather than
-                flashing "Sign in" at somebody who is already signed in. */}
-            {status !== 'checking' &&
-              (user ? (
-                <Link
-                  to={homeFor(user.role)}
-                  className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
-                  aria-label={`Your account, signed in as ${user.name}`}
-                  title={`Signed in as ${user.name}`}
-                >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                    <circle cx="12" cy="8" r="3.6" />
-                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
-                  </svg>
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand" />
-                </Link>
-              ) : (
-                <Link
-                  to="/login"
-                  className="rounded-full p-2.5 transition-colors hover:bg-shell"
-                  aria-label="Sign in to your account"
-                  title="Sign in to your account"
-                >
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                    <circle cx="12" cy="8" r="3.6" />
-                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
-                  </svg>
-                </Link>
-              ))}
-
             {/* Saved sits left of the two baskets: it is the step before either
                 of them, not a third destination. */}
             <Link
@@ -426,6 +394,39 @@ export function Header() {
                 </span>
               )}
             </button>
+
+            {/* The way in to an account, and the way back to one. Last in the
+                row, past everything you might be carrying: the baskets are what
+                somebody came to do, and the account is where they go afterwards.
+                `checking` renders nothing rather than flashing "Sign in" at
+                somebody who is already signed in. */}
+            {status !== 'checking' &&
+              (user ? (
+                <Link
+                  to={homeFor(user.role)}
+                  className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
+                  aria-label={`Your account, signed in as ${user.name}`}
+                  title={`Signed in as ${user.name}`}
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="12" cy="8" r="3.6" />
+                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
+                  </svg>
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand" />
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="rounded-full p-2.5 transition-colors hover:bg-shell"
+                  aria-label="Sign in to your account"
+                  title="Sign in to your account"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="12" cy="8" r="3.6" />
+                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
+                  </svg>
+                </Link>
+              ))}
           </div>
         </div>
       </Container>

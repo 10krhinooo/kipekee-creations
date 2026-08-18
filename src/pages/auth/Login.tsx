@@ -31,8 +31,6 @@ export function Login() {
   const from = (location.state as { from?: string } | null)?.from
 
   if (status === 'signed-in' && user) {
-    // Somebody on a temporary password has exactly one place to be.
-    if (user.mustChangePassword) return <Navigate to="/change-password" replace />
     return <Navigate to={from ?? homeFor(user.role)} replace />
   }
 

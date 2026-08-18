@@ -34,6 +34,7 @@ import { Register } from './pages/auth/Register'
 import { ForgotPassword } from './pages/auth/ForgotPassword'
 import { ResetPassword } from './pages/auth/ResetPassword'
 import { ChangePassword } from './pages/auth/ChangePassword'
+import { AcceptInvite } from './pages/auth/AcceptInvite'
 import { NoAccess } from './pages/auth/NoAccess'
 import { AccountLayout } from './pages/account/AccountLayout'
 import { AccountOverview } from './pages/account/Overview'
@@ -181,6 +182,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/no-access" element={<NoAccess />} />
 
           {/* The staff-only paths these replaced. Kept as redirects because

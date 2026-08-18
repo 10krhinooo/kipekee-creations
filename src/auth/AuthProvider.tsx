@@ -31,8 +31,6 @@ export interface User {
   email: string
   phone: string | null
   role: Role
-  /** True while on a temporary password: the app must send them to change it. */
-  mustChangePassword: boolean
 }
 
 interface StoredSession extends User {
@@ -54,6 +52,8 @@ interface AuthApi {
     phone: string
     password: string
   }) => Promise<AuthResult>
+  /** Sets the first password on an invited account, which also signs them in. */
+  acceptInvite: (token: string, password: string) => Promise<AuthResult>
   logout: () => Promise<void>
   /** Re-reads the profile, after a change made elsewhere in the account area. */
   refresh: () => Promise<void>
@@ -159,11 +159,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [adopt],
   )
 
+  const acceptInvite = useCallback(
+    async (token: string, password: string): Promise<AuthResult> => {
+      const result = await api.post<StoredSession>('/api/auth/invite/accept', { token, password })
+      if (!result.ok) return { ok: false, message: result.message }
+      // The backend signs them in on acceptance, for the same reason it does on
+      // registration: they have just proved they own the mailbox and chosen a
+      // password, and a sign-in screen next would only ask for it again.
+      adopt(result.data)
+      return { ok: true }
+    },
+    [adopt],
+  )
+
   const logout = useCallback(async () => {
-    // Tells the server first, so signing out on a shared machine actually ends
-    // the session rather than only forgetting the token on this device.
-    await api.post('/api/auth/logout')
+    // Sent before the local session is cleared, so the header still carries the
+    // token and signing out on a shared machine actually ends the session
+    // server-side rather than only forgetting it on this device.
+    //
+    // Not awaited, though. Nothing after this depends on the answer, and
+    // holding the UI on a network round trip made the sign-out button feel
+    // broken on a slow connection - the one moment somebody wants the screen to
+    // change immediately.
+    const sent = api.post('/api/auth/logout')
     adopt(null)
+    await sent.catch(() => {})
   }, [adopt])
 
   const refresh = useCallback(async () => {
@@ -179,7 +199,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: session.email,
           phone: session.phone,
           role: session.role,
-          mustChangePassword: session.mustChangePassword,
         }
       : null
 
@@ -190,10 +209,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: user?.role === 'ADMIN',
       login,
       register,
+      acceptInvite,
       logout,
       refresh,
     }
-  }, [session, status, login, register, logout, refresh])
+  }, [session, status, login, register, acceptInvite, logout, refresh])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
