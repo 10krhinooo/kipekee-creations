@@ -26,6 +26,9 @@ import { Wishlist } from './pages/Wishlist'
 import { Compare } from './pages/Compare'
 import { CompareBar } from './components/CompareBar'
 import { AdminLayout } from './admin/AdminLayout'
+import { AdminAuthProvider } from './admin/auth'
+import { AdminGuard } from './admin/AdminGuard'
+import { AdminLogin } from './admin/pages/Login'
 import { Dashboard } from './admin/pages/Dashboard'
 import { Quotes } from './admin/pages/Quotes'
 import { QuoteBuilder } from './admin/pages/QuoteBuilder'
@@ -93,6 +96,7 @@ function StorefrontLayout() {
 
 export default function App() {
   return (
+    <AdminAuthProvider>
     <BasketProvider>
       {/* Above both shells: the storefront previews products in a room, and the
           admin will preview materials in the same one, so the tier is a
@@ -127,7 +131,15 @@ export default function App() {
             <Route path="*" element={<Home />} />
           </Route>
 
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminGuard>
+                <AdminLayout />
+              </AdminGuard>
+            }
+          >
             <Route index element={<Dashboard />} />
             <Route path="quotes" element={<Quotes />} />
             <Route path="quotes/:id" element={<QuoteBuilder />} />
@@ -143,5 +155,6 @@ export default function App() {
        </PhotoProvider>
       </TierProvider>
     </BasketProvider>
+    </AdminAuthProvider>
   )
 }
