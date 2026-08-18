@@ -54,10 +54,18 @@ export function Button({
     className,
   )
 
-  if (to) return <Link to={to} className={classes}>{children}</Link>
+  // `onClick` reaches the link forms too. A caller that navigates and closes a
+  // drawer in one action passes both, and dropping it left the drawer open
+  // over the page it had just navigated to.
+  if (to)
+    return (
+      <Link to={to} onClick={onClick} className={classes}>
+        {children}
+      </Link>
+    )
   if (href)
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={classes}>
+      <a href={href} onClick={onClick} target="_blank" rel="noreferrer" className={classes}>
         {children}
       </a>
     )

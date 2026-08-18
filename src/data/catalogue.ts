@@ -814,6 +814,15 @@ export const bySlug = (slug: string) => products.find((p) => p.slug === slug)
 
 export const categoryBySlug = (slug: string) => categories.find((c) => c.slug === slug)
 
+/**
+ * The most of a line a shopper may hold. Only ready-made goods are finite —
+ * made-to-measure work is cut to order, so its `stock` figure means nothing
+ * there. Callers disable the control at the cap rather than letting the click
+ * land and silently do nothing.
+ */
+export const stockCapOf = (product: Product | undefined): number =>
+  product && product.mode === 'buy' ? product.stock : Infinity
+
 export const priceOf = (product: Product, colourId?: string, sizeId?: string) => {
   const c = product.colours.find((v) => v.id === colourId)
   const s = product.sizes?.find((v) => v.id === sizeId)
