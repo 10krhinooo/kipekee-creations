@@ -4,6 +4,7 @@ import { swatch } from '../lib/swatch'
 import { money } from '../lib/format'
 import { Badge, Button, Stars, cx } from './ui'
 import { useBasket } from '../store/basket'
+import { COMPARE_LIMIT, useSaved } from '../store/saved'
 
 /**
  * One card, two behaviours. A `buy` product shows a firm price and adds
@@ -13,7 +14,11 @@ import { useBasket } from '../store/basket'
  */
 export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const { addToCart, addToQuote } = useBasket()
+  const { isSaved, toggleSaved, isComparing, toggleCompare, compare } = useSaved()
   const isQuote = product.mode === 'quote'
+  const saved = isSaved(product.slug)
+  const comparing = isComparing(product.slug)
+  const compareFull = !comparing && compare.length >= COMPARE_LIMIT
 
   const quickAdd = () => {
     if (isQuote) {
@@ -55,6 +60,50 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           {!isQuote && product.leadTimeDays === 0 && <Badge tone="stock">In stock</Badge>}
         </div>
       </Link>
+
+      {/*
+        Outside the <Link> and lifted above it. The title link below stretches
+        an ::after pseudo-element across the whole card to make it clickable, so
+        anything interactive has to clear that overlay or the card swallows the
+        click.
+      */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+        <button
+          onClick={() => toggleSaved(product.slug)}
+          aria-pressed={saved}
+          aria-label={saved ? `Remove ${product.name} from saved` : `Save ${product.name}`}
+          className={cx(
+            'rounded-full bg-white/92 p-2 shadow-sm backdrop-blur transition-colors hover:bg-white',
+            saved ? 'text-brand' : 'text-ink/55 hover:text-brand',
+          )}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill={saved ? 'currentColor' : 'none'}
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path d="M12 20.5l-1.4-1.3C5.4 14.5 2 11.4 2 7.6 2 4.9 4.1 3 6.7 3c1.5 0 3 .7 3.9 1.9l1.4 1.8 1.4-1.8C14.3 3.7 15.8 3 17.3 3 19.9 3 22 4.9 22 7.6c0 3.8-3.4 6.9-8.6 11.6z" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => toggleCompare(product.slug)}
+          disabled={compareFull}
+          aria-pressed={comparing}
+          title={compareFull ? `Compare holds ${COMPARE_LIMIT} products` : undefined}
+          className={cx(
+            'rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition-colors',
+            comparing
+              ? 'bg-ink text-white'
+              : 'bg-white/92 text-ink/70 hover:bg-white hover:text-brand',
+            compareFull && 'cursor-not-allowed opacity-45',
+          )}
+        >
+          {comparing ? 'Comparing' : 'Compare'}
+        </button>
+      </div>
 
       <div className="flex flex-1 flex-col p-4">
         <div className="mb-2 flex items-start justify-between gap-3">

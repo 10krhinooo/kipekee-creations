@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, cx } from '../../components/ui'
 import { Card, PageHeader, Segmented, Table, Td, Th } from '../components/AdminUI'
@@ -138,6 +139,13 @@ export function Products() {
                     )}
                   </Td>
                   <Td align="right">
+                    <div className="flex items-center justify-end gap-3">
+                    <Link
+                      to={`/admin/products/${s.slug}/photos`}
+                      className="text-[13px] text-brand hover:underline"
+                    >
+                      Photos
+                    </Link>
                     {s.mode === 'buy' ? (
                       <div className="inline-flex items-center rounded-full border border-line">
                         <button
@@ -159,6 +167,7 @@ export function Products() {
                     ) : (
                       <button className="text-[13px] text-brand hover:underline">Edit rates</button>
                     )}
+                    </div>
                   </Td>
                 </tr>
               )

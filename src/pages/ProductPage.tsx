@@ -1,11 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { bySlug, categoryBySlug, priceOf, products, rooms } from '../data/catalogue'
 import type { Room } from '../data/types'
 import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
+import { usePhotos } from '../store/photos'
+import { useSaved } from '../store/saved'
 import { ProductCard } from '../components/ProductCard'
+import { PhotoGrid } from '../components/PhotoGrid'
+import { Lightbox } from '../components/Lightbox'
+import { RecentlyViewed } from '../components/RecentlyViewed'
 import { sceneTabLabel } from '../components/RoomPreview'
 import { RoomView } from '../components/preview/RoomView'
 import { TierToggle } from '../components/preview/TierToggle'
@@ -42,13 +47,17 @@ export function ProductPage() {
 function ProductDetail({ slug }: { slug: string }) {
   const product = bySlug(slug)
   const { addToCart, addToQuote } = useBasket()
+  const { photosFor } = usePhotos()
+  const { recordView } = useSaved()
 
   const [colour, setColour] = useState(product?.colours[0].id ?? '')
   const [size, setSize] = useState(product?.sizes?.[0].id ?? '')
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState<Tab>('overview')
   const [activeImage, setActiveImage] = useState(0)
-  const [view, setView] = useState<'room' | 'fabric'>('room')
+  const [view, setView] = useState<'room' | 'photos' | 'fabric'>('room')
+  /** Which swatch the lightbox is showing, or null when it is closed. */
+  const [zoom, setZoom] = useState<number | null>(null)
   const [drawn, setDrawn] = useState(true)
   const [night, setNight] = useState(false)
 
@@ -57,6 +66,11 @@ function ProductDetail({ slug }: { slug: string }) {
   const [width, setWidth] = useState('')
   const [drop, setDrop] = useState('')
   const [windows, setWindows] = useState(1)
+
+  // Recorded here rather than in the route so a direct link counts as a view.
+  useEffect(() => {
+    if (product) recordView(product.slug)
+  }, [product, recordView])
 
   const related = useMemo(
     () =>
@@ -170,6 +184,19 @@ function ProductDetail({ slug }: { slug: string }) {
     swatch(product.pattern, selectedColour.swatch || product.accent, 9),
   ]
 
+  /**
+   * Catalogue photography merged with anything staff have uploaded. A renderer
+   * proves the colour and the drape; only a photograph proves the stitching, so
+   * where photos exist they earn their own tab.
+   */
+  const photos = photosFor(product)
+
+  /** The swatches as lightbox items, so the fabric view zooms too. */
+  const fabricItems = gallery.map((src, i) => ({
+    src,
+    alt: `${product.name} in ${selectedColour.label}, detail ${i + 1}`,
+  }))
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'specs', label: 'Specifications' },
@@ -200,8 +227,14 @@ function ProductDetail({ slug }: { slug: string }) {
           {scene && (
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <div className="flex gap-1 rounded-full bg-shell p-1">
+                {/* Photos only appears when there are some. A tab that opens
+                    onto "no photos yet" is worse than no tab, and most of the
+                    catalogue has none until the shoot happens. */}
                 {([
                   { id: 'room' as const, label: sceneTabLabel[scene] },
+                  ...(photos.length
+                    ? [{ id: 'photos' as const, label: `Photos (${photos.length})` }]
+                    : []),
                   { id: 'fabric' as const, label: 'Fabric' },
                 ]).map((v) => (
                   <button
@@ -223,7 +256,15 @@ function ProductDetail({ slug }: { slug: string }) {
           )}
 
           <div className="relative overflow-hidden rounded-2xl bg-sand">
-            {scene && view === 'room' ? (
+            {view === 'photos' ? (
+              <div className="p-2">
+                <PhotoGrid
+                  photos={photos}
+                  colourId={selectedColour.id}
+                  label={`${product.name} photographs`}
+                />
+              </div>
+            ) : scene && view === 'room' ? (
               <div className="aspect-4/5 w-full">
                 <RoomView
                   colour={selectedColour.swatch || product.accent}
@@ -241,11 +282,17 @@ function ProductDetail({ slug }: { slug: string }) {
                 />
               </div>
             ) : (
-              <img
-                src={gallery[activeImage]}
-                alt={`${product.name} in ${selectedColour.label}`}
-                className="aspect-4/5 w-full object-cover"
-              />
+              <button
+                onClick={() => setZoom(activeImage)}
+                className="block w-full cursor-zoom-in"
+                aria-label="Enlarge this swatch"
+              >
+                <img
+                  src={gallery[activeImage]}
+                  alt={`${product.name} in ${selectedColour.label}`}
+                  className="aspect-4/5 w-full object-cover"
+                />
+              </button>
             )}
 
             {/*
@@ -280,7 +327,11 @@ function ProductDetail({ slug }: { slug: string }) {
             )}
           </div>
 
-          {scene && view === 'room' ? (
+          {view === 'photos' ? (
+            <p className="mt-3 text-center text-[12px] text-muted">
+              Photographs of the finished piece. Tap any one to see it full size.
+            </p>
+          ) : scene && view === 'room' ? (
             <p className="mt-3 text-center text-[12px] text-muted">
               Showing {selectedColour.label}
               {product.sizes && selectedSize ? `, ${selectedSize.label.toLowerCase()}` : ''}. Change
@@ -302,6 +353,16 @@ function ProductDetail({ slug }: { slug: string }) {
                 </button>
               ))}
             </div>
+          )}
+
+          {zoom !== null && (
+            <Lightbox
+              items={fabricItems}
+              index={zoom}
+              onIndex={setZoom}
+              onClose={() => setZoom(null)}
+              label={`${product.name} fabric detail`}
+            />
           )}
         </div>
 
@@ -725,6 +786,8 @@ function ProductDetail({ slug }: { slug: string }) {
           </div>
         </section>
       )}
+
+      <RecentlyViewed exclude={product.slug} />
     </Container>
   )
 }
