@@ -1,6 +1,22 @@
 import { Link } from 'react-router-dom'
 import { categories } from '../data/catalogue'
-import { Button, Container, MAP_URL, WhatsAppIcon, whatsappLink } from './ui'
+import {
+  Button,
+  Container,
+  FacebookIcon,
+  InstagramIcon,
+  MAP_URL,
+  TikTokIcon,
+  WhatsAppIcon,
+  whatsappLink,
+} from './ui'
+
+/** Real profile URLs to follow once the brand's accounts are live. */
+const SOCIAL_LINKS = [
+  { label: 'Instagram', href: '#', Icon: InstagramIcon },
+  { label: 'Facebook', href: '#', Icon: FacebookIcon },
+  { label: 'TikTok', href: '#', Icon: TikTokIcon },
+]
 
 export function Footer() {
   return (
@@ -24,6 +40,19 @@ export function Footer() {
             <WhatsAppIcon />
             WhatsApp us
           </Button>
+
+          <div className="mt-5 flex items-center gap-3">
+            {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                aria-label={label}
+                className="rounded-full border border-white/15 p-2 text-white/70 transition-colors hover:border-white/30 hover:text-white"
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
         </div>
 
         <div>

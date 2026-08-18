@@ -30,6 +30,7 @@ import {
   cx,
   whatsappLink,
 } from '../components/ui'
+import { quoteWhatsAppLink } from '../lib/whatsapp'
 
 type Tab = 'overview' | 'specs' | 'care' | 'delivery' | 'reviews'
 
@@ -550,9 +551,19 @@ function ProductDetail({ slug }: { slug: string }) {
                 <Button
                   full
                   variant="whatsapp"
-                  href={whatsappLink(
-                    `Hello Kipekee, I would like a quote for ${product.name} (${selectedColour.label}) for my ${room.toLowerCase()}.`,
-                  )}
+                  href={quoteWhatsAppLink([
+                    {
+                      product,
+                      line: {
+                        slug: product.slug,
+                        colour,
+                        room,
+                        widthCm: width ? Number(width) : undefined,
+                        dropCm: drop ? Number(drop) : undefined,
+                        windows,
+                      },
+                    },
+                  ])}
                 >
                   <WhatsAppIcon />
                   Ask on WhatsApp

@@ -67,11 +67,17 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
         anything interactive has to clear that overlay or the card swallows the
         click.
       */}
-      <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+      {/*
+        Same shape, same row: a text pill stacked under the heart used to read
+        as two different controls fighting for the corner. Both are now
+        circular icon buttons side by side, so the corner reads as one group.
+      */}
+      <div className="absolute top-3 right-3 z-10 flex items-start gap-1.5">
         <button
           onClick={() => toggleSaved(product.slug)}
           aria-pressed={saved}
           aria-label={saved ? `Remove ${product.name} from saved` : `Save ${product.name}`}
+          title={saved ? 'Remove from saved' : 'Save for later'}
           className={cx(
             'rounded-full bg-white/92 p-2 shadow-sm backdrop-blur transition-colors hover:bg-white',
             saved ? 'text-brand' : 'text-ink/55 hover:text-brand',
@@ -92,16 +98,26 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           onClick={() => toggleCompare(product.slug)}
           disabled={compareFull}
           aria-pressed={comparing}
-          title={compareFull ? `Compare holds ${COMPARE_LIMIT} products` : undefined}
+          aria-label={comparing ? `Remove ${product.name} from compare` : `Add ${product.name} to compare`}
+          title={
+            compareFull
+              ? `Compare holds ${COMPARE_LIMIT} products`
+              : comparing
+                ? 'Remove from compare'
+                : 'Add to compare'
+          }
           className={cx(
-            'rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur transition-colors',
+            'rounded-full p-2 shadow-sm backdrop-blur transition-colors',
             comparing
               ? 'bg-ink text-white'
-              : 'bg-white/92 text-ink/70 hover:bg-white hover:text-brand',
+              : 'bg-white/92 text-ink/55 hover:bg-white hover:text-brand',
             compareFull && 'cursor-not-allowed opacity-45',
           )}
         >
-          {comparing ? 'Comparing' : 'Compare'}
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M3 12h11M14 12l-3.5-3.5M14 12l-3.5 3.5" />
+            <path d="M21 12h-4M17 12l3.5-3.5M17 12l3.5 3.5" />
+          </svg>
         </button>
       </div>
 

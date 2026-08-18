@@ -90,6 +90,7 @@ export function Lightbox({
           ref={closeRef}
           onClick={onClose}
           aria-label="Close"
+          title="Close"
           className="rounded-full p-2 transition-colors hover:bg-white/15"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -131,6 +132,7 @@ function Arrow({ side, onClick }: { side: 'left' | 'right'; onClick: () => void 
         onClick()
       }}
       aria-label={side === 'left' ? 'Previous photo' : 'Next photo'}
+      title={side === 'left' ? 'Previous photo' : 'Next photo'}
       className={cx(
         'absolute top-1/2 -translate-y-1/2 rounded-full bg-white/12 p-3 text-white transition-colors hover:bg-white/25',
         side === 'left' ? 'left-3 sm:left-6' : 'right-3 sm:right-6',

@@ -1,6 +1,23 @@
-import { Button, Container, MAP_URL, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { useState } from 'react'
+import { Button, Container, MAP_URL, WhatsAppIcon, cx, whatsappLink } from '../components/ui'
+import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
 
 export function Contact() {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [touched, setTouched] = useState({ name: false, phone: false, email: false })
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+
+  const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
+  const phoneError =
+    touched.phone && !isValidKenyanPhone(phone)
+      ? phone.trim()
+        ? 'Enter a valid Kenyan phone number, e.g. 07XX XXX XXX'
+        : 'Enter your phone number'
+      : undefined
+  const emailError = touched.email && email.trim() && !isValidEmail(email) ? 'Enter a valid email address' : undefined
+
   return (
     <Container className="py-8 sm:py-14">
       <header className="mb-10 max-w-2xl">
@@ -78,9 +95,33 @@ export function Contact() {
           <div className="rounded-2xl border border-line p-6 sm:p-8">
             <h2 className="mb-5 font-display text-lg font-semibold">Send us a message</h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Your name" placeholder="Jane Wanjiru" />
-              <Input label="Phone" type="tel" placeholder="07XX XXX XXX" />
-              <Input label="Email" type="email" placeholder="jane@example.com" className="sm:col-span-2" />
+              <Input
+                label="Your name"
+                placeholder="Jane Wanjiru"
+                value={name}
+                onChange={setName}
+                onBlur={() => touch('name')}
+                error={nameError}
+              />
+              <Input
+                label="Phone"
+                type="tel"
+                placeholder="07XX XXX XXX"
+                value={phone}
+                onChange={setPhone}
+                onBlur={() => touch('phone')}
+                error={phoneError}
+              />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="jane@example.com"
+                className="sm:col-span-2"
+                value={email}
+                onChange={setEmail}
+                onBlur={() => touch('email')}
+                error={emailError}
+              />
               <label className="block sm:col-span-2">
                 <span className="mb-1.5 block text-[13px] font-medium">What's this about?</span>
                 <select className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand">
@@ -101,7 +142,7 @@ export function Contact() {
                 />
               </label>
             </div>
-            <Button full size="lg" className="mt-5">
+            <Button full size="lg" className="mt-5" onClick={() => setTouched({ name: true, phone: true, email: true })}>
               Send message
             </Button>
             <p className="mt-3 text-center text-[12px] text-muted">
@@ -142,11 +183,19 @@ function Input({
   placeholder,
   type = 'text',
   className = '',
+  value,
+  onChange,
+  onBlur,
+  error,
 }: {
   label: string
   placeholder?: string
   type?: string
   className?: string
+  value: string
+  onChange: (v: string) => void
+  onBlur?: () => void
+  error?: string
 }) {
   return (
     <label className={`block ${className}`}>
@@ -154,8 +203,16 @@ function Input({
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={!!error}
+        className={cx(
+          'w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-brand',
+          error ? 'border-red-400' : 'border-line',
+        )}
       />
+      {error && <span className="mt-1 block text-[12px] text-red-600">{error}</span>}
     </label>
   )
 }
