@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { categories, products, rooms } from '../data/catalogue'
+import { categories, categoryBySlug, products, rooms } from '../data/catalogue'
 import type { Product } from '../data/types'
 import { ProductCard } from '../components/ProductCard'
 import { Button, Container, cx } from '../components/ui'
 import { money } from '../lib/format'
+import { RecentlyViewed } from '../components/RecentlyViewed'
 
 type Sort = 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest'
 
@@ -33,6 +34,8 @@ export function Shop() {
   const maxPrice = Number(params.get('max') ?? PRICE_MAX)
   const inStockOnly = params.get('stock') === '1'
   const sort = (params.get('sort') as Sort) ?? 'featured'
+  /** Free-text search, handed over by the header's search panel. */
+  const search = (params.get('q') ?? '').trim().toLowerCase()
 
   const update = (mutate: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(params)
@@ -57,6 +60,7 @@ export function Shop() {
     selectedCategories.length +
     selectedRooms.length +
     (mode ? 1 : 0) +
+    (search ? 1 : 0) +
     (maxPrice < PRICE_MAX ? 1 : 0) +
     (inStockOnly ? 1 : 0)
 
@@ -64,6 +68,15 @@ export function Shop() {
     let list: Product[] = products.filter((p) => {
       if (selectedCategories.length && !selectedCategories.includes(p.category)) return false
       if (selectedRooms.length && !p.rooms.some((r) => selectedRooms.includes(r))) return false
+      if (
+        search &&
+        // Same haystack as the header's panel, so "see all results" cannot
+        // return a different set from the dropdown that offered it.
+        !`${p.name} ${p.summary} ${p.category} ${categoryBySlug(p.category)?.name ?? ''} ${p.rooms.join(' ')}`
+          .toLowerCase()
+          .includes(search)
+      )
+        return false
       if (mode && p.mode !== mode) return false
       if (p.price > maxPrice) return false
       if (inStockOnly && !(p.mode === 'buy' && p.stock > 0)) return false
@@ -88,7 +101,7 @@ export function Shop() {
         list.sort((a, b) => Number(!!b.bestSeller) - Number(!!a.bestSeller))
     }
     return list
-  }, [selectedCategories, selectedRooms, mode, maxPrice, inStockOnly, sort])
+  }, [selectedCategories, selectedRooms, mode, maxPrice, inStockOnly, sort, search])
 
   const heading =
     selectedCategories.length === 1
@@ -195,6 +208,21 @@ export function Shop() {
         <aside className="hidden w-60 shrink-0 lg:block">{Filters}</aside>
 
         <div className="min-w-0 flex-1">
+          {search && (
+            <div className="mb-4 flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-shell px-3 py-1.5 text-[13px]">
+                Searching “{search}”
+                <button
+                  onClick={() => setSingle('q', '')}
+                  aria-label="Clear the search"
+                  className="text-muted hover:text-brand"
+                >
+                  &times;
+                </button>
+              </span>
+            </div>
+          )}
+
           <div className="mb-6 flex items-center justify-between gap-4 border-b border-line pb-4">
             <p className="text-sm text-muted">
               <strong className="text-ink">{results.length}</strong>{' '}
@@ -252,6 +280,8 @@ export function Shop() {
               ))}
             </div>
           )}
+
+          <RecentlyViewed />
         </div>
       </div>
 

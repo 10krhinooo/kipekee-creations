@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { BasketProvider } from './store/basket'
+import { PhotoProvider } from './store/photos'
+import { SavedProvider } from './store/saved'
 import { TierProvider, useRenderTier } from './components/preview/TierProvider'
 
 // Lazy, and never imported from anywhere eager: this is the boundary that keeps
@@ -20,6 +22,9 @@ import { MeasureGuide } from './pages/MeasureGuide'
 import { Trade } from './pages/Trade'
 import { About } from './pages/About'
 import { Contact } from './pages/Contact'
+import { Wishlist } from './pages/Wishlist'
+import { Compare } from './pages/Compare'
+import { CompareBar } from './components/CompareBar'
 import { AdminLayout } from './admin/AdminLayout'
 import { Dashboard } from './admin/pages/Dashboard'
 import { Quotes } from './admin/pages/Quotes'
@@ -28,6 +33,7 @@ import { Orders, OrderDetail } from './admin/pages/Orders'
 import { Products } from './admin/pages/Products'
 import { Schedule } from './admin/pages/Schedule'
 import { Customers } from './admin/pages/Customers'
+import { ProductPhotos } from './admin/pages/ProductPhotos'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -70,6 +76,7 @@ function StorefrontLayout() {
       </main>
       <Footer />
       <BasketDrawer />
+      <CompareBar />
       <WhatsAppFab />
 
       {/* Mounted once per session and deliberately out here, above the router
@@ -91,6 +98,10 @@ export default function App() {
           admin will preview materials in the same one, so the tier is a
           property of the session rather than of either app. */}
       <TierProvider>
+       {/* Photos are written by the admin and read by the storefront, so the
+           store cannot live inside either shell. */}
+       <PhotoProvider>
+        <SavedProvider>
         <ScrollToTop />
         <a
           href="#main"
@@ -111,6 +122,8 @@ export default function App() {
             <Route path="/hotel-linen" element={<Trade />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/compare" element={<Compare />} />
             <Route path="*" element={<Home />} />
           </Route>
 
@@ -121,10 +134,13 @@ export default function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="products" element={<Products />} />
+            <Route path="products/:slug/photos" element={<ProductPhotos />} />
             <Route path="schedule" element={<Schedule />} />
             <Route path="customers" element={<Customers />} />
           </Route>
         </Routes>
+        </SavedProvider>
+       </PhotoProvider>
       </TierProvider>
     </BasketProvider>
   )

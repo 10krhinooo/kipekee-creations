@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#6f6350"/>
+      <stop offset="1" stop-color="#17181a"/>
+    </linearGradient>
+    <pattern id="d" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="14" cy="14" r="1.6" fill="#ffffff" fill-opacity="0.16"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#g)"/>
+  <rect width="1600" height="1000" fill="url(#d)"/>
+  <g fill="#ffffff" font-family="Poppins, Open Sans, sans-serif" text-anchor="middle">
+    <text x="800" y="490" font-size="61" font-weight="600" fill-opacity="0.9">Concealed zip</text>
+    <text x="800" y="548" font-size="33" letter-spacing="4" fill-opacity="0.55">PHOTOGRAPH PENDING</text>
+  </g>
+</svg>

@@ -58,6 +58,25 @@ export interface Review {
   body: string
 }
 
+/**
+ * A real photograph of a product.
+ *
+ * Every other image in this app is generated from `pattern` and `accent`, which
+ * proves the colourway and the drape but cannot show stitching, a finished hem,
+ * or the cloth hanging in somebody's front room. Photos are the one image source
+ * that can, so they are modelled rather than derived.
+ */
+export interface ProductPhoto {
+  /** Absolute path under /photos, or an https URL. Never a bare relative path. */
+  src: string
+  alt: string
+  /** Ties a photo to a colourway, so choosing a colour surfaces its photos first. */
+  colourId?: string
+  caption?: string
+  /** Landscape shots take a two-column cell so the grid does not letterbox them. */
+  wide?: boolean
+}
+
 export interface Product {
   slug: string
   name: string
@@ -84,6 +103,13 @@ export interface Product {
   leadTimeDays: number
   badges?: string[]
   bestSeller?: boolean
+  /**
+   * Photography committed under `public/photos/`. Optional because the client's
+   * shoot has not happened yet: a product without photos simply does not offer
+   * the tab. Staff-uploaded photos live in IndexedDB and are merged on top of
+   * this by `photosFor()` in `src/store/photos.tsx`.
+   */
+  photos?: ProductPhoto[]
 }
 
 /** A line in the payable cart. */

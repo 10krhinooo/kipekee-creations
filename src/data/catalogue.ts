@@ -164,6 +164,30 @@ export const products: Product[] = [
     leadTimeDays: 10,
     badges: ['Free site measure', 'Fitted in Nairobi'],
     bestSeller: true,
+    photos: [
+      {
+        src: '/photos/kitenge-blockout-curtains-1.svg',
+        alt: 'A pair of kitenge blockout curtains fitted across a living room window in Kileleshwa',
+        colourId: 'warm-sand',
+      },
+      {
+        src: '/photos/kitenge-blockout-curtains-2.svg',
+        alt: 'Close view of the wave heading, showing the even fold along the ceiling track',
+        colourId: 'deep-olive',
+        caption: 'Wave heading, on a ceiling track',
+      },
+      {
+        src: '/photos/kitenge-blockout-curtains-3.svg',
+        alt: 'The 10cm double hem and weighted corner that keeps the drop hanging straight',
+        caption: 'A 10cm double hem with weighted corners',
+      },
+      {
+        src: '/photos/kitenge-blockout-curtains-4.svg',
+        alt: 'The same curtains drawn closed at night, with no light leaking around the edges',
+        colourId: 'midnight',
+        wide: true,
+      },
+    ],
   },
   {
     slug: 'sheer-linen-voile',
@@ -401,6 +425,23 @@ export const products: Product[] = [
     leadTimeDays: 0,
     badges: ['Ships same day'],
     bestSeller: true,
+    photos: [
+      {
+        src: '/photos/embroidered-cushion-cover-1.svg',
+        alt: 'Three embroidered cushion covers arranged along a natural linen sofa',
+        colourId: 'brick',
+      },
+      {
+        src: '/photos/embroidered-cushion-cover-2.svg',
+        alt: 'Close view of the hand-guided embroidery on the cotton canvas face',
+        caption: 'Hand-guided embroidery on 280 gsm canvas',
+      },
+      {
+        src: '/photos/embroidered-cushion-cover-3.svg',
+        alt: 'The concealed zip along the bottom edge, open to show the bias-cut piping',
+        wide: true,
+      },
+    ],
   },
   {
     slug: 'geometric-cushion-cover',
@@ -665,6 +706,18 @@ export const products: Product[] = [
     leadTimeDays: 12,
     badges: ['Made to span', 'Fitted in Nairobi'],
     bestSeller: true,
+    photos: [
+      {
+        src: '/photos/wrought-iron-curtain-rail-1.svg',
+        alt: 'A curtain rail being forged over the anvil in the Katani Road workshop',
+        caption: 'Forged in our own workshop on Katani Road',
+      },
+      {
+        src: '/photos/wrought-iron-curtain-rail-2.svg',
+        alt: 'A finished scroll finial in matte black, fitted to the end of a rail',
+        colourId: 'matte-black',
+      },
+    ],
   },
   {
     slug: 'wrought-iron-wall-bracket',
@@ -760,6 +813,15 @@ export const products: Product[] = [
 export const bySlug = (slug: string) => products.find((p) => p.slug === slug)
 
 export const categoryBySlug = (slug: string) => categories.find((c) => c.slug === slug)
+
+/**
+ * The most of a line a shopper may hold. Only ready-made goods are finite —
+ * made-to-measure work is cut to order, so its `stock` figure means nothing
+ * there. Callers disable the control at the cap rather than letting the click
+ * land and silently do nothing.
+ */
+export const stockCapOf = (product: Product | undefined): number =>
+  product && product.mode === 'buy' ? product.stock : Infinity
 
 export const priceOf = (product: Product, colourId?: string, sizeId?: string) => {
   const c = product.colours.find((v) => v.id === colourId)
