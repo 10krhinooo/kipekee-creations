@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { orders, quotes, fittings, stock } from './data/operations'
-import { useAdminAuth } from './auth'
+import { useAuth } from '../auth/AuthProvider'
 
 const initialsOf = (name: string) =>
   name
@@ -40,6 +40,13 @@ const icons = {
       <path d="M3 7l9 4 9-4M12 11v10" />
     </>
   ),
+  accounts: (
+    <>
+      <circle cx="12" cy="7.5" r="3.5" />
+      <path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" />
+      <path d="M17.5 3.5l1 1.6 1.8.3-1.3 1.3.3 1.8-1.8-.9-1.8.9.3-1.8L14.7 5.4l1.8-.3z" />
+    </>
+  ),
   customers: (
     <>
       <circle cx="9" cy="8" r="3.5" />
@@ -53,8 +60,30 @@ export function AdminLayout() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { name, logout } = useAdminAuth()
-  const adminName = name ?? 'Admin'
+  const { user, logout, isAdmin } = useAuth()
+  const adminName = user?.name ?? 'Admin'
+
+  // Escape closes the drawer, and while it is open the page behind it does not
+  // scroll. Both are what makes a slide-over feel like a panel rather than a
+  // second page: without the scroll lock, dragging the menu drags the console
+  // underneath it, which on a phone is the difference between "a drawer" and
+  // "something went wrong".
+  useEffect(() => {
+    if (!open) return
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [open])
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -69,6 +98,11 @@ export function AdminLayout() {
     { to: '/admin/schedule', label: 'Schedule', icon: icons.schedule, badge: upcoming },
     { to: '/admin/products', label: 'Products', icon: icons.products, badge: lowStock, urgent: true },
     { to: '/admin/customers', label: 'Customers', icon: icons.customers },
+    // Managing who works here is an admin's job, so staff are not shown a link
+    // to a page that would only refuse them.
+    ...(isAdmin
+      ? [{ to: '/admin/accounts', label: 'Workshop accounts', icon: icons.accounts }]
+      : []),
   ]
 
   const sidebar = (
@@ -134,14 +168,15 @@ export function AdminLayout() {
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
             {initialsOf(adminName)}
           </span>
-          <span className="min-w-0 flex-1">
+          <Link to="/account/profile" className="min-w-0 flex-1" title="Your details">
             <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
-            <span className="block text-[11px] text-white/50">Signed in</span>
-          </span>
+            <span className="block text-[11px] text-white/50">
+              {isAdmin ? 'Admin' : 'Staff'} · your details
+            </span>
+          </Link>
           <button
             onClick={() => {
-              logout()
-              navigate('/admin/login', { replace: true })
+              logout().then(() => navigate('/login', { replace: true }))
             }}
             className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/6 hover:text-white"
             aria-label="Sign out"
@@ -159,20 +194,30 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-shell">
       {/* Fixed sidebar on desktop, slide-over on mobile. */}
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col bg-ink px-3 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col overflow-y-auto bg-ink px-3 py-5 lg:flex">
         {sidebar}
       </aside>
 
+      {/* The scrim fades over exactly as long as the panel takes to travel.
+          Left on the default 150ms it finished first, so the last third of the
+          slide happened against an already-bare page and read as a stutter. */}
       <div
         onClick={() => setOpen(false)}
+        aria-hidden
         className={cx(
-          'fixed inset-0 z-40 bg-ink/50 transition-opacity lg:hidden',
+          'fixed inset-0 z-40 bg-ink/50 transition-opacity duration-300 ease-out lg:hidden',
           open ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
+      {/* Kept mounted rather than conditionally rendered, because a panel that
+          only exists while open has nothing to slide in from. `inert` while
+          closed is what stops the off-screen copy of the whole menu from
+          collecting tab stops and being read out by a screen reader - the cost
+          of keeping it there. */}
       <aside
+        inert={!open}
         className={cx(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-ink px-3 py-5 transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-ink px-3 py-5 transition-transform duration-300 ease-out lg:hidden',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -229,7 +274,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main key={location.pathname} className="animate-rise px-4 py-6 sm:px-6 lg:px-8">
+        <main key={location.pathname} className="animate-page-rise px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>

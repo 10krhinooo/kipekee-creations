@@ -6,6 +6,7 @@ import { swatch } from '../lib/swatch'
 import { Button, Container, WhatsAppIcon, cx } from '../components/ui'
 import { quoteWhatsAppLink } from '../lib/whatsapp'
 import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
+import { post } from '../lib/api'
 
 /**
  * The quote request is the conversion path for made-to-measure work.
@@ -15,6 +16,10 @@ import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
 export function QuoteRequest() {
   const { quote, updateQuote, removeFromQuote, clear } = useBasket()
   const [sent, setSent] = useState(false)
+  const [reference, setReference] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [preferredTime, setPreferredTime] = useState('As soon as possible')
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -33,9 +38,43 @@ export function QuoteRequest() {
   const emailError = touched.email && email.trim() && !isValidEmail(email) ? 'Enter a valid email address' : undefined
   const canSend = name.trim() !== '' && isValidKenyanPhone(phone) && (email.trim() === '' || isValidEmail(email))
 
-  const sendQuote = () => {
+  const sendQuote = async () => {
     setTouched({ name: true, phone: true, email: true })
-    if (!canSend) return
+    if (!canSend || sending) return
+
+    setSendError(null)
+    setSending(true)
+    const result = await post<{ reference: string }>('/api/quotes/request', {
+      name,
+      phone,
+      email: email.trim() || null,
+      area: area.trim() || null,
+      preferredTime,
+      lines: quote.map((line) => {
+        const product = bySlug(line.slug)
+        const metres = line.widthCm ? line.widthCm / 100 : 1
+        return {
+          productName: product?.name ?? line.slug,
+          colour: product?.colours.find((c) => c.id === line.colour)?.label ?? null,
+          room: line.room,
+          widthCm: line.widthCm ?? null,
+          dropCm: line.dropCm ?? null,
+          windows: line.windows,
+          notes: line.notes?.trim() || null,
+          indicativeAmount: product ? Math.round(product.price * metres * line.windows) : null,
+        }
+      }),
+    })
+    setSending(false)
+
+    if (!result.ok) {
+      setSendError(result.message)
+      return
+    }
+
+    // Only cleared once the workshop has it. Clearing first would throw away
+    // measurements the visitor took off a window if the request never landed.
+    setReference(result.data?.reference ?? null)
     clear('quote')
     setSent(true)
   }
@@ -56,9 +95,15 @@ export function QuoteRequest() {
           </svg>
         </div>
         <h1 className="font-display text-3xl font-semibold">Quote request sent</h1>
+        {reference && (
+          <p className="mx-auto mt-4 inline-block rounded-full bg-sand px-4 py-1.5 font-display text-sm font-semibold text-ink">
+            Reference {reference}
+          </p>
+        )}
         <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
           One of our fitters will call within one working day to confirm the details and book your
           free measure. Nothing is charged until you approve the written quote.
+          {email.trim() && ' A copy is on its way to your email.'}
         </p>
         <Button to="/shop" size="lg">Keep browsing</Button>
       </Container>
@@ -203,7 +248,11 @@ export function QuoteRequest() {
                 <span className="mb-1.5 block text-[13px] font-medium">
                   When suits you for the measure?
                 </span>
-                <select className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand">
+                <select
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+                >
                   <option>As soon as possible</option>
                   <option>This week, weekday morning</option>
                   <option>This week, weekday afternoon</option>
@@ -229,9 +278,14 @@ export function QuoteRequest() {
             </p>
 
             <div className="mt-5 space-y-2.5">
-              <Button size="lg" full onClick={sendQuote}>
-                Send my quote request
+              <Button size="lg" full disabled={sending} onClick={sendQuote}>
+                {sending ? 'Sending…' : 'Send my quote request'}
               </Button>
+              {sendError && (
+                <p role="alert" className="rounded-lg bg-brand-50 px-3 py-2 text-[12.5px] leading-relaxed text-brand-700">
+                  {sendError}
+                </p>
+              )}
               <Button
                 full
                 variant="whatsapp"

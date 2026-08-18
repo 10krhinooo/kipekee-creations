@@ -67,8 +67,37 @@ changes over 1400ms, deliberately slower so it reads as light rather than a swit
 
 ## The admin side
 
-`/admin` is the staff view of the same two streams, and it has no login: this is a prototype, so
-the route is open.
+`/admin` is the staff view of the same two streams, behind the same login everyone else uses.
+
+There is **one set of auth screens**, not one per audience. Staff and customers prove identity
+identically, and the only real difference is what the account may reach, which is a role rather
+than a separate door. Signing in routes on that role: a customer lands on `/account`, staff land on
+`/admin`. `/admin/accounts` is admin-only on top of that, so not everyone who can read the order
+queue can also promote themselves.
+
+Admins add staff from `/admin/accounts`. The new account is created with **no password on it** and
+the person is emailed a one-time invite link, good for a week, that lets them choose their own on
+`/accept-invite`. Nothing that opens the console is ever put in an email: until the link is
+followed there is nothing to sign in with, and a link that goes astray can be retired by sending
+another. Suspending is the normal answer when somebody leaves: their name stays attached to the
+quotes and fittings they worked on, which deleting would take with it.
+
+### Signing in locally
+
+The backend seeds these accounts in dev only. They exist while the backend runs with its dev
+profile and never reach a real deployment.
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `admin@kipekeecreations.co.ke` | `kipekee-admin-dev` | Admin |
+| `grace@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `david@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `workshop@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `jane@example.com` | `kipekee-customer-dev` | Customer |
+| `bookings@sarova.example` | `kipekee-customer-dev` | Customer |
+
+Two customers on purpose: the account area is built for the repeat trade buyer as much as the
+one-off shopper, and those two want different things from it.
 
 The screen that matters is the **quote builder** at `/admin/quotes/:id`. A request arrives from the
 storefront carrying the customer's measurements; staff price each window, add or waive fitting,
@@ -103,6 +132,24 @@ npm run build     # typecheck and production build
 npm run lint      # oxlint
 ```
 
+Anything that sends email, and the staff login, need the backend running alongside. The dev server
+proxies `/api` to it on port 8080.
+
+### Email templates
+
+Transactional emails are authored as React in `emails/`, and rendered once at build time into
+static Qute templates the backend fills in per message. Nothing renders React at send time.
+
+```bash
+cd emails
+npm install
+npm run dev       # preview the templates in a browser on :3030
+npm run build     # render them into the backend's resources/templates/email
+```
+
+Re-run `npm run build` after any template change and commit the rendered output with it: the
+backend builds from the committed HTML, never from this workspace.
+
 ## How it is laid out
 
 ```
@@ -112,7 +159,8 @@ src/
   store/         The dual cart and quote basket, persisted to localStorage
   components/    Header, footer, product card, basket drawer, room visualiser
   pages/         One file per storefront route
-  admin/         The staff app: its own layout, data and pages
+  admin/         The staff app: its own layout, auth, data and pages
+emails/          React Email templates, rendered to Qute templates at build time
 ```
 
 ## Routes
@@ -128,7 +176,15 @@ src/
 | `/measure-guide` | Measuring guide with a live price calculator |
 | `/hotel-linen` | Trade and contract page |
 | `/about`, `/contact` | Company pages |
+| `/login`, `/register` | Sign in and sign up, for staff and customers alike |
+| `/forgot-password`, `/reset-password` | Password reset, by emailed one-time link |
+| `/accept-invite` | An invited staff member choosing their first password |
+| `/change-password` | Changing your own password, knowing the current one |
+| `/account` | Reorder, saved list, quotes |
+| `/account/orders`, `/account/saved` | Order and quote history, the saved list |
+| `/account/addresses`, `/account/profile` | Delivery addresses, personal details |
 | `/admin` | Dashboard, action queues and revenue |
+| `/admin/accounts` | Workshop accounts, admin only |
 | `/admin/quotes`, `/admin/quotes/:id` | Quote queue and the quote builder |
 | `/admin/orders`, `/admin/orders/:id` | Shop orders and fulfilment |
 | `/admin/products` | Catalogue, pricing and stock levels |

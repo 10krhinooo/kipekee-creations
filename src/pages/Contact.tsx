@@ -1,13 +1,19 @@
 import { useState } from 'react'
 import { Button, Container, MAP_URL, WhatsAppIcon, cx, whatsappLink } from '../components/ui'
 import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
+import { post } from '../lib/api'
 
 export function Contact() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [touched, setTouched] = useState({ name: false, phone: false, email: false })
+  const [topic, setTopic] = useState('Book a free window measure')
+  const [message, setMessage] = useState('')
+  const [touched, setTouched] = useState({ name: false, phone: false, email: false, message: false })
   const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
   const phoneError =
@@ -16,7 +22,33 @@ export function Contact() {
         ? 'Enter a valid Kenyan phone number, e.g. 07XX XXX XXX'
         : 'Enter your phone number'
       : undefined
-  const emailError = touched.email && email.trim() && !isValidEmail(email) ? 'Enter a valid email address' : undefined
+  const emailError =
+    touched.email && !isValidEmail(email)
+      ? email.trim()
+        ? 'Enter a valid email address'
+        : 'Enter your email address so we can reply'
+      : undefined
+  const messageError = touched.message && !message.trim() ? 'Tell us what you need' : undefined
+  const canSend = name.trim() !== '' && isValidEmail(email) && message.trim() !== ''
+
+  const sendMessage = async () => {
+    setTouched({ name: true, phone: true, email: true, message: true })
+    if (!canSend || sending) return
+
+    setSendError(null)
+    setSending(true)
+    const result = await post('/api/contact', {
+      name,
+      email,
+      phone: phone.trim() || null,
+      topic,
+      message,
+    })
+    setSending(false)
+
+    if (result.ok) setSent(true)
+    else setSendError(result.message)
+  }
 
   return (
     <Container className="py-8 sm:py-14">
@@ -124,7 +156,11 @@ export function Contact() {
               />
               <label className="block sm:col-span-2">
                 <span className="mb-1.5 block text-[13px] font-medium">What's this about?</span>
-                <select className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand">
+                <select
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+                >
                   <option>Book a free window measure</option>
                   <option>Quote for made-to-measure curtains</option>
                   <option>Question about an order</option>
@@ -137,17 +173,45 @@ export function Contact() {
                 <span className="mb-1.5 block text-[13px] font-medium">Message</span>
                 <textarea
                   rows={5}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onBlur={() => touch('message')}
+                  aria-invalid={!!messageError}
                   placeholder="Tell us about the room, the window, or what you're looking for."
-                  className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+                  className={cx(
+                    'w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-brand',
+                    messageError ? 'border-red-400' : 'border-line',
+                  )}
                 />
+                {messageError && (
+                  <span className="mt-1 block text-[12px] text-red-600">{messageError}</span>
+                )}
               </label>
             </div>
-            <Button full size="lg" className="mt-5" onClick={() => setTouched({ name: true, phone: true, email: true })}>
-              Send message
-            </Button>
-            <p className="mt-3 text-center text-[12px] text-muted">
-              We reply within one working day. Prototype form. Nothing is sent.
-            </p>
+            {sent ? (
+              <div className="mt-5 rounded-xl bg-[#e8f5ec] px-4 py-4 text-center">
+                <p className="font-display text-[15px] font-semibold text-[#1a6b39]">
+                  Message sent
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+                  We have emailed you a copy and will reply within one working day.
+                </p>
+              </div>
+            ) : (
+              <>
+                <Button full size="lg" className="mt-5" disabled={sending} onClick={sendMessage}>
+                  {sending ? 'Sending…' : 'Send message'}
+                </Button>
+                {sendError && (
+                  <p role="alert" className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-center text-[12.5px] leading-relaxed text-brand-700">
+                    {sendError}
+                  </p>
+                )}
+                <p className="mt-3 text-center text-[12px] text-muted">
+                  We reply within one working day.
+                </p>
+              </>
+            )}
           </div>
 
           {/* The address is a link, so a visitor gets directions in one tap. */}

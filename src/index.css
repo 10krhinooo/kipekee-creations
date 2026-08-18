@@ -77,11 +77,26 @@
   animation: kc-rise 0.5s var(--ease-out-soft) both;
 }
 
+/*
+  The same rise, held back until `PageCurtain` has drawn the cloth off the page.
+  `both` keeps the content at opacity 0 through the delay, which is what lets it
+  arrive as the curtain clears rather than being revealed already in place.
+  Applied to a layout's `<main>` and never to an ancestor of the fixed header,
+  drawer or FAB: an animated `transform` makes its element a containing block,
+  and `position: fixed` inside one stops being fixed to the viewport.
+*/
+@utility animate-page-rise {
+  animation: kc-rise 0.62s var(--ease-out-soft) 0.42s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Delays have to go too, or a held-back entrance becomes a held-back blank
+       screen for anyone who asked for less motion. */
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

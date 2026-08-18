@@ -6,9 +6,17 @@ import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
 import { Button, Container, cx } from '../components/ui'
 import { KENYA_COUNTIES, deliveryEtaFor } from '../data/kenya'
-import { isValidKenyanPhone } from '../lib/validate'
+import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
+import { post } from '../lib/api'
 
 type Pay = 'mpesa' | 'card' | 'cod'
+
+/** What the receipt calls each method. Customer-facing, so not the raw ids. */
+const PAY_LABELS: Record<Pay, string> = {
+  mpesa: 'M-Pesa',
+  card: 'Card',
+  cod: 'Cash on delivery',
+}
 
 /**
  * Checkout is a single page with three visible steps rather than a multi-page
@@ -25,7 +33,11 @@ export function Checkout() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [touched, setTouched] = useState({ name: false, phone: false, address: false })
+  const [email, setEmail] = useState('')
+  const [touched, setTouched] = useState({ name: false, phone: false, address: false, email: false })
+  const [placing, setPlacing] = useState(false)
+  const [reference, setReference] = useState<string | null>(null)
+  const [placeError, setPlaceError] = useState<string | null>(null)
   const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
 
   const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
@@ -36,11 +48,51 @@ export function Checkout() {
         : 'Enter your phone number'
       : undefined
   const addressError = touched.address && !address.trim() ? 'Enter a delivery address' : undefined
-  const canPlaceOrder = name.trim() !== '' && isValidKenyanPhone(phone) && address.trim() !== ''
+  const emailError =
+    touched.email && !isValidEmail(email)
+      ? email.trim()
+        ? 'Enter a valid email address'
+        : 'Enter your email so we can send the receipt'
+      : undefined
+  const canPlaceOrder =
+    name.trim() !== '' && isValidKenyanPhone(phone) && address.trim() !== '' && isValidEmail(email)
 
-  const placeOrder = () => {
-    setTouched({ name: true, phone: true, address: true })
-    if (!canPlaceOrder) return
+  const placeOrder = async () => {
+    setTouched({ name: true, phone: true, address: true, email: true })
+    if (!canPlaceOrder || placing) return
+
+    setPlaceError(null)
+    setPlacing(true)
+    const county = KENYA_COUNTIES.find((c) => c.id === town)
+    const result = await post<{ reference: string }>('/api/orders/confirmation', {
+      name,
+      email,
+      phone,
+      address,
+      county: county?.name ?? null,
+      paymentMethod: PAY_LABELS[pay],
+      deliveryEstimate: deliveryEtaFor(town),
+      deliveryAmount: delivery,
+      lines: cart.map((line) => {
+        const product = bySlug(line.slug)
+        const colour = product?.colours.find((c) => c.id === line.colour)?.label
+        const size = product?.sizes?.find((v) => v.id === line.size)?.label
+        return {
+          productName: product?.name ?? line.slug,
+          detail: [colour, size].filter(Boolean).join(' · ') || null,
+          qty: line.qty,
+          amount: product ? priceOf(product, line.colour, line.size) * line.qty : 0,
+        }
+      }),
+    })
+    setPlacing(false)
+
+    if (!result.ok) {
+      setPlaceError(result.message)
+      return
+    }
+
+    setReference(result.data?.reference ?? null)
     clear('cart')
     setPlaced(true)
   }
@@ -54,9 +106,14 @@ export function Checkout() {
           </svg>
         </div>
         <h1 className="font-display text-3xl font-semibold">Order received</h1>
+        {reference && (
+          <p className="mx-auto mt-4 inline-block rounded-full bg-sand px-4 py-1.5 font-display text-sm font-semibold text-ink">
+            Order {reference}
+          </p>
+        )}
         <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
-          We've sent a confirmation to your phone. Your order leaves the Katani Road workshop this
-          afternoon and you'll get a tracking SMS when the rider is on the way.
+          A confirmation is on its way to your email. Your order leaves the Katani Road workshop
+          this afternoon and you'll get a tracking SMS when the rider is on the way.
         </p>
         <Button to="/shop" size="lg">Continue shopping</Button>
       </Container>
@@ -121,6 +178,16 @@ export function Checkout() {
                 onBlur={() => touch('address')}
                 error={addressError}
               />
+              <Input
+                label="Email"
+                type="email"
+                placeholder="jane@example.com"
+                className="sm:col-span-2"
+                value={email}
+                onChange={setEmail}
+                onBlur={() => touch('email')}
+                error={emailError}
+              />
             </div>
           </Step>
 
@@ -177,11 +244,17 @@ export function Checkout() {
               By placing the order you agree to our delivery and returns terms. Ready-made stock can
               be returned within 14 days unused.
             </p>
-            <Button size="lg" full onClick={placeOrder}>
-              Place order · {money(total)}
+            <Button size="lg" full disabled={placing} onClick={placeOrder}>
+              {placing ? 'Placing your order…' : `Place order · ${money(total)}`}
             </Button>
+            {placeError && (
+              <p role="alert" className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-center text-[12.5px] leading-relaxed text-brand-700">
+                {placeError}
+              </p>
+            )}
             <p className="mt-3 text-center text-[12px] text-muted">
-              Prototype only. No payment is taken.
+              No payment is taken on this screen. We confirm the total with you before anything is
+              charged.
             </p>
           </Step>
         </div>
