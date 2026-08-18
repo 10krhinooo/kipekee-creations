@@ -1,7 +1,16 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { orders, quotes, fittings, stock } from './data/operations'
+import { useAdminAuth } from './auth'
+
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('') || 'A'
 
 const icons = {
   dashboard: <path d="M3 3h7v7H3zM14 3h7v4h-7zM14 11h7v10h-7zM3 14h7v7H3z" />,
@@ -43,6 +52,9 @@ const icons = {
 export function AdminLayout() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { name, logout } = useAdminAuth()
+  const adminName = name ?? 'Admin'
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -120,12 +132,25 @@ export function AdminLayout() {
         </Link>
         <div className="flex items-center gap-3 rounded-xl px-3 py-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
-            AW
+            {initialsOf(adminName)}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-white">Alice Wanjala</span>
-            <span className="block text-[11px] text-white/50">Sales manager</span>
+            <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
+            <span className="block text-[11px] text-white/50">Signed in</span>
           </span>
+          <button
+            onClick={() => {
+              logout()
+              navigate('/admin/login', { replace: true })
+            }}
+            className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/6 hover:text-white"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.7">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+          </button>
         </div>
       </div>
     </>
