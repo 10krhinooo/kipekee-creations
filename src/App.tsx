@@ -25,6 +25,7 @@ import { Contact } from './pages/Contact'
 import { Wishlist } from './pages/Wishlist'
 import { Compare } from './pages/Compare'
 import { CompareBar } from './components/CompareBar'
+import { PageCurtain } from './components/PageCurtain'
 import { AdminLayout } from './admin/AdminLayout'
 import { AdminAuthProvider } from './admin/auth'
 import { AdminGuard } from './admin/AdminGuard'
@@ -38,8 +39,12 @@ import { Schedule } from './admin/pages/Schedule'
 import { Customers } from './admin/pages/Customers'
 import { ProductPhotos } from './admin/pages/ProductPhotos'
 
-function ScrollToTop() {
-  const { pathname } = useLocation()
+/**
+ * Takes the pathname rather than reading it. During a curtain transition the
+ * page on screen is one step behind the real location, and scrolling to the top
+ * of the page somebody is still looking at would be a visible jolt.
+ */
+function ScrollToTop({ pathname }: { pathname: string }) {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
@@ -70,11 +75,15 @@ function WhatsAppFab() {
  */
 function StorefrontLayout() {
   const { tier } = useRenderTier()
+  const { pathname } = useLocation()
 
   return (
     <div>
       <Header />
-      <main id="main">
+      {/* Keyed so each page replays the entrance, and on `<main>` rather than a
+          wrapper so the animated transform never becomes a containing block for
+          the fixed header, drawer or FAB above it. */}
+      <main id="main" key={pathname} className="animate-page-rise">
         <Outlet />
       </main>
       <Footer />
@@ -106,7 +115,6 @@ export default function App() {
            store cannot live inside either shell. */}
        <PhotoProvider>
         <SavedProvider>
-        <ScrollToTop />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
@@ -114,7 +122,11 @@ export default function App() {
           Skip to content
         </a>
 
-        <Routes>
+        <PageCurtain>
+          {(shown) => (
+            <>
+              <ScrollToTop pathname={shown.pathname} />
+              <Routes location={shown}>
           <Route element={<StorefrontLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
@@ -150,7 +162,10 @@ export default function App() {
             <Route path="schedule" element={<Schedule />} />
             <Route path="customers" element={<Customers />} />
           </Route>
-        </Routes>
+              </Routes>
+            </>
+          )}
+        </PageCurtain>
         </SavedProvider>
        </PhotoProvider>
       </TierProvider>

@@ -1,0 +1,24 @@
+{
+  "name": "kipekee-emails",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "email dev --dir templates --port 3030",
+    "build": "tsx build.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "react-email": "^6.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "~6.0.2"
+  }
+}

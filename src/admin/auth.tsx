@@ -131,3 +131,41 @@ export function useAdminAuth() {
   if (!ctx) throw new Error('useAdminAuth must be used within AdminAuthProvider')
   return ctx
 }
+
+/**
+ * Password reset lives outside the context on purpose: both calls happen while
+ * signed out, so nothing about them needs - or should have - access to a
+ * session. Keeping them as plain functions also keeps `AdminAuthProvider` to
+ * the one job of holding the session.
+ */
+
+export interface AuthResult {
+  ok: boolean
+  message?: string
+}
+
+async function post(path: string, body: unknown): Promise<AuthResult> {
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (res.ok) return { ok: true }
+    const parsed = await res.json().catch(() => null)
+    return { ok: false, message: parsed?.message ?? 'Something went wrong. Try again.' }
+  } catch {
+    return { ok: false, message: 'Could not reach the server. Check your connection and try again.' }
+  }
+}
+
+/**
+ * Always resolves ok on a reachable server, whether or not the address belongs
+ * to a staff account. Telling an anonymous caller "no such user" would turn
+ * this form into a way to enumerate who works here.
+ */
+export const requestPasswordReset = (email: string) =>
+  post('/api/admin/password-reset/request', { email })
+
+export const resetPassword = (token: string, password: string) =>
+  post('/api/admin/password-reset/confirm', { token, password })

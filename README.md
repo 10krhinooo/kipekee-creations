@@ -67,8 +67,25 @@ changes over 1400ms, deliberately slower so it reads as light rather than a swit
 
 ## The admin side
 
-`/admin` is the staff view of the same two streams, and it has no login: this is a prototype, so
-the route is open.
+`/admin` is the staff view of the same two streams, behind a login. Sign in at `/admin/login`;
+`/admin/forgot-password` mails a one-time reset link and `/admin/reset-password` spends it. The
+session is an opaque bearer token in `sessionStorage`, revalidated against the backend on load, so
+a token that expired while a tab sat open does not flash the console open before bouncing.
+
+### Signing in locally
+
+The backend seeds these accounts in dev only. They are equal - there is no role tier in the console
+today - and differ just enough to check the greeting, the sidebar initials, and that a password
+reset touches one account rather than all of them.
+
+| Email | Password |
+| --- | --- |
+| `admin@kipekeecreations.co.ke` | `kipekee-admin-dev` |
+| `grace@kipekeecreations.co.ke` | `kipekee-staff-dev` |
+| `david@kipekeecreations.co.ke` | `kipekee-staff-dev` |
+| `workshop@kipekeecreations.co.ke` | `kipekee-staff-dev` |
+
+They exist only while the backend runs with its dev profile, and never reach a real deployment.
 
 The screen that matters is the **quote builder** at `/admin/quotes/:id`. A request arrives from the
 storefront carrying the customer's measurements; staff price each window, add or waive fitting,
@@ -103,6 +120,24 @@ npm run build     # typecheck and production build
 npm run lint      # oxlint
 ```
 
+Anything that sends email, and the staff login, need the backend running alongside. The dev server
+proxies `/api` to it on port 8080.
+
+### Email templates
+
+Transactional emails are authored as React in `emails/`, and rendered once at build time into
+static Qute templates the backend fills in per message. Nothing renders React at send time.
+
+```bash
+cd emails
+npm install
+npm run dev       # preview the templates in a browser on :3030
+npm run build     # render them into the backend's resources/templates/email
+```
+
+Re-run `npm run build` after any template change and commit the rendered output with it: the
+backend builds from the committed HTML, never from this workspace.
+
 ## How it is laid out
 
 ```
@@ -112,7 +147,8 @@ src/
   store/         The dual cart and quote basket, persisted to localStorage
   components/    Header, footer, product card, basket drawer, room visualiser
   pages/         One file per storefront route
-  admin/         The staff app: its own layout, data and pages
+  admin/         The staff app: its own layout, auth, data and pages
+emails/          React Email templates, rendered to Qute templates at build time
 ```
 
 ## Routes
@@ -128,6 +164,8 @@ src/
 | `/measure-guide` | Measuring guide with a live price calculator |
 | `/hotel-linen` | Trade and contract page |
 | `/about`, `/contact` | Company pages |
+| `/admin/login` | Staff sign in |
+| `/admin/forgot-password`, `/admin/reset-password` | Password reset, by emailed one-time link |
 | `/admin` | Dashboard, action queues and revenue |
 | `/admin/quotes`, `/admin/quotes/:id` | Quote queue and the quote builder |
 | `/admin/orders`, `/admin/orders/:id` | Shop orders and fulfilment |

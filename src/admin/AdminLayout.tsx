@@ -229,7 +229,7 @@ export function AdminLayout() {
           </div>
         </header>
 
-        <main key={location.pathname} className="animate-rise px-4 py-6 sm:px-6 lg:px-8">
+        <main key={location.pathname} className="animate-page-rise px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>
