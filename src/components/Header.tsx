@@ -246,6 +246,7 @@ export function Header() {
             onClick={() => setOpen((v) => !v)}
             className="-ml-1 rounded-lg p-2 lg:hidden"
             aria-label={open ? 'Close menu' : 'Open menu'}
+            title={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
@@ -337,6 +338,7 @@ export function Header() {
               to="/wishlist"
               className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
               aria-label={`Saved products, ${savedCount} items`}
+              title="View saved products"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -359,6 +361,7 @@ export function Header() {
               onClick={() => openDrawer('quote')}
               className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
               aria-label={`Quote list, ${quoteCount} items`}
+              title="View quote list"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
                 <path d="M9 3h6l4 4v14H5V3h4z" />
@@ -375,6 +378,7 @@ export function Header() {
               onClick={() => openDrawer('cart')}
               className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
               aria-label={`Cart, ${cartCount} items`}
+              title="View cart"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
                 <path d="M6 6h15l-1.5 9h-12z" />

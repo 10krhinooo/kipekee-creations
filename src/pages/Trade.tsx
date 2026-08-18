@@ -38,7 +38,7 @@ export function Trade() {
                 href={whatsappLink('Hello Kipekee, I am furnishing a property and would like trade pricing.')}
               >
                 <WhatsAppIcon />
-                Talk to the trade desk
+                Talk to a member of the team
               </Button>
             </div>
           </div>

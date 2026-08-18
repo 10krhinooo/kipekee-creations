@@ -7,7 +7,8 @@ import { bySlug, priceOf, rooms, stockCapOf } from '../data/catalogue'
 import type { Product, QuoteLine } from '../data/types'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
-import { Button, WhatsAppIcon, cx, whatsappLink } from './ui'
+import { Button, WhatsAppIcon, cx } from './ui'
+import { quoteWhatsAppLink } from '../lib/whatsapp'
 
 /**
  * Everything the tab trap will cycle through. The panel itself is excluded by
@@ -200,7 +201,7 @@ export function BasketDrawer() {
                 : 'Made-to-measure items we price for you'}
             </p>
           </div>
-          <button onClick={closeDrawer} aria-label="Close" className="rounded-full p-2 hover:bg-shell">
+          <button onClick={closeDrawer} aria-label="Close" title="Close" className="rounded-full p-2 hover:bg-shell">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
@@ -270,6 +271,7 @@ export function BasketDrawer() {
                               onClick={() => setCartQty(i, line.qty - 1)}
                               className="px-2.5 py-1 text-sm hover:text-brand"
                               aria-label="Decrease quantity"
+                              title="Decrease quantity"
                             >
                               −
                             </button>
@@ -279,6 +281,7 @@ export function BasketDrawer() {
                               disabled={atCap}
                               className="px-2.5 py-1 text-sm hover:text-brand disabled:pointer-events-none disabled:opacity-35"
                               aria-label="Increase quantity"
+                              title="Increase quantity"
                             >
                               +
                             </button>
@@ -430,11 +433,11 @@ export function BasketDrawer() {
                 <Button
                   variant="whatsapp"
                   full
-                  href={whatsappLink(
-                    `Hello Kipekee, I would like a quote for: ${quote
-                      .map((l) => bySlug(l.slug)?.name)
-                      .filter(Boolean)
-                      .join(', ')}`,
+                  href={quoteWhatsAppLink(
+                    quote.flatMap((line) => {
+                      const product = bySlug(line.slug)
+                      return product ? [{ product, line }] : []
+                    }),
                   )}
                 >
                   <WhatsAppIcon />
@@ -476,6 +479,7 @@ function UndoStrip({
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
+          title="Dismiss"
           className="rounded-full p-1 text-white/60 hover:text-white"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">

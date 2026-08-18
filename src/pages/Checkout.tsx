@@ -5,6 +5,8 @@ import { bySlug, priceOf } from '../data/catalogue'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
 import { Button, Container, cx } from '../components/ui'
+import { KENYA_COUNTIES, deliveryEtaFor } from '../data/kenya'
+import { isValidKenyanPhone } from '../lib/validate'
 
 type Pay = 'mpesa' | 'card' | 'cod'
 
@@ -19,6 +21,29 @@ export function Checkout() {
   const [pay, setPay] = useState<Pay>('mpesa')
   const [town, setTown] = useState('nairobi')
   const [placed, setPlaced] = useState(false)
+
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [touched, setTouched] = useState({ name: false, phone: false, address: false })
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+
+  const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
+  const phoneError =
+    touched.phone && !isValidKenyanPhone(phone)
+      ? phone.trim()
+        ? 'Enter a valid Kenyan phone number, e.g. 07XX XXX XXX'
+        : 'Enter your phone number'
+      : undefined
+  const addressError = touched.address && !address.trim() ? 'Enter a delivery address' : undefined
+  const canPlaceOrder = name.trim() !== '' && isValidKenyanPhone(phone) && address.trim() !== ''
+
+  const placeOrder = () => {
+    setTouched({ name: true, phone: true, address: true })
+    if (!canPlaceOrder) return
+    clear('cart')
+    setPlaced(true)
+  }
 
   if (placed) {
     return (
@@ -56,23 +81,46 @@ export function Checkout() {
         <div className="space-y-8">
           <Step n={1} title="Where are we delivering?">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input label="Full name" placeholder="Jane Wanjiru" />
-              <Input label="Phone number" placeholder="07XX XXX XXX" type="tel" />
+              <Input
+                label="Full name"
+                placeholder="Jane Wanjiru"
+                value={name}
+                onChange={setName}
+                onBlur={() => touch('name')}
+                error={nameError}
+              />
+              <Input
+                label="Phone number"
+                placeholder="07XX XXX XXX"
+                type="tel"
+                value={phone}
+                onChange={setPhone}
+                onBlur={() => touch('phone')}
+                error={phoneError}
+              />
               <label className="block sm:col-span-2">
-                <span className="mb-1.5 block text-[13px] font-medium">Town</span>
+                <span className="mb-1.5 block text-[13px] font-medium">County</span>
                 <select
                   value={town}
                   onChange={(e) => setTown(e.target.value)}
                   className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
                 >
-                  <option value="nairobi">Nairobi, next day</option>
-                  <option value="mombasa">Mombasa, 2–3 days</option>
-                  <option value="kisumu">Kisumu, 2–3 days</option>
-                  <option value="nakuru">Nakuru, 2 days</option>
-                  <option value="other">Elsewhere in Kenya, 3–4 days</option>
+                  {KENYA_COUNTIES.map((county) => (
+                    <option key={county.id} value={county.id}>
+                      {county.name}, {deliveryEtaFor(county.id)}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <Input label="Delivery address" placeholder="Estate, street, house or apartment" className="sm:col-span-2" />
+              <Input
+                label="Delivery address"
+                placeholder="Estate, street, house or apartment"
+                className="sm:col-span-2"
+                value={address}
+                onChange={setAddress}
+                onBlur={() => touch('address')}
+                error={addressError}
+              />
             </div>
           </Step>
 
@@ -129,14 +177,7 @@ export function Checkout() {
               By placing the order you agree to our delivery and returns terms. Ready-made stock can
               be returned within 14 days unused.
             </p>
-            <Button
-              size="lg"
-              full
-              onClick={() => {
-                clear('cart')
-                setPlaced(true)
-              }}
-            >
+            <Button size="lg" full onClick={placeOrder}>
               Place order · {money(total)}
             </Button>
             <p className="mt-3 text-center text-[12px] text-muted">
@@ -221,11 +262,19 @@ function Input({
   placeholder,
   type = 'text',
   className,
+  value,
+  onChange,
+  onBlur,
+  error,
 }: {
   label: string
   placeholder?: string
   type?: string
   className?: string
+  value: string
+  onChange: (v: string) => void
+  onBlur?: () => void
+  error?: string
 }) {
   return (
     <label className={cx('block', className)}>
@@ -233,8 +282,16 @@ function Input({
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={!!error}
+        className={cx(
+          'w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-brand',
+          error ? 'border-red-400' : 'border-line',
+        )}
       />
+      {error && <span className="mt-1 block text-[12px] text-red-600">{error}</span>}
     </label>
   )
 }

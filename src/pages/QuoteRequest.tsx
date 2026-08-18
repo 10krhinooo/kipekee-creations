@@ -3,7 +3,9 @@ import { useBasket } from '../store/basket'
 import { bySlug, rooms } from '../data/catalogue'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
-import { Button, Container, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { Button, Container, WhatsAppIcon, cx } from '../components/ui'
+import { quoteWhatsAppLink } from '../lib/whatsapp'
+import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
 
 /**
  * The quote request is the conversion path for made-to-measure work.
@@ -13,6 +15,30 @@ import { Button, Container, WhatsAppIcon, whatsappLink } from '../components/ui'
 export function QuoteRequest() {
   const { quote, updateQuote, removeFromQuote, clear } = useBasket()
   const [sent, setSent] = useState(false)
+
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [area, setArea] = useState('')
+  const [touched, setTouched] = useState({ name: false, phone: false, email: false })
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+
+  const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
+  const phoneError =
+    touched.phone && !isValidKenyanPhone(phone)
+      ? phone.trim()
+        ? 'Enter a valid Kenyan phone number, e.g. 07XX XXX XXX'
+        : 'Enter your phone number'
+      : undefined
+  const emailError = touched.email && email.trim() && !isValidEmail(email) ? 'Enter a valid email address' : undefined
+  const canSend = name.trim() !== '' && isValidKenyanPhone(phone) && (email.trim() === '' || isValidEmail(email))
+
+  const sendQuote = () => {
+    setTouched({ name: true, phone: true, email: true })
+    if (!canSend) return
+    clear('quote')
+    setSent(true)
+  }
 
   const indicative = quote.reduce((sum, line) => {
     const p = bySlug(line.slug)
@@ -139,13 +165,39 @@ export function QuoteRequest() {
           <div className="rounded-2xl border border-line p-5 sm:p-6">
             <h2 className="mb-5 font-display text-lg font-semibold">Your details</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Full name" placeholder="Jane Wanjiru" />
-              <Field label="Phone number" placeholder="07XX XXX XXX" type="tel" />
-              <Field label="Email" placeholder="jane@example.com" type="email" className="sm:col-span-2" />
+              <Field
+                label="Full name"
+                placeholder="Jane Wanjiru"
+                value={name}
+                onChange={setName}
+                onBlur={() => touch('name')}
+                error={nameError}
+              />
+              <Field
+                label="Phone number"
+                placeholder="07XX XXX XXX"
+                type="tel"
+                value={phone}
+                onChange={setPhone}
+                onBlur={() => touch('phone')}
+                error={phoneError}
+              />
+              <Field
+                label="Email"
+                placeholder="jane@example.com"
+                type="email"
+                className="sm:col-span-2"
+                value={email}
+                onChange={setEmail}
+                onBlur={() => touch('email')}
+                error={emailError}
+              />
               <Field
                 label="Where are you?"
                 placeholder="Estate or area, e.g. Kileleshwa"
                 className="sm:col-span-2"
+                value={area}
+                onChange={setArea}
               />
               <label className="block sm:col-span-2">
                 <span className="mb-1.5 block text-[13px] font-medium">
@@ -177,20 +229,17 @@ export function QuoteRequest() {
             </p>
 
             <div className="mt-5 space-y-2.5">
-              <Button size="lg" full onClick={() => { clear('quote'); setSent(true) }}>
+              <Button size="lg" full onClick={sendQuote}>
                 Send my quote request
               </Button>
               <Button
                 full
                 variant="whatsapp"
-                href={whatsappLink(
-                  `Hello Kipekee, I would like a quote for: ${quote
-                    .map((l) => {
-                      const p = bySlug(l.slug)
-                      const dims = l.widthCm && l.dropCm ? ` (${l.widthCm}x${l.dropCm}cm)` : ''
-                      return `${p?.name}${dims} for the ${l.room.toLowerCase()}`
-                    })
-                    .join('; ')}`,
+                href={quoteWhatsAppLink(
+                  quote.flatMap((line) => {
+                    const product = bySlug(line.slug)
+                    return product ? [{ product, line }] : []
+                  }),
                 )}
               >
                 <WhatsAppIcon />
@@ -251,11 +300,19 @@ function Field({
   placeholder,
   type = 'text',
   className = '',
+  value,
+  onChange,
+  onBlur,
+  error,
 }: {
   label: string
   placeholder?: string
   type?: string
   className?: string
+  value: string
+  onChange: (v: string) => void
+  onBlur?: () => void
+  error?: string
 }) {
   return (
     <label className={`block ${className}`}>
@@ -263,8 +320,16 @@ function Field({
       <input
         type={type}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={!!error}
+        className={cx(
+          'w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-brand',
+          error ? 'border-red-400' : 'border-line',
+        )}
       />
+      {error && <span className="mt-1 block text-[12px] text-red-600">{error}</span>}
     </label>
   )
 }
