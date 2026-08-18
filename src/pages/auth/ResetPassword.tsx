@@ -1,17 +1,18 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { AuthScene } from '../components/AuthScene'
-import { AuthAlert, AuthCard, AuthDone, AuthField, AuthSubmit } from '../components/AuthUI'
-import { resetPassword } from '../auth'
+import { AuthScene } from '../../components/auth/AuthScene'
+import {
+  AuthCard,
+  AuthDone,
+  AuthFooter,
+  AuthSubmit,
+  Notice,
+  PasswordField,
+} from '../../components/auth/AuthUI'
+import { api } from '../../lib/api'
+import { MIN_PASSWORD_LENGTH, strengthOf } from '../../lib/password'
 
-/**
- * Short, and deliberately not a policy engine. A staff console for one workshop
- * needs a floor on password length, not a character-class checklist that pushes
- * people towards writing the password on the monitor.
- */
-const MIN_LENGTH = 10
-
-export function AdminResetPassword() {
+export function ResetPassword() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const token = params.get('token') ?? ''
@@ -23,26 +24,23 @@ export function AdminResetPassword() {
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
 
-  const tooShort = password.length > 0 && password.length < MIN_LENGTH
-  const passwordError = touched.password && tooShort ? `Use at least ${MIN_LENGTH} characters` : undefined
-  const confirmError =
-    touched.confirm && confirm !== '' && confirm !== password ? 'The two passwords do not match' : undefined
-  const canSubmit = password.length >= MIN_LENGTH && confirm === password
+  const clearError = useCallback(() => setError(null), [])
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setTouched({ password: true, confirm: true })
-    if (!canSubmit) return
-    setError(null)
-    setSubmitting(true)
-    const result = await resetPassword(token, password)
-    setSubmitting(false)
-    if (result.ok) setDone(true)
-    else setError(result.message ?? 'Something went wrong. Try again.')
-  }
+  const passwordProblem =
+    password.length === 0
+      ? 'Choose a password'
+      : password.length < MIN_PASSWORD_LENGTH
+        ? `Use at least ${MIN_PASSWORD_LENGTH} characters`
+        : strengthOf(password).score === 1
+          ? 'Choose something harder to guess'
+          : undefined
+  const confirmProblem =
+    confirm !== password ? 'The two passwords do not match' : confirm ? undefined : 'Type it again'
 
-  // A link with no token in it never had a chance of working, so say so up
-  // front rather than after someone has typed a password twice.
+  const canSubmit = !passwordProblem && !confirmProblem
+
+  // A link with no token never had a chance of working, so say so up front
+  // rather than after somebody has typed a password twice.
   if (!token) {
     return (
       <AuthScene>
@@ -50,17 +48,30 @@ export function AdminResetPassword() {
           title="That link is incomplete"
           intro="Reset links carry a one-time token, and this one arrived without it."
         >
-          <p data-field className="mt-6 text-[13px] leading-relaxed text-muted">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted">
             Copy the link straight from the email rather than retyping it, or ask for a fresh one.
           </p>
-          <p data-field className="mt-6 text-center text-[12.5px] text-muted">
-            <Link to="/admin/forgot-password" className="text-brand underline underline-offset-2">
+          <AuthFooter>
+            <Link to="/forgot-password" className="text-brand underline underline-offset-2">
               Request a new reset link
             </Link>
-          </p>
+          </AuthFooter>
         </AuthCard>
       </AuthScene>
     )
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setTouched({ password: true, confirm: true })
+    if (!canSubmit || submitting) return
+
+    setError(null)
+    setSubmitting(true)
+    const result = await api.post('/api/auth/password-reset/confirm', { token, password })
+    setSubmitting(false)
+    if (result.ok) setDone(true)
+    else setError(result.message)
   }
 
   return (
@@ -73,18 +84,18 @@ export function AdminResetPassword() {
               password is out.
             </p>
             <button
-              onClick={() => navigate('/admin/login', { replace: true })}
+              onClick={() => navigate('/login', { replace: true })}
               className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
             >
               Sign in
             </button>
           </AuthDone>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-            <AuthField
+          <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
+            <PasswordField
               label="New password"
-              hint={`${MIN_LENGTH} characters or more`}
-              type="password"
+              hint={`${MIN_PASSWORD_LENGTH} characters or more`}
+              strength
               required
               autoComplete="new-password"
               autoFocus
@@ -92,24 +103,23 @@ export function AdminResetPassword() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-              error={passwordError}
-              placeholder="••••••••••"
+              error={touched.password ? passwordProblem : undefined}
+              placeholder="A phrase you will remember"
             />
 
-            <AuthField
+            <PasswordField
               label="Confirm new password"
-              type="password"
               required
               autoComplete="new-password"
               disabled={submitting}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-              error={confirmError}
-              placeholder="••••••••••"
+              error={touched.confirm ? confirmProblem : undefined}
+              placeholder="Type it again"
             />
 
-            {error && <AuthAlert>{error}</AuthAlert>}
+            {error && <Notice onDismiss={clearError}>{error}</Notice>}
 
             <AuthSubmit busy={submitting} busyLabel="Saving…">
               Save new password
@@ -117,11 +127,11 @@ export function AdminResetPassword() {
           </form>
         )}
 
-        <p data-field className="mt-6 text-center text-[12.5px] text-muted">
-          <Link to="/admin/login" className="text-ink underline underline-offset-2 hover:text-brand">
+        <AuthFooter>
+          <Link to="/login" className="text-ink underline underline-offset-2 hover:text-brand">
             Back to sign in
           </Link>
-        </p>
+        </AuthFooter>
       </AuthCard>
     </AuthScene>
   )

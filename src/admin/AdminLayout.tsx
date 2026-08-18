@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { orders, quotes, fittings, stock } from './data/operations'
-import { useAdminAuth } from './auth'
+import { useAuth } from '../auth/AuthProvider'
 
 const initialsOf = (name: string) =>
   name
@@ -40,6 +40,13 @@ const icons = {
       <path d="M3 7l9 4 9-4M12 11v10" />
     </>
   ),
+  accounts: (
+    <>
+      <circle cx="12" cy="7.5" r="3.5" />
+      <path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" />
+      <path d="M17.5 3.5l1 1.6 1.8.3-1.3 1.3.3 1.8-1.8-.9-1.8.9.3-1.8L14.7 5.4l1.8-.3z" />
+    </>
+  ),
   customers: (
     <>
       <circle cx="9" cy="8" r="3.5" />
@@ -53,8 +60,8 @@ export function AdminLayout() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { name, logout } = useAdminAuth()
-  const adminName = name ?? 'Admin'
+  const { user, logout, isAdmin } = useAuth()
+  const adminName = user?.name ?? 'Admin'
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -69,6 +76,11 @@ export function AdminLayout() {
     { to: '/admin/schedule', label: 'Schedule', icon: icons.schedule, badge: upcoming },
     { to: '/admin/products', label: 'Products', icon: icons.products, badge: lowStock, urgent: true },
     { to: '/admin/customers', label: 'Customers', icon: icons.customers },
+    // Managing who works here is an admin's job, so staff are not shown a link
+    // to a page that would only refuse them.
+    ...(isAdmin
+      ? [{ to: '/admin/accounts', label: 'Workshop accounts', icon: icons.accounts }]
+      : []),
   ]
 
   const sidebar = (
@@ -134,14 +146,15 @@ export function AdminLayout() {
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
             {initialsOf(adminName)}
           </span>
-          <span className="min-w-0 flex-1">
+          <Link to="/account/profile" className="min-w-0 flex-1" title="Your details">
             <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
-            <span className="block text-[11px] text-white/50">Signed in</span>
-          </span>
+            <span className="block text-[11px] text-white/50">
+              {isAdmin ? 'Admin' : 'Staff'} · your details
+            </span>
+          </Link>
           <button
             onClick={() => {
-              logout()
-              navigate('/admin/login', { replace: true })
+              logout().then(() => navigate('/login', { replace: true }))
             }}
             className="rounded-lg p-2 text-white/50 transition-colors hover:bg-white/6 hover:text-white"
             aria-label="Sign out"

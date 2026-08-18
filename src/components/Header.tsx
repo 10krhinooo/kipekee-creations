@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { categories, categoryBySlug, products } from '../data/catalogue'
 import { useBasket } from '../store/basket'
 import { useSaved } from '../store/saved'
+import { homeFor, useAuth } from '../auth/AuthProvider'
 import { swatch } from '../lib/swatch'
 import { Button, Container, WhatsAppIcon, cx, whatsappLink } from './ui'
 import { money } from '../lib/format'
@@ -211,6 +212,7 @@ function Search({ onDone }: { onDone?: () => void }) {
 export function Header() {
   const { cartCount, quoteCount, openDrawer } = useBasket()
   const { savedCount } = useSaved()
+  const { status, user } = useAuth()
   const [open, setOpen] = useState(false)
   const [shopOpen, setShopOpen] = useState(false)
   const location = useLocation()
@@ -332,6 +334,38 @@ export function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-1 md:ml-2">
+            {/* The way in to an account, and the way back to one. Left of
+                everything else because it is about who you are rather than what
+                you are carrying. `checking` renders nothing rather than
+                flashing "Sign in" at somebody who is already signed in. */}
+            {status !== 'checking' &&
+              (user ? (
+                <Link
+                  to={homeFor(user.role)}
+                  className="relative rounded-full p-2.5 transition-colors hover:bg-shell"
+                  aria-label={`Your account, signed in as ${user.name}`}
+                  title={`Signed in as ${user.name}`}
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="12" cy="8" r="3.6" />
+                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
+                  </svg>
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand" />
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="rounded-full p-2.5 transition-colors hover:bg-shell"
+                  aria-label="Sign in to your account"
+                  title="Sign in to your account"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <circle cx="12" cy="8" r="3.6" />
+                    <path d="M4.5 20.5c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5" />
+                  </svg>
+                </Link>
+              ))}
+
             {/* Saved sits left of the two baskets: it is the step before either
                 of them, not a third destination. */}
             <Link
@@ -423,7 +457,17 @@ export function Header() {
                 {c.name}
               </Link>
             ))}
-            <div className="px-3 pt-4">
+            {/* The account icon in the bar is easy to miss on a phone, so the
+                menu names the thing outright. */}
+            {status !== 'checking' && (
+              <div className="px-3 pt-4">
+                <Button to={user ? homeFor(user.role) : '/login'} variant="outline" full>
+                  {user ? `Your account · ${user.name}` : 'Sign in or create an account'}
+                </Button>
+              </div>
+            )}
+
+            <div className="px-3 pt-2">
               <Button
                 variant="whatsapp"
                 full

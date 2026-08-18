@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, type Location } from 'react-router-dom'
 import { animate, utils } from 'animejs'
-import { CURTAIN_EASE, reducedMotion } from '../lib/motion'
+import { CURTAIN_EASE, GATHERED, reducedMotion } from '../lib/motion'
 import { CurtainCloth } from './Curtains'
 
 /**
@@ -33,9 +33,45 @@ const OPEN_REST = 0.1
 
 type Phase = 'hidden' | 'closing' | 'opening'
 
-/** The staff auth screens draw their own curtain; a second one would double up. */
-const AUTH_PATHS = new Set(['/admin/login', '/admin/forgot-password', '/admin/reset-password'])
-const isAuthRoute = (pathname: string) => AUTH_PATHS.has(pathname)
+/**
+ * Areas whose internal navigation is not a page change.
+ *
+ * Moving between the tabs of the account area, or the sidebar of the workshop
+ * console, is sub-navigation within one screen: the chrome stays put and only
+ * the panel changes. Drawing a full curtain over that is heavier than the thing
+ * it is covering, and it makes a console somebody works in all day feel slow.
+ *
+ * Only applies when both ends are inside the same area. Arriving from the shop
+ * or leaving for it is a real change and still gets the curtain.
+ */
+const SECTIONS = ['/account', '/admin']
+
+const sectionOf = (pathname: string) =>
+  SECTIONS.find((section) => pathname === section || pathname.startsWith(`${section}/`)) ?? null
+
+/**
+ * The auth screens, which the curtain does not get out of the way for.
+ *
+ * `AuthScene` is a window with the curtains drawn back and the rail across the
+ * top, held in the viewport for as long as the screen is up. So arriving there
+ * does not end with the cloth leaving: it ends with the cloth coming to rest at
+ * exactly the position the staging holds it, `GATHERED`, with the same rail
+ * above it. The overlay then fades against an identical curtain underneath,
+ * which makes the handoff invisible - one curtain that opened and stayed, with
+ * the page appearing from behind it.
+ *
+ * This is why the two must agree: change `GATHERED` here and the staging moves
+ * with it, but give the overlay a rail the staging does not have (or vice
+ * versa) and the swap becomes a visible flicker.
+ */
+const AUTH_PATHS = new Set([
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/change-password',
+  '/no-access',
+])
 
 /**
  * Holds the routes back until the cloth is actually shut.
@@ -64,9 +100,28 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
 
   const stale = location.key !== shown.key
 
-  // Motion nobody asked for, and a transition between two screens that each
-  // draw their own curtain, both resolve the same way: swap immediately.
-  const skip = reducedMotion() || isAuthRoute(location.pathname) || isAuthRoute(shown.pathname)
+  // Every real page change gets the curtain, auth screens included. They used
+  // to be exempt because they drew their own reveal; that reveal is gone
+  // precisely so there is one transition in the app rather than two that can
+  // disagree. Motion nobody asked for is still skipped, and so is moving around
+  // inside an area where nothing but a panel is changing.
+  // A query-string change is not a page change. The shop keeps its filters and
+  // sorting in the URL precisely so a filtered view is shareable and the back
+  // button works, which means ticking a category pushes a new history entry on
+  // the same path. Curtaining that would put a full transition between "9
+  // products" and "3 products".
+  const samePath = location.pathname === shown.pathname
+
+  const withinSection =
+    sectionOf(location.pathname) !== null &&
+    sectionOf(location.pathname) === sectionOf(shown.pathname)
+  const skip = reducedMotion() || samePath || withinSection
+
+  // Where the panels come to rest, and whether a rail comes with them. Read off
+  // `shown` rather than `location` because by the time the open runs, `shown`
+  // has already advanced to the destination - which is exactly the screen the
+  // resting position has to match.
+  const restingOnAuth = AUTH_PATHS.has(shown.pathname)
 
   useEffect(() => {
     if (!stale) return
@@ -93,7 +148,7 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     utils.set(panels, { scaleX: closing ? OPEN_REST : 1 })
 
     animate(panels, {
-      scaleX: closing ? 1 : OPEN_REST,
+      scaleX: closing ? 1 : restingOnAuth ? GATHERED : OPEN_REST,
       duration: closing ? CLOSE_MS : OPEN_MS,
       ease: CURTAIN_EASE,
       onComplete: () => {
@@ -109,15 +164,29 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
         // Only once the cloth has finished travelling. Fading it during the
         // open makes it look like it is evaporating halfway across the screen
         // instead of being drawn back and then getting out of the way.
+        //
+        // On an auth screen the fade is a handoff rather than a disappearance:
+        // an identical curtain sits underneath at the same width, so what is
+        // left behind is the staging, not bare page.
         animate(el, {
           opacity: 0,
           duration: FADE_MS,
           ease: 'outQuad',
-          onComplete: () => setPhase('hidden'),
+          onComplete: () => {
+            // Parked fully open as well as hidden. `display: none` already
+            // removes it, but leaving the panels at their resting width means
+            // an interrupted cycle can never flash a strip of cloth down each
+            // edge before the next close seeds them.
+            utils.set(panels, { scaleX: 0 })
+            setPhase('hidden')
+          },
         })
       },
     })
-  }, [phase])
+    // `restingOnAuth` belongs here: it changes in the same commit as the phase
+    // that reads it, when `shown` advances to the destination, so React batches
+    // them into one run rather than animating to the wrong resting position.
+  }, [phase, restingOnAuth])
 
   return (
     <>
@@ -128,10 +197,19 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
         // click would make the site feel broken in a way that is very hard to
         // reproduce on purpose.
         className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
-        style={{ display: phase === 'hidden' ? 'none' : 'block', opacity: 0 }}
+        // React owns `display` here and anime owns `opacity`, and the two must
+        // not overlap. Setting `opacity` in this style object as well meant
+        // every re-render rewrote it to 0 mid-tween, which left the cloth
+        // stranded part-way across the screen. `display: none` while hidden is
+        // what keeps the overlay from showing before the effect seeds it.
+        style={{ display: phase === 'hidden' ? 'none' : 'block' }}
         aria-hidden
       >
-        <CurtainCloth className="h-full w-full" glow={false} rail={false} />
+        {/* The rail comes along only when the cloth is going to stay, so it
+            lands on the one the staging already draws instead of appearing and
+            then vanishing. No glow: the staging underneath owns the daylight,
+            and a second gradient over the card would wash it out. */}
+        <CurtainCloth className="h-full w-full" glow={false} rail={restingOnAuth} />
       </div>
     </>
   )

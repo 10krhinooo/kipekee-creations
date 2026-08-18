@@ -67,25 +67,36 @@ changes over 1400ms, deliberately slower so it reads as light rather than a swit
 
 ## The admin side
 
-`/admin` is the staff view of the same two streams, behind a login. Sign in at `/admin/login`;
-`/admin/forgot-password` mails a one-time reset link and `/admin/reset-password` spends it. The
-session is an opaque bearer token in `sessionStorage`, revalidated against the backend on load, so
-a token that expired while a tab sat open does not flash the console open before bouncing.
+`/admin` is the staff view of the same two streams, behind the same login everyone else uses.
+
+There is **one set of auth screens**, not one per audience. Staff and customers prove identity
+identically, and the only real difference is what the account may reach, which is a role rather
+than a separate door. Signing in routes on that role: a customer lands on `/account`, staff land on
+`/admin`. `/admin/accounts` is admin-only on top of that, so not everyone who can read the order
+queue can also promote themselves.
+
+Admins add staff from `/admin/accounts`. A new account is created on a temporary password that is
+emailed to them, and is refused every request except changing that password, so a temporary
+password cannot quietly become a permanent one. Suspending is the normal answer when somebody
+leaves: their name stays attached to the quotes and fittings they worked on, which deleting would
+take with it.
 
 ### Signing in locally
 
-The backend seeds these accounts in dev only. They are equal - there is no role tier in the console
-today - and differ just enough to check the greeting, the sidebar initials, and that a password
-reset touches one account rather than all of them.
+The backend seeds these accounts in dev only. They exist while the backend runs with its dev
+profile and never reach a real deployment.
 
-| Email | Password |
-| --- | --- |
-| `admin@kipekeecreations.co.ke` | `kipekee-admin-dev` |
-| `grace@kipekeecreations.co.ke` | `kipekee-staff-dev` |
-| `david@kipekeecreations.co.ke` | `kipekee-staff-dev` |
-| `workshop@kipekeecreations.co.ke` | `kipekee-staff-dev` |
+| Email | Password | Role |
+| --- | --- | --- |
+| `admin@kipekeecreations.co.ke` | `kipekee-admin-dev` | Admin |
+| `grace@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `david@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `workshop@kipekeecreations.co.ke` | `kipekee-staff-dev` | Staff |
+| `jane@example.com` | `kipekee-customer-dev` | Customer |
+| `bookings@sarova.example` | `kipekee-customer-dev` | Customer |
 
-They exist only while the backend runs with its dev profile, and never reach a real deployment.
+Two customers on purpose: the account area is built for the repeat trade buyer as much as the
+one-off shopper, and those two want different things from it.
 
 The screen that matters is the **quote builder** at `/admin/quotes/:id`. A request arrives from the
 storefront carrying the customer's measurements; staff price each window, add or waive fitting,
@@ -164,9 +175,14 @@ emails/          React Email templates, rendered to Qute templates at build time
 | `/measure-guide` | Measuring guide with a live price calculator |
 | `/hotel-linen` | Trade and contract page |
 | `/about`, `/contact` | Company pages |
-| `/admin/login` | Staff sign in |
-| `/admin/forgot-password`, `/admin/reset-password` | Password reset, by emailed one-time link |
+| `/login`, `/register` | Sign in and sign up, for staff and customers alike |
+| `/forgot-password`, `/reset-password` | Password reset, by emailed one-time link |
+| `/change-password` | Forced on first sign-in for an invited staff member |
+| `/account` | Reorder, saved list, quotes |
+| `/account/orders`, `/account/saved` | Order and quote history, the saved list |
+| `/account/addresses`, `/account/profile` | Delivery addresses, personal details |
 | `/admin` | Dashboard, action queues and revenue |
+| `/admin/accounts` | Workshop accounts, admin only |
 | `/admin/quotes`, `/admin/quotes/:id` | Quote queue and the quote builder |
 | `/admin/orders`, `/admin/orders/:id` | Shop orders and fulfilment |
 | `/admin/products` | Catalogue, pricing and stock levels |
