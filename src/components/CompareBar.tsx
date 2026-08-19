@@ -1,4 +1,4 @@
-import { bySlug } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { swatch } from '../lib/swatch'
 import { useSaved } from '../store/saved'
 import { Button, Container } from './ui'
@@ -11,6 +11,7 @@ import { Button, Container } from './ui'
  * action directly underneath it.
  */
 export function CompareBar() {
+  const { bySlug } = useCatalogue()
   const { compare, toggleCompare, clearCompare } = useSaved()
 
   const items = compare.map((slug) => bySlug(slug)).filter((p) => p !== undefined)

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { categories, categoryBySlug, products } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { useBasket } from '../store/basket'
 import { useSaved } from '../store/saved'
 import { homeFor, useAuth } from '../auth/AuthProvider'
@@ -34,6 +34,7 @@ const primary = [
  * catalogue does not require reaching for the mouse.
  */
 function Search({ onDone }: { onDone?: () => void }) {
+  const { products, categoryBySlug } = useCatalogue()
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -210,6 +211,8 @@ function Search({ onDone }: { onDone?: () => void }) {
 }
 
 export function Header() {
+
+  const { categories } = useCatalogue()
   const { cartCount, quoteCount, openDrawer } = useBasket()
   const { savedCount } = useSaved()
   const { status, user } = useAuth()

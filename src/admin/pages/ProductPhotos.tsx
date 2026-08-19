@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { bySlug } from '../../data/catalogue'
+import { useCatalogue } from '../../store/catalogue'
 import { MAX_UPLOAD_BYTES } from '../../lib/image'
 import { usePhotos } from '../../store/photos'
 import { Button, cx } from '../../components/ui'
@@ -19,6 +19,7 @@ import { Card, EmptyState, PageHeader } from '../components/AdminUI'
  * when the storefront is not.
  */
 export function ProductPhotos() {
+  const { bySlug } = useCatalogue()
   const { slug = '' } = useParams()
   const product = bySlug(slug)
   const { ready, uploadsFor, addPhotos, updatePhoto, removePhoto, reorder } = usePhotos()

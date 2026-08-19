@@ -9,7 +9,9 @@ import {
   type ReactNode,
 } from 'react'
 import type { CartLine, QuoteLine } from '../data/types'
-import { bySlug, priceOf, stockCapOf } from '../data/catalogue'
+import { priceOf, stockCapOf } from '../data/catalogue'
+import { useCatalogue } from './catalogue'
+import type { Product } from '../data/types'
 
 /*
  * Two baskets, deliberately. Ready-made stock goes in `cart` and is payable at
@@ -40,8 +42,19 @@ const empty: State = { cart: [], quote: [] }
 const sameCartLine = (a: CartLine, b: CartLine) =>
   a.slug === b.slug && a.colour === b.colour && a.size === b.size
 
-const capped = (line: CartLine, qty: number): number =>
-  Math.min(Math.max(0, qty), stockCapOf(bySlug(line.slug)))
+/**
+ * How many of a line the shopper may hold.
+ *
+ * Takes the lookup rather than reaching for it, because the catalogue is loaded
+ * over the network now and the reducer is a pure function of its arguments. The
+ * alternative was a module-level cache that the reducer reads and something
+ * else fills, which is the same bug as a global with extra steps.
+ */
+const capped = (
+  line: CartLine,
+  qty: number,
+  bySlug: (slug: string) => Product | undefined,
+): number => Math.min(Math.max(0, qty), stockCapOf(bySlug(line.slug)))
 
 const insertAt = <T,>(list: T[], index: number, item: T): T[] => {
   const next = [...list]
@@ -51,7 +64,16 @@ const insertAt = <T,>(list: T[], index: number, item: T): T[] => {
   return next
 }
 
-const reducer = (state: State, action: Action): State => {
+/**
+ * The reducer needs the catalogue to cap a quantity, and the catalogue arrives
+ * after the first render, so it is built per render from the current lookup
+ * rather than defined once at module scope. `useReducer` reads the reducer it
+ * was handed on the render that dispatched, so a basket opened before the shop
+ * finished loading still caps correctly once it has.
+ */
+const makeReducer =
+  (bySlug: (slug: string) => Product | undefined) =>
+  (state: State, action: Action): State => {
   switch (action.type) {
     case 'hydrate':
       return action.state
@@ -59,11 +81,11 @@ const reducer = (state: State, action: Action): State => {
     case 'cart/add': {
       const at = state.cart.findIndex((l) => sameCartLine(l, action.line))
       if (at === -1) {
-        const qty = capped(action.line, action.line.qty)
+        const qty = capped(action.line, action.line.qty, bySlug)
         return qty > 0 ? { ...state, cart: [...state.cart, { ...action.line, qty }] } : state
       }
       const cart = state.cart.map((l, i) =>
-        i === at ? { ...l, qty: capped(l, l.qty + action.line.qty) } : l,
+        i === at ? { ...l, qty: capped(l, l.qty + action.line.qty, bySlug) } : l,
       )
       return { ...state, cart }
     }
@@ -72,7 +94,7 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         cart: state.cart
-          .map((l, i) => (i === action.index ? { ...l, qty: capped(l, action.qty) } : l))
+          .map((l, i) => (i === action.index ? { ...l, qty: capped(l, action.qty, bySlug) } : l))
           .filter((l) => l.qty > 0),
       }
 
@@ -161,6 +183,8 @@ export const FREE_DELIVERY_THRESHOLD = 10000
 export const DELIVERY_FEE = 450
 
 export function BasketProvider({ children }: { children: ReactNode }) {
+  const { bySlug } = useCatalogue()
+  const reducer = useMemo(() => makeReducer(bySlug), [bySlug])
   const [state, dispatch] = useReducer(reducer, empty)
   const [drawer, setDrawer] = useState<DrawerView>(null)
   const [removed, setRemoved] = useState<RemovedLine | null>(null)

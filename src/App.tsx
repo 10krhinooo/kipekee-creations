@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { BasketProvider } from './store/basket'
+import { CatalogueProvider } from './store/catalogue'
 import { PhotoProvider } from './store/photos'
 import { SavedProvider } from './store/saved'
 import { TierProvider, useRenderTier } from './components/preview/TierProvider'
@@ -119,6 +120,7 @@ function StorefrontLayout() {
 export default function App() {
   return (
     <AuthProvider>
+    <CatalogueProvider>
     <BasketProvider>
       {/* Above both shells: the storefront previews products in a room, and the
           admin will preview materials in the same one, so the tier is a
@@ -227,6 +229,7 @@ export default function App() {
        </PhotoProvider>
       </TierProvider>
     </BasketProvider>
+    </CatalogueProvider>
     </AuthProvider>
   )
 }

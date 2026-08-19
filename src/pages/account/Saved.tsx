@@ -4,11 +4,13 @@ import { AccountPanel, EmptyNote } from './AccountLayout'
 import { Notice } from '../../components/auth/AuthUI'
 import { Button } from '../../components/ui'
 import { api } from '../../lib/api'
-import { bySlug } from '../../data/catalogue'
+import { useCatalogue } from '../../store/catalogue'
 import { money } from '../../lib/format'
 import { swatch } from '../../lib/swatch'
 
 export function AccountSaved() {
+
+  const { bySlug } = useCatalogue()
   const [slugs, setSlugs] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const clearError = useCallback(() => setError(null), [])
