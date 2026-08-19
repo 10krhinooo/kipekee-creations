@@ -12,23 +12,28 @@ import {
   Td,
   Th,
 } from '../components/AdminUI'
-import {
-  quoteStatusLabel,
-  quoteTotal,
-  quotes,
-  type QuoteStatus,
-} from '../data/operations'
+import { quoteStatusLabel, type QuoteStatus } from '../data/operations'
+import { useQuotes } from '../data/api'
 
 type Filter = 'all' | 'action' | QuoteStatus
 
+/**
+ * How long a job has been waiting.
+ *
+ * Measured from now rather than from a date written into the file. The
+ * prototype froze "now" at an afternoon in August 2026, which made every quote
+ * look the same age forever and made the age column decorative.
+ */
 const since = (iso: string) => {
-  const hours = Math.round((new Date('2026-08-16T13:00:00').getTime() - new Date(iso).getTime()) / 3.6e6)
-  if (hours < 24) return `${hours}h`
+  const hours = Math.round((Date.now() - new Date(iso).getTime()) / 3.6e6)
+  if (hours < 24) return `${Math.max(0, hours)}h`
   return `${Math.round(hours / 24)}d`
 }
 
 export function Quotes() {
   const [filter, setFilter] = useState<Filter>('action')
+  const { data, loading, error } = useQuotes()
+  const quotes = data ?? []
 
   // "Needs action" is the default view because it is the only one that maps to
   // the promise made on the storefront: a written quote within one working day.
@@ -71,6 +76,9 @@ export function Quotes() {
         }
       />
 
+      {loading && <p className="mb-5 text-sm text-muted">Loading quotes…</p>}
+      {error && <p className="mb-5 text-sm text-brand">{error}</p>}
+
       <div className="mb-5">
         <Segmented options={options} value={filter} onChange={setFilter} />
       </div>
@@ -93,7 +101,9 @@ export function Quotes() {
             </thead>
             <tbody>
               {shown.map((q) => {
-                const total = quoteTotal(q)
+                // Computed by the server, so the figure on screen is the one the
+                // customer was quoted rather than the browser's arithmetic.
+                const total = q.total
                 return (
                   <tr key={q.id} className="hover:bg-shell">
                     <Td>
@@ -110,12 +120,10 @@ export function Quotes() {
                       <span className="block text-[12px] text-muted">{q.area}</span>
                     </Td>
                     <Td>
-                      <span className="block text-[13px]">{q.items[0].product}</span>
+                      <span className="block text-[13px]">{q.firstProduct ?? 'No lines yet'}</span>
                       <span className="block text-[12px] text-muted">
-                        {q.items.length > 1
-                          ? `+${q.items.length - 1} more, `
-                          : ''}
-                        {q.items.reduce((n, i) => n + i.windows, 0)} windows
+                        {q.lineCount > 1 ? `+${q.lineCount - 1} more, ` : ''}
+                        {q.windows} windows
                       </span>
                     </Td>
                     <Td>

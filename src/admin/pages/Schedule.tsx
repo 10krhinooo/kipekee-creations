@@ -1,31 +1,61 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, cx } from '../../components/ui'
 import { Card, CardHeader, PageHeader } from '../components/AdminUI'
-import { fittings } from '../data/operations'
+import { useSchedule } from '../data/api'
 
 /**
  * The fitters' week. Measure visits and fittings are the physical half of the
  * business, and the storefront promises a measure within 48 hours, so this
  * board is what makes that promise keepable.
  */
-const DAYS = [
-  { date: '2026-08-18', label: 'Mon 18' },
-  { date: '2026-08-19', label: 'Tue 19' },
-  { date: '2026-08-20', label: 'Wed 20' },
-  { date: '2026-08-21', label: 'Thu 21' },
-  { date: '2026-08-22', label: 'Fri 22' },
-  { date: '2026-08-23', label: 'Sat 23' },
-]
+/**
+ * The six working days from this Monday.
+ *
+ * These used to be six hardcoded dates in August 2026, which was fine for a
+ * prototype and means an empty board on any other week. The week is worked out
+ * from today now, and the same range is what the schedule endpoint is asked
+ * for, so the board and the query cannot disagree about which week it is.
+ */
+const startOfWeek = () => {
+  const today = new Date()
+  const monday = new Date(today)
+  // getDay() is 0 on Sunday, which belongs to the week just gone.
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+  return monday
+}
+
+const isoDate = (date: Date) => date.toISOString().slice(0, 10)
+
+const weekDays = () =>
+  Array.from({ length: 6 }, (_, i) => {
+    const date = new Date(startOfWeek())
+    date.setDate(date.getDate() + i)
+    return {
+      date: isoDate(date),
+      label: date.toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric' }),
+    }
+  })
 
 export function Schedule() {
+  const DAYS = useMemo(weekDays, [])
+  const { data, loading, error } = useSchedule(DAYS[0].date, DAYS.length)
+  const fittings = useMemo(() => data ?? [], [data])
+
   const measures = fittings.filter((f) => f.kind === 'measure').length
   const fits = fittings.filter((f) => f.kind === 'fitting').length
+
+  // The fitters are whoever is actually on the board this week, rather than the
+  // two names the prototype had written into it.
+  const fitters = [...new Set(fittings.map((f) => f.fitter).filter(Boolean))] as string[]
 
   return (
     <>
       <PageHeader
         title="Schedule"
-        intro={`${measures} measures and ${fits} fittings booked this week across two fitters.`}
+        intro={`${measures} measures and ${fits} fittings booked this week across ${fitters.length} ${
+          fitters.length === 1 ? 'fitter' : 'fitters'
+        }.`}
         action={
           <Button size="sm">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -46,6 +76,9 @@ export function Schedule() {
           Fitting
         </span>
       </div>
+
+      {loading && <p className="mb-5 text-sm text-muted">Loading the week…</p>}
+      {error && <p className="mb-5 text-sm text-brand">{error}</p>}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {DAYS.map((day) => {
@@ -106,7 +139,7 @@ export function Schedule() {
         <Card>
           <CardHeader title="Fitter load" hint="Visits booked this week" />
           <ul className="space-y-3">
-            {['Peter K.', 'John M.'].map((fitter) => {
+            {fitters.map((fitter) => {
               const count = fittings.filter((f) => f.fitter === fitter).length
               const windows = fittings
                 .filter((f) => f.fitter === fitter)
@@ -122,7 +155,7 @@ export function Schedule() {
                   <div className="h-1.5 overflow-hidden rounded-full bg-shell">
                     <div
                       className="h-full rounded-full bg-brand"
-                      style={{ width: `${(count / fittings.length) * 100}%` }}
+                      style={{ width: `${fittings.length ? (count / fittings.length) * 100 : 0}%` }}
                     />
                   </div>
                 </li>
@@ -136,7 +169,11 @@ export function Schedule() {
           <ul className="space-y-2 text-[13px]">
             {Object.entries(
               fittings.reduce<Record<string, number>>((acc, f) => {
-                acc[f.area] = (acc[f.area] ?? 0) + 1
+                // Area is optional on a visit booked off a phone call, and
+                // "not recorded" is worth showing rather than dropping: it is
+                // the row somebody needs to go and fill in.
+                const area = f.area ?? 'Area not recorded'
+                acc[area] = (acc[area] ?? 0) + 1
                 return acc
               }, {}),
             )
