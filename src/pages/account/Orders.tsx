@@ -32,12 +32,50 @@ const STATUS_TONE: Record<OrderSummary['status'], 'neutral' | 'brand' | 'stock'>
   cancelled: 'neutral',
 }
 
+interface QuoteSummary {
+  id: string
+  status: string
+  requestedAt: string
+  sentAt: string | null
+  validUntil: string | null
+  firstProduct: string | null
+  lineCount: number
+  windows: number
+  total: number
+  priced: boolean
+  approvedAt: string | null
+}
+
+/** The eight stages, in the customer's words rather than the workshop's. */
+const QUOTE_LABEL: Record<string, string> = {
+  new: 'With us',
+  measure_booked: 'Measure booked',
+  measured: 'Measured',
+  sent: 'Ready for you',
+  approved: 'Approved',
+  in_production: 'In the workshop',
+  fitted: 'Fitted',
+  lost: 'Closed',
+}
+
+const QUOTE_TONE: Record<string, 'neutral' | 'brand' | 'stock'> = {
+  new: 'neutral',
+  measure_booked: 'neutral',
+  measured: 'neutral',
+  sent: 'brand',
+  approved: 'stock',
+  in_production: 'brand',
+  fitted: 'stock',
+  lost: 'neutral',
+}
+
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** Order and quote history. */
 export function AccountOrders() {
   const [orders, setOrders] = useState<OrderSummary[] | null>(null)
+  const [quotes, setQuotes] = useState<QuoteSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -47,6 +85,9 @@ export function AccountOrders() {
         setOrders([])
         setError(result.message)
       }
+    })
+    api.get<QuoteSummary[]>('/api/account/quotes').then((result) => {
+      setQuotes(result.ok ? result.data : [])
     })
   }, [])
 
@@ -93,14 +134,51 @@ export function AccountOrders() {
       </AccountPanel>
 
       <AccountPanel title="Quotes" intro="Made-to-measure jobs, with the measurements we took.">
-        <EmptyNote>
-          No quotes yet. When you request one while signed in, it stays here with its measurements
-          and its fixed price, so a repeat job starts from the last one.
-          <br />
-          <Button to="/quote" size="sm" className="mt-4">
-            Request a quote
-          </Button>
-        </EmptyNote>
+        {quotes === null ? (
+          <EmptyNote>Loading your quotes…</EmptyNote>
+        ) : quotes.length === 0 ? (
+          <EmptyNote>
+            No quotes yet. When you request one while signed in, it stays here with its measurements
+            and its fixed price, so a repeat job starts from the last one.
+            <br />
+            <Button to="/quote" size="sm" className="mt-4">
+              Request a quote
+            </Button>
+          </EmptyNote>
+        ) : (
+          <ul className="space-y-3">
+            {quotes.map((quote) => (
+              <li
+                key={quote.id}
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-line p-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[14px] font-semibold text-ink">{quote.id}</p>
+                  <p className="text-[12.5px] text-muted">
+                    {dateFmt(quote.requestedAt)} · {quote.firstProduct ?? 'Made to measure'}
+                    {quote.lineCount > 1 ? ` and ${quote.lineCount - 1} more` : ''}
+                  </p>
+                </div>
+                <Badge tone={QUOTE_TONE[quote.status] ?? 'neutral'}>
+                  {QUOTE_LABEL[quote.status] ?? quote.status}
+                </Badge>
+                {quote.priced && (
+                  <span className="text-[14px] font-semibold text-ink">{money(quote.total)}</span>
+                )}
+                {/*
+                  Only a sent quote has a link worth following: the page behind
+                  it reads the approval token, and a job still being priced has
+                  no token and nothing to show.
+                */}
+                {quote.status === 'sent' && (
+                  <Button size="sm" variant="outline" to={`/quote/${quote.id}`}>
+                    View
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </AccountPanel>
     </>
   )

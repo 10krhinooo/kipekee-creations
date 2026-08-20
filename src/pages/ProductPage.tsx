@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { priceOf, rooms } from '../data/catalogue'
 import { useCatalogue } from '../store/catalogue'
-import type { Room } from '../data/types'
+import type { Product, Room } from '../data/types'
 import { swatch } from '../lib/swatch'
-import { mediaUrl } from '../lib/api'
-import { leadTime, money } from '../lib/format'
+import { mediaUrl, post } from '../lib/api'
+import { useAuth } from '../auth/AuthProvider'
+import { leadTime, money, plural } from '../lib/format'
 import { useBasket } from '../store/basket'
 import { useSaved } from '../store/saved'
 import { ProductCard } from '../components/ProductCard'
@@ -26,6 +27,7 @@ import {
   Button,
   Container,
   SectionHeading,
+  StarRatingInput,
   Stars,
   WhatsAppIcon,
   cx,
@@ -34,6 +36,9 @@ import {
 import { quoteWhatsAppLink } from '../lib/whatsapp'
 
 type Tab = 'overview' | 'specs' | 'care' | 'delivery' | 'reviews'
+
+/** Long enough to say something, short enough not to be a wall to clear. */
+const MIN_REVIEW_LENGTH = 20
 
 /**
  * Keyed on the slug so every product gets a clean slate. Navigating between
@@ -749,35 +754,50 @@ function ProductDetail({ slug }: { slug: string }) {
                 <div className="text-center">
                   <p className="font-display text-4xl font-bold text-ink">{product.rating}</p>
                   <Stars rating={product.rating} />
-                  <p className="mt-1 text-[12px] text-muted">{product.reviewCount} reviews</p>
+                  <p className="mt-1 text-[12px] text-muted">
+                    {plural(product.reviewCount, 'rating')}
+                  </p>
                 </div>
-                <div className="min-w-48 flex-1 space-y-1.5">
-                  {[5, 4, 3, 2, 1].map((star) => {
-                    const share =
-                      star === 5 ? 78 : star === 4 ? 16 : star === 3 ? 4 : star === 2 ? 1 : 1
-                    return (
-                      <div key={star} className="flex items-center gap-2 text-[12px]">
-                        <span className="w-3 text-muted">{star}</span>
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
-                          <div className="h-full bg-[#e0a422]" style={{ width: `${share}%` }} />
+                {product.reviews.length > 0 && (
+                  <div className="min-w-48 flex-1 space-y-1.5">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const count = product.reviews.filter((r) => r.rating === star).length
+                      const share = Math.round((count / product.reviews.length) * 100)
+                      return (
+                        <div key={star} className="flex items-center gap-2 text-[12px]">
+                          <span className="w-3 text-muted">{star}</span>
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+                            <div className="h-full bg-[#e0a422]" style={{ width: `${share}%` }} />
+                          </div>
+                          <span className="w-8 text-right text-muted">{share}%</span>
                         </div>
-                        <span className="w-8 text-right text-muted">{share}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                    {/*
+                      The bars are over the reviews written here, not over
+                      `reviewCount`. That figure is the shop's aggregate over
+                      every rating a product has earned, and only a subset of
+                      those came with words attached, so drawing a breakdown
+                      against it would be inventing the difference.
+                    */}
+                    <p className="pt-1 text-[11px] text-muted">
+                      Across the {plural(product.reviews.length, 'review')} written below.
+                    </p>
+                  </div>
+                )}
               </div>
+
+              <ReviewForm product={product} />
 
               <ul className="divide-y divide-line">
                 {product.reviews.map((rev) => (
-                  <li key={rev.author + rev.date} className="py-5">
+                  <li key={rev.id ?? rev.author + rev.date} className="py-5">
                     <div className="mb-2 flex flex-wrap items-center gap-3">
                       <Stars rating={rev.rating} />
                       <span className="text-sm font-semibold">{rev.author}</span>
                       <span className="text-[12px] text-muted">
-                        {rev.location} · {rev.date}
+                        {[rev.location, rev.date].filter(Boolean).join(' · ')}
                       </span>
-                      <Badge tone="stock">Verified purchase</Badge>
                     </div>
                     <p className="text-[15px] leading-relaxed text-ink-soft">{rev.body}</p>
                   </li>
@@ -835,5 +855,137 @@ function Tick() {
     >
       <path d="M4 12l5 5L20 6" />
     </svg>
+  )
+}
+
+/**
+ * Leaving a review, for somebody signed in.
+ *
+ * Gated on a session because the endpoint is, and because a review is signed
+ * with the account's name: the payload carries no author field precisely so
+ * nobody can sign as somebody else. Signed-out visitors get the reason and a
+ * way in rather than a form that fails on submit.
+ */
+function ReviewForm({ product }: { product: Product }) {
+  const { user } = useAuth()
+  const { reload } = useCatalogue()
+  const { pathname } = useLocation()
+
+  const [rating, setRating] = useState(0)
+  const [body, setBody] = useState('')
+  const [location, setLocation] = useState('')
+  const [touched, setTouched] = useState({ rating: false, body: false })
+  const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+
+  const ratingError = touched.rating && rating === 0 ? 'Pick a rating' : undefined
+  const bodyError =
+    touched.body && body.trim().length < MIN_REVIEW_LENGTH
+      ? body.trim()
+        ? `Tell us a little more, at least ${MIN_REVIEW_LENGTH} characters`
+        : 'Say something about it'
+      : undefined
+  const canSend = rating > 0 && body.trim().length >= MIN_REVIEW_LENGTH
+
+  const send = async () => {
+    setTouched({ rating: true, body: true })
+    if (!canSend || sending) return
+
+    setSendError(null)
+    setSending(true)
+    const result = await post(
+      `/api/catalogue/products/${encodeURIComponent(product.slug)}/reviews`,
+      { rating, body: body.trim(), location: location.trim() || null },
+    )
+    setSending(false)
+
+    if (result.ok) {
+      setSent(true)
+      // The score and the list both live on the product, so the catalogue is
+      // refetched rather than the new review being pushed in locally, which
+      // would show a figure the server has not agreed to.
+      reload()
+    } else {
+      setSendError(result.message)
+    }
+  }
+
+  if (!user) {
+    return (
+      <div className="mb-8 rounded-2xl border border-line px-5 py-4 text-[13.5px] text-muted">
+        <Link to="/login" state={{ from: pathname }} className="text-brand underline underline-offset-2">
+          Sign in
+        </Link>{' '}
+        to leave a review. Reviews are signed with your account name, so we know they come from a
+        real customer.
+      </div>
+    )
+  }
+
+  if (sent) {
+    return (
+      <div className="mb-8 rounded-2xl bg-[#e8f5ec] px-5 py-4 text-center">
+        <p className="font-display text-[15px] font-semibold text-[#1a6b39]">Thank you</p>
+        <p className="mt-1 text-[13px] leading-relaxed text-ink-soft">
+          Your review is on the page now.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-8 rounded-2xl border border-line p-5">
+      <h3 className="mb-4 font-display text-[15px] font-semibold text-ink">
+        Reviewing as {user.name}
+      </h3>
+
+      <div className="mb-3">
+        <StarRatingInput value={rating} onChange={setRating} name={`rating-${product.slug}`} />
+        {ratingError && <p className="mt-1 text-[12px] text-red-600">{ratingError}</p>}
+      </div>
+
+      <label className="mb-3 block">
+        <span className="mb-1.5 block text-[13px] font-medium">Your review</span>
+        <textarea
+          rows={4}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onBlur={() => touch('body')}
+          aria-invalid={!!bodyError}
+          placeholder="How does it hang, how has it washed, would you buy it again?"
+          className={cx(
+            'w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-brand',
+            bodyError ? 'border-red-400' : 'border-line',
+          )}
+        />
+        {bodyError && <span className="mt-1 block text-[12px] text-red-600">{bodyError}</span>}
+      </label>
+
+      <label className="mb-4 block">
+        <span className="mb-1.5 block text-[13px] font-medium">
+          Where you are <span className="font-normal text-muted">(optional)</span>
+        </span>
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Karen"
+          className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-brand"
+        />
+      </label>
+
+      <Button size="sm" disabled={sending} onClick={send}>
+        {sending ? 'Posting…' : 'Post review'}
+      </Button>
+      {sendError && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-[12.5px] leading-relaxed text-brand-700"
+        >
+          {sendError}
+        </p>
+      )}
+    </div>
   )
 }

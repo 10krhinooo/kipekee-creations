@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { useAuth } from '../auth/AuthProvider'
 import { money } from '../lib/format'
 import { Badge, Button, Container, SectionHeading, WHATSAPP, whatsappLink } from '../components/ui'
 
@@ -50,34 +51,48 @@ export function QuoteApproval() {
   const { reference = '' } = useParams()
   const [params] = useSearchParams()
   const token = params.get('token') ?? ''
+  const { user } = useAuth()
 
   const [quote, setQuote] = useState<CustomerQuoteView | null>(null)
   const [checked, setChecked] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const [approving, setApproving] = useState(false)
 
+  /**
+   * Two ways to arrive here, and the difference is only what proves identity.
+   *
+   * From the emailed link, the token in the query string is the credential and
+   * there is no session. From the account area there is no token, and the
+   * session is. The backend has an endpoint for each, returning the same
+   * projection, so the page is the same either way.
+   */
   const load = useCallback(() => {
-    if (!reference || !token) {
+    if (!reference) {
+      setChecked(true)
+      setProblem('That link is missing something. Check it was copied in full from the email.')
+      return
+    }
+    if (!token && !user) {
       setChecked(true)
       setProblem('That link is missing something. Check it was copied in full from the email.')
       return
     }
     setChecked(false)
-    api
-      .get<CustomerQuoteView>(
-        `/api/quote/${encodeURIComponent(reference)}?token=${encodeURIComponent(token)}`,
-      )
-      .then((result) => {
-        if (result.ok) {
-          setQuote(result.data)
-          setProblem(null)
-        } else {
-          setQuote(null)
-          setProblem(result.message)
-        }
-        setChecked(true)
-      })
-  }, [reference, token])
+    const path = token
+      ? `/api/quote/${encodeURIComponent(reference)}?token=${encodeURIComponent(token)}`
+      : `/api/account/quotes/${encodeURIComponent(reference)}`
+
+    api.get<CustomerQuoteView>(path).then((result) => {
+      if (result.ok) {
+        setQuote(result.data)
+        setProblem(null)
+      } else {
+        setQuote(null)
+        setProblem(result.message)
+      }
+      setChecked(true)
+    })
+  }, [reference, token, user])
 
   useEffect(() => {
     load()
@@ -112,7 +127,10 @@ export function QuoteApproval() {
   }
 
   const approved = quote.approvedAt !== null
-  const canApprove = quote.status === 'sent' && !approved
+  // Approving needs the token: that link is the customer's signature on the
+  // figures, and the backend has no session-based approve. Read from the
+  // account instead, the quote shows but the button does not.
+  const canApprove = quote.status === 'sent' && !approved && Boolean(token)
 
   return (
     <Container className="max-w-2xl py-10 sm:py-14">
@@ -197,6 +215,11 @@ export function QuoteApproval() {
           <Button size="lg" onClick={approve} disabled={approving}>
             {approving ? 'Approving…' : 'Approve this quote'}
           </Button>
+        )}
+        {quote.status === 'sent' && !approved && !token && (
+          <p className="text-[14px] text-muted">
+            To approve this quote, open the link in the email we sent you.
+          </p>
         )}
         {approved && (
           <p className="text-[14px] text-muted">

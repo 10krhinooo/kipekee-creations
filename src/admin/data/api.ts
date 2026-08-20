@@ -273,3 +273,26 @@ export const updatePhotoDetails = (
 export const deletePhoto = (slug: string, id: number) =>
   api.del<void>(`/api/admin/products/${encodeURIComponent(slug)}/photos/${id}`)
 
+// Reviews ------------------------------------------------------------------
+
+export interface ReviewRow {
+  id: number
+  productSlug: string
+  productName: string
+  author: string
+  authorEmail: string | null
+  location: string | null
+  rating: number
+  body: string
+  createdAt: string
+  isPublished: boolean
+}
+
+/** The queue, hidden reviews included, which is what makes a hide reversible. */
+export const useReviews = () => useResource<ReviewRow[]>('/api/admin/products/reviews')
+
+export const setReviewPublished = (slug: string, id: number, isPublished: boolean) =>
+  api.put<ReviewRow>(
+    `/api/admin/products/${encodeURIComponent(slug)}/reviews/${id}/published`,
+    { isPublished },
+  )
