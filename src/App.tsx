@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { BasketProvider } from './store/basket'
 import { CatalogueProvider } from './store/catalogue'
-import { PhotoProvider } from './store/photos'
 import { SavedProvider } from './store/saved'
 import { TierProvider, useRenderTier } from './components/preview/TierProvider'
 
@@ -50,6 +49,7 @@ import { Quotes } from './admin/pages/Quotes'
 import { QuoteBuilder } from './admin/pages/QuoteBuilder'
 import { Orders, OrderDetail } from './admin/pages/Orders'
 import { Products } from './admin/pages/Products'
+import { ProductEditor } from './admin/pages/ProductEditor'
 import { Schedule } from './admin/pages/Schedule'
 import { Customers } from './admin/pages/Customers'
 import { ProductPhotos } from './admin/pages/ProductPhotos'
@@ -127,10 +127,7 @@ export default function App() {
           admin will preview materials in the same one, so the tier is a
           property of the session rather than of either app. */}
       <TierProvider>
-       {/* Photos are written by the admin and read by the storefront, so the
-           store cannot live inside either shell. */}
-       <PhotoProvider>
-        <SavedProvider>
+       <SavedProvider>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
@@ -209,6 +206,8 @@ export default function App() {
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="products" element={<Products />} />
+            <Route path="products/new" element={<ProductEditor />} />
+            <Route path="products/:slug/edit" element={<ProductEditor />} />
             <Route path="products/:slug/photos" element={<ProductPhotos />} />
             <Route path="schedule" element={<Schedule />} />
             <Route path="customers" element={<Customers />} />
@@ -227,8 +226,7 @@ export default function App() {
             </>
           )}
         </PageCurtain>
-        </SavedProvider>
-       </PhotoProvider>
+       </SavedProvider>
       </TierProvider>
     </BasketProvider>
     </CatalogueProvider>

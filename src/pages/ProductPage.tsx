@@ -4,9 +4,9 @@ import { priceOf, rooms } from '../data/catalogue'
 import { useCatalogue } from '../store/catalogue'
 import type { Room } from '../data/types'
 import { swatch } from '../lib/swatch'
+import { mediaUrl } from '../lib/api'
 import { leadTime, money } from '../lib/format'
 import { useBasket } from '../store/basket'
-import { usePhotos } from '../store/photos'
 import { useSaved } from '../store/saved'
 import { ProductCard } from '../components/ProductCard'
 import { PhotoGrid } from '../components/PhotoGrid'
@@ -50,7 +50,6 @@ function ProductDetail({ slug }: { slug: string }) {
   const { bySlug, products, categoryBySlug } = useCatalogue()
   const product = bySlug(slug)
   const { addToCart, addToQuote } = useBasket()
-  const { photosFor } = usePhotos()
   const { recordView } = useSaved()
 
   const [colour, setColour] = useState(product?.colours[0].id ?? '')
@@ -192,7 +191,7 @@ function ProductDetail({ slug }: { slug: string }) {
    * proves the colour and the drape; only a photograph proves the stitching, so
    * where photos exist they earn their own tab.
    */
-  const photos = photosFor(product)
+  const photos = (product.photos ?? []).map((p) => ({ ...p, src: mediaUrl(p.src) }))
 
   /** The swatches as lightbox items, so the fabric view zooms too. */
   const fabricItems = gallery.map((src, i) => ({

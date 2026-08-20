@@ -1,35 +1,107 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useCatalogue } from '../../store/catalogue'
-import { MAX_UPLOAD_BYTES } from '../../lib/image'
-import { usePhotos } from '../../store/photos'
+import { mediaUrl } from '../../lib/api'
+import { MAX_UPLOAD_BYTES, decodeAndResize, isWide, measure, rejectionMessage, rejectionOf } from '../../lib/image'
 import { Button, cx } from '../../components/ui'
 import { Card, EmptyState, PageHeader } from '../components/AdminUI'
+import {
+  deletePhoto,
+  updatePhotoDetails,
+  uploadPhoto,
+  useAdminPhotos,
+  type AdminPhoto,
+} from '../data/api'
 
 /**
- * Photo management for one product.
+ * Photo management for one product, backed by the admin's upload endpoint.
  *
- * The product is resolved from the catalogue rather than from the admin's own
- * `stock` array: `StockRow` carries no colourways, and assigning a photo to a
- * colourway is the whole reason a shopper's colour choice can surface the right
- * pictures first.
- *
- * Catalogue photography appears here too, marked and read-only, so staff can
- * see the complete set they are adding to instead of a list that looks empty
- * when the storefront is not.
+ * Each file is still resized and re-encoded in the browser first, for the
+ * same reason it always was: it strips the location data phone cameras embed
+ * and cuts the upload to a tenth of the size. The backend re-checks the type
+ * and the size on arrival regardless, since a limit enforced only in this
+ * page is a limit anybody can skip by not using the page.
  */
 export function ProductPhotos() {
   const { bySlug } = useCatalogue()
   const { slug = '' } = useParams()
   const product = bySlug(slug)
-  const { ready, uploadsFor, addPhotos, updatePhoto, removePhoto, reorder } = usePhotos()
+  const { data, loading, reload } = useAdminPhotos(slug)
+  const photos = data ?? []
 
   const [errors, setErrors] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  /** The photo currently being dragged, for reordering. */
-  const dragging = useRef<string | null>(null)
+  const dragging = useRef<number | null>(null)
+  /**
+   * Edits applied on screen immediately; `reload()` after each save replaces
+   * this with what the server actually stored, so a rejected change does not
+   * silently stay on screen.
+   */
+  const [pending, setPending] = useState<Record<number, Partial<AdminPhoto>>>({})
+
+  useEffect(() => setPending({}), [data])
+
+  const view = photos.map((p) => ({ ...p, ...pending[p.id] }))
+
+  const accept = useCallback(
+    async (files: FileList | File[] | null) => {
+      if (!files || !slug || busy) return
+      setBusy(true)
+      const errs: string[] = []
+
+      for (const file of Array.from(files)) {
+        const rejection = rejectionOf(file)
+        if (rejection) {
+          errs.push(rejectionMessage(rejection, file.name))
+          continue
+        }
+        try {
+          const blob = await decodeAndResize(file)
+          const result = await uploadPhoto(slug, blob, file.name.replace(/\.[^.]+$/, '') + '.jpg')
+          if (!result.ok) {
+            errs.push(result.message)
+            continue
+          }
+          const { width, height } = await measure(blob)
+          if (width > 0 && isWide(width, height)) {
+            await updatePhotoDetails(slug, result.data.id, { wide: true })
+          }
+        } catch {
+          errs.push(rejectionMessage('decode', file.name))
+        }
+      }
+
+      setErrors(errs)
+      setBusy(false)
+      reload()
+      if (inputRef.current) inputRef.current.value = ''
+    },
+    [slug, busy, reload],
+  )
+
+  const patch = (id: number, details: Partial<Pick<AdminPhoto, 'alt' | 'colourId' | 'caption' | 'wide'>>) => {
+    setPending((prev) => ({ ...prev, [id]: { ...prev[id], ...details } }))
+    void updatePhotoDetails(slug, id, details)
+  }
+
+  const remove = async (id: number) => {
+    if (!confirm('Delete this photo? It cannot be recovered.')) return
+    const result = await deletePhoto(slug, id)
+    if (result.ok) reload()
+  }
+
+  const drop = (targetId: number) => {
+    const from = dragging.current
+    dragging.current = null
+    if (from === null || from === targetId) return
+    const ids = view.map((p) => p.id)
+    const next = ids.filter((id) => id !== from)
+    next.splice(ids.indexOf(targetId), 0, from)
+    next.forEach((id, sortOrder) => void updatePhotoDetails(slug, id, { sortOrder }))
+    reload()
+  }
 
   if (!product) {
     return (
@@ -40,33 +112,13 @@ export function ProductPhotos() {
     )
   }
 
-  const uploads = uploadsFor(product.slug)
-  const catalogue = product.photos ?? []
-  const incomplete = uploads.filter((u) => !u.alt.trim()).length
-
-  const accept = async (files: FileList | File[] | null) => {
-    if (!files || busy) return
-    setBusy(true)
-    setErrors(await addPhotos(product.slug, files))
-    setBusy(false)
-    if (inputRef.current) inputRef.current.value = ''
-  }
-
-  const drop = (targetId: string) => {
-    const from = dragging.current
-    dragging.current = null
-    if (!from || from === targetId) return
-    const ids = uploads.map((u) => u.id)
-    const next = ids.filter((id) => id !== from)
-    next.splice(ids.indexOf(targetId), 0, from)
-    reorder(product.slug, next)
-  }
+  const incomplete = view.filter((p) => !p.alt.trim()).length
 
   return (
     <>
       <PageHeader
         title={`Photos: ${product.name}`}
-        intro="Photographs shown on the product page alongside the room view and the fabric swatch. Stored in this browser."
+        intro="Photographs shown on the product page alongside the room view and the fabric swatch."
         action={
           <Button size="sm" variant="outline" to="/admin/products">
             Back to products
@@ -91,7 +143,7 @@ export function ProductPhotos() {
         )}
       >
         <p className="font-display text-[15px] font-semibold text-ink">
-          {busy ? 'Processing…' : 'Drop photographs here'}
+          {busy ? 'Uploading…' : 'Drop photographs here'}
         </p>
         <p className="mx-auto mt-1.5 mb-4 max-w-md text-[13px] text-muted">
           JPEG, PNG or WebP, up to {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB each. Each one is
@@ -128,49 +180,31 @@ export function ProductPhotos() {
         </p>
       )}
 
-      {catalogue.length > 0 && (
-        <Card className="mb-5">
-          <h2 className="mb-3 text-[13px] font-semibold tracking-wide text-muted uppercase">
-            From the catalogue
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {catalogue.map((p) => (
-              <figure key={p.src} className="overflow-hidden rounded-xl border border-line">
-                <img src={p.src} alt={p.alt} className="aspect-square w-full object-cover" />
-                <figcaption className="px-2 py-1.5 text-[11px] text-muted">
-                  Committed to the catalogue
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {!ready ? (
+      {loading ? (
         <p className="py-12 text-center text-sm text-muted">Loading photos…</p>
-      ) : uploads.length === 0 ? (
+      ) : view.length === 0 ? (
         <EmptyState
-          title="No uploaded photos"
-          body="Add photographs above and they appear on the product page immediately, without a rebuild."
+          title="No photos yet"
+          body="Add photographs above and they appear on the product page as soon as the upload finishes."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {uploads.map((u) => (
+          {view.map((p) => (
             <Card
-              key={u.id}
-              className={cx('cursor-move', !u.alt.trim() && 'ring-1 ring-brand-200')}
+              key={p.id}
+              className={cx('cursor-move', !p.alt.trim() && 'ring-1 ring-brand-200')}
             >
               <div
                 draggable
                 onDragStart={() => {
-                  dragging.current = u.id
+                  dragging.current = p.id
                 }}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={() => drop(u.id)}
+                onDrop={() => drop(p.id)}
               >
                 <img
-                  src={u.url}
-                  alt={u.alt || 'Uploaded photo awaiting a description'}
+                  src={mediaUrl(p.src)}
+                  alt={p.alt || 'Uploaded photo awaiting a description'}
                   className="mb-3 aspect-4/3 w-full rounded-xl object-cover"
                 />
               </div>
@@ -178,11 +212,11 @@ export function ProductPhotos() {
               <label className="mb-2 block">
                 <span className="mb-1 block text-[12px] font-medium text-ink">
                   Description
-                  {!u.alt.trim() && <span className="ml-1 font-normal text-brand">required</span>}
+                  {!p.alt.trim() && <span className="ml-1 font-normal text-brand">required</span>}
                 </span>
                 <input
-                  value={u.alt}
-                  onChange={(e) => updatePhoto(u.id, { alt: e.target.value })}
+                  value={p.alt}
+                  onChange={(e) => patch(p.id, { alt: e.target.value })}
                   placeholder="Kitenge curtains hung in a living room"
                   className="w-full rounded-lg border border-line px-3 py-2 text-[13px] outline-none focus:border-brand"
                 />
@@ -191,8 +225,8 @@ export function ProductPhotos() {
               <label className="mb-2 block">
                 <span className="mb-1 block text-[12px] font-medium text-ink">Caption</span>
                 <input
-                  value={u.caption ?? ''}
-                  onChange={(e) => updatePhoto(u.id, { caption: e.target.value })}
+                  value={p.caption ?? ''}
+                  onChange={(e) => patch(p.id, { caption: e.target.value })}
                   placeholder="Optional, shown under the enlarged photo"
                   className="w-full rounded-lg border border-line px-3 py-2 text-[13px] outline-none focus:border-brand"
                 />
@@ -201,8 +235,8 @@ export function ProductPhotos() {
               <label className="mb-3 block">
                 <span className="mb-1 block text-[12px] font-medium text-ink">Colourway</span>
                 <select
-                  value={u.colourId ?? ''}
-                  onChange={(e) => updatePhoto(u.id, { colourId: e.target.value || undefined })}
+                  value={p.colourId ?? ''}
+                  onChange={(e) => patch(p.id, { colourId: e.target.value || null })}
                   className="w-full rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none focus:border-brand"
                 >
                   <option value="">Any colour</option>
@@ -218,17 +252,12 @@ export function ProductPhotos() {
                 <label className="flex items-center gap-2 text-[12px] text-ink-soft">
                   <input
                     type="checkbox"
-                    checked={Boolean(u.wide)}
-                    onChange={(e) => updatePhoto(u.id, { wide: e.target.checked })}
+                    checked={Boolean(p.wide)}
+                    onChange={(e) => patch(p.id, { wide: e.target.checked })}
                   />
                   Wide cell
                 </label>
-                <button
-                  onClick={() => {
-                    if (confirm('Delete this photo? It cannot be recovered.')) removePhoto(u.id)
-                  }}
-                  className="text-[12px] text-brand hover:underline"
-                >
+                <button onClick={() => remove(p.id)} className="text-[12px] text-brand hover:underline">
                   Delete
                 </button>
               </div>
@@ -238,11 +267,11 @@ export function ProductPhotos() {
       )}
 
       <p className="mt-6 text-[12px] text-muted">
-        Photos are held in this browser only. Seen on{' '}
+        Seen immediately on{' '}
         <Link to={`/product/${product.slug}`} className="text-brand hover:underline">
           the product page
-        </Link>{' '}
-        on this device.
+        </Link>
+        , for every visitor.
       </p>
     </>
   )

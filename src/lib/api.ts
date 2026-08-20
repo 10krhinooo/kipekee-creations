@@ -43,18 +43,10 @@ export const setAuthToken = (token: string | null) => {
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
-async function request<T>(method: Method, path: string, body?: unknown): Promise<ApiResult<T>> {
-  const headers: Record<string, string> = {}
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
-  if (authToken) headers.Authorization = `Bearer ${authToken}`
-
+async function toResult<T>(fetchIt: () => Promise<Response>): Promise<ApiResult<T>> {
   let res: Response
   try {
-    res = await fetch(BASE + path, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
+    res = await fetchIt()
   } catch {
     return {
       ok: false,
@@ -84,16 +76,59 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   return { ok: false, message: GENERIC, status: res.status }
 }
 
+function request<T>(method: Method, path: string, body?: unknown): Promise<ApiResult<T>> {
+  return toResult<T>(() => {
+    const headers: Record<string, string> = {}
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    if (authToken) headers.Authorization = `Bearer ${authToken}`
+    return fetch(BASE + path, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  })
+}
+
+/**
+ * A single file, as `multipart/form-data`.
+ *
+ * No `Content-Type` header here on purpose: the browser sets it, boundary
+ * included, only when it builds the body itself from a `FormData`. Setting it
+ * by hand is how a multipart request ends up without a boundary and the
+ * backend cannot parse it.
+ */
+function upload<T>(path: string, field: string, file: Blob, filename: string): Promise<ApiResult<T>> {
+  return toResult<T>(() => {
+    const headers: Record<string, string> = {}
+    if (authToken) headers.Authorization = `Bearer ${authToken}`
+    const form = new FormData()
+    form.append(field, file, filename)
+    return fetch(BASE + path, { method: 'POST', headers, body: form })
+  })
+}
+
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   del: <T>(path: string) => request<T>('DELETE', path),
+  upload,
 }
 
 /** Kept as a named export because the storefront forms read better with it. */
 export const post = api.post
+
+/**
+ * A `src` the backend handed back, resolved against wherever the backend is.
+ *
+ * Every other path in this app is relative and goes through the dev proxy or
+ * a same-origin deploy, but `/api/media/...` is served by the backend
+ * specifically, so it needs the same origin prefix a fetch does. A bare
+ * `/api/media/...` in an `<img>` would resolve against the frontend's own
+ * origin instead and 404 wherever the two are on different hosts.
+ */
+export const mediaUrl = (src: string) => (src.startsWith('/api/') ? BASE + src : src)
 
 function safeParse(text: string): unknown {
   try {
