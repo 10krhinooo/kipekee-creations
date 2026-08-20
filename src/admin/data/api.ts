@@ -168,3 +168,108 @@ export const cancelFitting = (id: number) => api.del<void>(`/api/admin/schedule/
 
 export const setTradeEnquiryHandled = (id: number, handled: boolean) =>
   api.put<void>(`/api/admin/trade-enquiries/${id}/handled`, { handled })
+
+// Products ---------------------------------------------------------------
+
+export interface AdminVariant {
+  id: string
+  label: string
+  swatch: string | null
+  delta: number
+  inStock: boolean
+}
+
+export interface AdminSpec {
+  label: string
+  value: string
+}
+
+export interface AdminPhoto {
+  id: number
+  src: string
+  alt: string
+  colourId: string | null
+  caption: string | null
+  wide: boolean
+}
+
+/** The whole product, for the editor. Matches `ProductDetail` on the backend. */
+export interface AdminProduct {
+  slug: string
+  name: string
+  category: string
+  rooms: string[]
+  mode: 'buy' | 'quote'
+  price: number
+  compareAt: number | null
+  unit: string
+  summary: string
+  description: string[]
+  pattern: string
+  accent: string
+  colours: AdminVariant[]
+  sizes: AdminVariant[] | null
+  specs: AdminSpec[]
+  care: string[]
+  stock: number
+  leadTimeDays: number
+  badges: string[]
+  bestSeller: boolean
+  photos: AdminPhoto[]
+  isPublished: boolean
+}
+
+/** What the editor sends to create or replace a product. Matches `ProductPayload`. */
+export interface ProductPayload {
+  name: string
+  category: string
+  mode: 'buy' | 'quote'
+  price: number
+  compareAt: number | null
+  unit: string
+  summary: string
+  description: string[]
+  rooms: string[]
+  care: string[]
+  badges: string[]
+  pattern: string
+  accent: string
+  stock: number
+  reorderAt: number
+  leadTimeDays: number
+  bestSeller: boolean
+  isPublished: boolean
+  colours: { id?: string; label: string; swatch?: string; delta: number; inStock: boolean }[]
+  sizes: { id?: string; label: string; swatch?: string; delta: number; inStock: boolean }[]
+  specs: { label: string; value: string }[]
+}
+
+export const useAdminProduct = (slug: string, enabled = true) =>
+  useResource<AdminProduct>(`/api/admin/products/${encodeURIComponent(slug)}`, enabled)
+
+export const createProduct = (payload: ProductPayload) =>
+  api.post<AdminProduct>('/api/admin/products', payload)
+
+export const updateProduct = (slug: string, payload: ProductPayload) =>
+  api.put<AdminProduct>(`/api/admin/products/${encodeURIComponent(slug)}`, payload)
+
+export const withdrawProduct = (slug: string) =>
+  api.del<AdminProduct>(`/api/admin/products/${encodeURIComponent(slug)}`)
+
+// Photographs --------------------------------------------------------------
+
+export const useAdminPhotos = (slug: string) =>
+  useResource<AdminPhoto[]>(`/api/admin/products/${encodeURIComponent(slug)}/photos`)
+
+export const uploadPhoto = (slug: string, file: Blob, filename: string) =>
+  api.upload<AdminPhoto>(`/api/admin/products/${encodeURIComponent(slug)}/photos`, 'file', file, filename)
+
+export const updatePhotoDetails = (
+  slug: string,
+  id: number,
+  details: Partial<{ alt: string; colourId: string | null; caption: string | null; wide: boolean; sortOrder: number }>,
+) => api.put<AdminPhoto>(`/api/admin/products/${encodeURIComponent(slug)}/photos/${id}`, details)
+
+export const deletePhoto = (slug: string, id: number) =>
+  api.del<void>(`/api/admin/products/${encodeURIComponent(slug)}/photos/${id}`)
+
