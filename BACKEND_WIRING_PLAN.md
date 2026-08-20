@@ -1,5 +1,32 @@
 # Wiring the storefront to the backend it already has
 
+## Status
+
+Done, each on its own branch and PR:
+
+- **B1** (frontend PR [#13](https://github.com/10krhinooo/kipekee-creations/pull/13)) — `/quote/:reference`
+  now exists and renders the live approval link.
+- **A6** (frontend PR #13) — the trade form posts to `/api/trade/enquiry` for real.
+- **A3** (frontend PR #13) — checkout moved to `POST /api/checkout`; the confirmation screen shows
+  the server's own total.
+- **Sample data** (backend PR [#4](https://github.com/10krhinooo/kipekee-creations-backend/pull/4),
+  not originally in this plan) — a dev-data migration seeding quotes, orders, trade enquiries and
+  fittings across every status, including one live approvable quote link, so the above three aren't
+  demoed against empty queues.
+- **A1 + A2** (frontend PR [#14](https://github.com/10krhinooo/kipekee-creations/pull/14)) —
+  `/account/orders` reads real order history; the storefront wishlist and the account's saved list
+  are now one store (`saved.tsx`), merging on sign-in instead of silently diverging; the account
+  Overview's "Reorder" panel re-adds the last order's lines to the basket.
+
+The three frontend PRs are stacked, each targeting the last rather than `main`, so they can be
+reviewed in the order they were built: `feat/connect-to-backend` (#12, pre-existing) ←
+`feat/quote-approval-trade-checkout` (#13) ← `feat/account-orders-and-saved-sync` (#14). Merge
+bottom to top.
+
+Not started: A4, A5, A7, A8, C1, C2, C3 (C3's checkout half landed as part of A3; the `kenya.ts`
+delivery-fee display duplication is still open). See sequencing below, unchanged except for what is
+now struck through in spirit by the above.
+
 ## Context
 
 The question was whether any frontend work in the sister repo
