@@ -51,11 +51,13 @@ export function AuthScene({ children }: { children: ReactNode }) {
           the viewport on a long form instead of scrolling away and leaving the
           card on a bare dark field. */}
       <div className="pointer-events-none fixed inset-0">
-        {/* The rail is dropped below `sm`: `preserveAspectRatio="none"` squashes
-            its rings into smudges once the viewport is taller than it is wide,
-            and a phone always is. */}
-        <CurtainCloth className="absolute inset-0 hidden h-full w-full sm:block" />
-        <CurtainCloth className="absolute inset-0 h-full w-full sm:hidden" rail={false} />
+        {/* One cloth at every width. The rail used to be dropped below `sm`,
+            because the SVG stretched its rings into smudges on a screen taller
+            than it is wide, and that left `PageCurtain` drawing a rail on
+            arrival that the staging underneath did not have: on a phone the
+            handoff flickered. `CurtainCloth` now draws the rail at a fixed
+            pixel size, so there is nothing to hide from. */}
+        <CurtainCloth className="absolute inset-0 h-full w-full" />
       </div>
 
       <div className="relative flex min-h-screen w-full items-center justify-center p-4 py-10 sm:p-8">
