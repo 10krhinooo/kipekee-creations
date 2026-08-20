@@ -1,58 +1,37 @@
-import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AccountPanel, EmptyNote } from './AccountLayout'
 import { Notice } from '../../components/auth/AuthUI'
 import { Button } from '../../components/ui'
-import { api } from '../../lib/api'
 import { useCatalogue } from '../../store/catalogue'
+import { useSaved } from '../../store/saved'
 import { money } from '../../lib/format'
 import { swatch } from '../../lib/swatch'
 
+/**
+ * Reads and writes the same `saved` list as the storefront heart icon, via
+ * `useSaved()`. There used to be two: this page fetched its own copy from the
+ * account, while the heart on every product card wrote to `localStorage` and
+ * never told this page. `SavedProvider` now merges the two on sign-in, so a
+ * product saved as a guest, or saved on another device, shows up here too.
+ */
 export function AccountSaved() {
-
   const { bySlug } = useCatalogue()
-  const [slugs, setSlugs] = useState<string[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const clearError = useCallback(() => setError(null), [])
+  const { saved, toggleSaved, savedError, clearSavedError } = useSaved()
 
-  useEffect(() => {
-    api.get<string[]>('/api/account/saved').then((r) => {
-      if (r.ok) setSlugs(r.data)
-      else {
-        setSlugs([])
-        setError(r.message)
-      }
-    })
-  }, [])
-
-  async function remove(slug: string) {
-    // Removed locally first, then confirmed. A wishlist is low stakes and a
-    // heart that waits on a round trip before responding feels broken.
-    const previous = slugs ?? []
-    setSlugs(previous.filter((s) => s !== slug))
-    const result = await api.del(`/api/account/saved/${encodeURIComponent(slug)}`)
-    if (!result.ok) {
-      setSlugs(previous)
-      setError(result.message)
-    }
-  }
-
-  const products = (slugs ?? []).map((slug) => ({ slug, product: bySlug(slug) }))
+  const products = saved.map((slug) => ({ slug, product: bySlug(slug) }))
 
   return (
     <AccountPanel
       title="Saved list"
       intro="Stored on your account, so it is the same list on every device you sign in on."
     >
-      {error && (
+      {savedError && (
         <div className="mb-4">
-          <Notice onDismiss={clearError}>{error}</Notice>
+          <Notice onDismiss={clearSavedError}>{savedError}</Notice>
         </div>
       )}
 
-      {slugs === null ? (
-        <EmptyNote>Loading your list…</EmptyNote>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <EmptyNote>
           Nothing saved yet. Tap the heart on any product to keep it here.
           <br />
@@ -99,7 +78,7 @@ export function AccountSaved() {
               )}
 
               <button
-                onClick={() => remove(slug)}
+                onClick={() => toggleSaved(slug)}
                 title="Remove from your saved list"
                 aria-label={`Remove ${product?.name ?? slug} from your saved list`}
                 className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-sand hover:text-brand"

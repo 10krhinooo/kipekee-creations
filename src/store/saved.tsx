@@ -4,9 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { useAuth } from '../auth/AuthProvider'
+import { api } from '../lib/api'
 
 /*
  * Three lists of slugs: saved, compare, and recently viewed.
@@ -19,6 +22,10 @@ import {
  * Same hydration shape as the basket: a `ready` flag gates the write effect so
  * the first render never overwrites stored state with an empty one, and both
  * sides are wrapped because private browsing refuses the write.
+ *
+ * `saved` alone also syncs to the account once signed in, through
+ * `POST/DELETE /api/account/saved`. `compare` and `recent` stay local always;
+ * neither means anything on a different device the way a wishlist does.
  */
 
 interface State {
@@ -45,6 +52,9 @@ interface SavedApi extends State {
   clearCompare: () => void
   recordView: (slug: string) => void
   savedCount: number
+  /** Set when a save/remove or the sign-in merge failed to reach the account. */
+  savedError: string | null
+  clearSavedError: () => void
 }
 
 const SavedContext = createContext<SavedApi | null>(null)
@@ -55,6 +65,21 @@ const strings = (value: unknown): string[] =>
 export function SavedProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(empty)
   const [ready, setReady] = useState(false)
+  const [savedError, setSavedError] = useState<string | null>(null)
+  const clearSavedError = useCallback(() => setSavedError(null), [])
+
+  const { status } = useAuth()
+  // Read outside React state so `toggleSaved` and the merge effect can stay
+  // stable/single-run without taking `status` or `state.saved` as a dependency.
+  const statusRef = useRef(status)
+  const savedRef = useRef(state.saved)
+  const mergedRef = useRef(false)
+  useEffect(() => {
+    statusRef.current = status
+  }, [status])
+  useEffect(() => {
+    savedRef.current = state.saved
+  }, [state.saved])
 
   useEffect(() => {
     try {
@@ -91,13 +116,68 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     }
   }, [state, ready])
 
+  /**
+   * Reconciles with the account once, the first time a session resolves to
+   * signed-in after hydration.
+   *
+   * A local list with something in it is merged up, because it may hold items
+   * saved as a guest before this sign-in. An empty local list instead fetches
+   * whatever the account already has, so a returning customer sees their list
+   * on a fresh browser rather than an empty one. Either way the response
+   * becomes the new local list: the account is authoritative from here on,
+   * for as long as this tab stays signed in.
+   */
+  useEffect(() => {
+    if (!ready || status !== 'signed-in' || mergedRef.current) return
+    mergedRef.current = true
+
+    const local = savedRef.current
+    const sync = local.length > 0
+      ? api.post<string[]>('/api/account/saved', { slugs: local })
+      : api.get<string[]>('/api/account/saved')
+
+    sync.then((result) => {
+      if (result.ok) setState((prev) => ({ ...prev, saved: result.data }))
+      else setSavedError(result.message)
+    })
+  }, [ready, status])
+
+  // A later sign-in, in the same tab, to a different or the same account,
+  // should merge again rather than trust a stale local list.
+  useEffect(() => {
+    if (status === 'signed-out') mergedRef.current = false
+  }, [status])
+
   const toggleSaved = useCallback((slug: string) => {
-    setState((prev) => ({
-      ...prev,
-      saved: prev.saved.includes(slug)
-        ? prev.saved.filter((s) => s !== slug)
-        : [slug, ...prev.saved],
-    }))
+    let adding = false
+    setState((prev) => {
+      adding = !prev.saved.includes(slug)
+      return {
+        ...prev,
+        saved: adding ? [slug, ...prev.saved] : prev.saved.filter((s) => s !== slug),
+      }
+    })
+
+    if (statusRef.current !== 'signed-in') return
+
+    // Applied locally first, same as the rest of this store; the account call
+    // confirms it in the background and reverts on failure.
+    if (adding) {
+      api.post<string[]>('/api/account/saved', { slugs: [slug] }).then((result) => {
+        if (result.ok) setState((prev) => ({ ...prev, saved: result.data }))
+        else {
+          setState((prev) => ({ ...prev, saved: prev.saved.filter((s) => s !== slug) }))
+          setSavedError(result.message)
+        }
+      })
+    } else {
+      api.del(`/api/account/saved/${encodeURIComponent(slug)}`).then((result) => {
+        if (!result.ok) {
+          setState((prev) => ({ ...prev, saved: [slug, ...prev.saved] }))
+          setSavedError(result.message)
+        }
+      })
+    }
   }, [])
 
   const toggleCompare = useCallback((slug: string) => {
@@ -136,8 +216,10 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       clearCompare,
       recordView,
       savedCount: state.saved.length,
+      savedError,
+      clearSavedError,
     }),
-    [state, toggleSaved, toggleCompare, clearCompare, recordView],
+    [state, toggleSaved, toggleCompare, clearCompare, recordView, savedError, clearSavedError],
   )
 
   return <SavedContext.Provider value={value}>{children}</SavedContext.Provider>
