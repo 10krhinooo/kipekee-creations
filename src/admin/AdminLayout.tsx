@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
-import { orders, quotes, fittings, stock } from './data/operations'
+import { useDashboard } from './data/api'
 import { useAuth } from '../auth/AuthProvider'
 
 const initialsOf = (name: string) =>
@@ -85,11 +85,14 @@ export function AdminLayout() {
     }
   }, [open])
 
-  // Live badge counts, so the sidebar doubles as the work queue.
-  const newQuotes = quotes.filter((q) => q.status === 'new').length
-  const openOrders = orders.filter((o) => o.status === 'new' || o.status === 'packing').length
-  const upcoming = fittings.length
-  const lowStock = stock.filter((s) => s.mode === 'buy' && s.stock <= s.reorderAt).length
+  // Live badge counts, so the sidebar doubles as the work queue. They come
+  // from the dashboard endpoint rather than being counted here, so the number
+  // on the badge and the number on the page it links to are the same number.
+  const { data: dashboard } = useDashboard()
+  const newQuotes = dashboard?.counters.quotesAwaiting ?? 0
+  const openOrders = dashboard?.counters.ordersToPack ?? 0
+  const upcoming = dashboard?.upcoming.length ?? 0
+  const lowStock = dashboard?.lowStock.length ?? 0
 
   const nav = [
     { to: '/admin', label: 'Dashboard', icon: icons.dashboard, end: true },

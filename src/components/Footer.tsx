@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { categories } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import {
   Button,
   Container,
@@ -19,6 +19,8 @@ const SOCIAL_LINKS = [
 ]
 
 export function Footer() {
+
+  const { categories } = useCatalogue()
   return (
     <footer className="mt-20 border-t border-line bg-ink text-white/80">
       <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">

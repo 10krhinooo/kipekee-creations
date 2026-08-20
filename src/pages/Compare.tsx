@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { bySlug, categoryBySlug } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import type { Product } from '../data/types'
 import { leadTime, money } from '../lib/format'
 import { swatch } from '../lib/swatch'
@@ -17,6 +17,7 @@ import { Button, Container, SectionHeading, Stars, cx } from '../components/ui'
  * visited before.
  */
 export function Compare() {
+  const { bySlug, categoryBySlug } = useCatalogue()
   const [params, setParams] = useSearchParams()
   const { compare, toggleCompare } = useSaved()
 

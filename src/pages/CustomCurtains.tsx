@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { products } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { swatch } from '../lib/swatch'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
@@ -67,6 +67,8 @@ const steps = [
 ]
 
 export function CustomCurtains() {
+
+  const { products } = useCatalogue()
   const madeToMeasure = products.filter((p) => p.mode === 'quote').slice(0, 4)
 
   return (

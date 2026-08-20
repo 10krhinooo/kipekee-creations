@@ -10,6 +10,16 @@
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; message: string; status?: number }
 
+/**
+ * Where the backend is.
+ *
+ * Empty in development, so every path stays relative and goes through the Vite
+ * proxy in `vite.config.ts`, which is why there is no CORS configuration on
+ * that side. In a real deployment the two are on different hosts, so this is
+ * set to the backend's origin at build time and the backend allows it back.
+ */
+const BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '')
+
 /** What Hibernate Validator returns on a 400, so a field error can be surfaced. */
 interface ErrorBody {
   violations?: { field?: string; message?: string }[]
@@ -40,7 +50,7 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
 
   let res: Response
   try {
-    res = await fetch(path, {
+    res = await fetch(BASE + path, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

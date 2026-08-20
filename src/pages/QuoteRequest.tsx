@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useBasket } from '../store/basket'
-import { bySlug, rooms } from '../data/catalogue'
+import { rooms } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
 import { Button, Container, WhatsAppIcon, cx } from '../components/ui'
@@ -14,6 +15,7 @@ import { post } from '../lib/api'
  * to capture the lead, not to interrogate the visitor.
  */
 export function QuoteRequest() {
+  const { bySlug } = useCatalogue()
   const { quote, updateQuote, removeFromQuote, clear } = useBasket()
   const [sent, setSent] = useState(false)
   const [reference, setReference] = useState<string | null>(null)

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { categories, products, rooms } from '../data/catalogue'
+import { rooms } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { swatch } from '../lib/swatch'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
@@ -99,6 +100,8 @@ const testimonials = [
 ]
 
 export function Home() {
+
+  const { products, categories } = useCatalogue()
   const bestSellers = products.filter((p) => p.bestSeller).slice(0, 4)
   const readyToShip = products.filter((p) => p.mode === 'buy' && p.leadTimeDays <= 1).slice(0, 4)
 

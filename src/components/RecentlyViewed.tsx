@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { bySlug } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
 import { useSaved } from '../store/saved'
@@ -11,6 +11,7 @@ import { useSaved } from '../store/saved'
  * product you are already looking at is noise.
  */
 export function RecentlyViewed({ exclude, title = 'Recently viewed' }: { exclude?: string; title?: string }) {
+  const { bySlug } = useCatalogue()
   const { recent } = useSaved()
 
   const items = recent

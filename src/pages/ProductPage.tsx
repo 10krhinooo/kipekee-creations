@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { bySlug, categoryBySlug, priceOf, products, rooms } from '../data/catalogue'
+import { priceOf, rooms } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import type { Room } from '../data/types'
 import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
@@ -46,6 +47,7 @@ export function ProductPage() {
 }
 
 function ProductDetail({ slug }: { slug: string }) {
+  const { bySlug, products, categoryBySlug } = useCatalogue()
   const product = bySlug(slug)
   const { addToCart, addToQuote } = useBasket()
   const { photosFor } = usePhotos()

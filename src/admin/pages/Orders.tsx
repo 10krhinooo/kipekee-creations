@@ -13,12 +13,8 @@ import {
   Td,
   Th,
 } from '../components/AdminUI'
-import {
-  orderStatusLabel,
-  orderTotal,
-  orders,
-  type OrderStatus,
-} from '../data/operations'
+import { orderStatusLabel, type OrderStatus } from '../data/operations'
+import { moveOrder, setOrderPaid, useOrder, useOrders } from '../data/api'
 
 type Filter = 'all' | OrderStatus
 
@@ -26,6 +22,8 @@ const payLabel = { mpesa: 'M-Pesa', card: 'Card', cod: 'On delivery' } as const
 
 export function Orders() {
   const [filter, setFilter] = useState<Filter>('all')
+  const { data, loading, error } = useOrders()
+  const orders = data ?? []
 
   const shown = filter === 'all' ? orders : orders.filter((o) => o.status === filter)
 
@@ -51,6 +49,9 @@ export function Orders() {
         title="Orders"
         intro="Ready-made stock paid for on the site. Made-to-measure jobs live under Quotes."
       />
+
+      {loading && <p className="mb-5 text-sm text-muted">Loading orders…</p>}
+      {error && <p className="mb-5 text-sm text-brand">{error}</p>}
 
       <div className="mb-5">
         <Segmented options={options} value={filter} onChange={setFilter} />
@@ -93,11 +94,9 @@ export function Orders() {
                     <span className="block text-[12px] text-muted">{o.town}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">
-                      {o.lines.reduce((n, l) => n + l.qty, 0)} items
-                    </span>
+                    <span className="text-[13px]">{o.items} items</span>
                     <span className="block max-w-48 truncate text-[12px] text-muted">
-                      {o.lines[0].name}
+                      {o.firstProduct ?? 'No lines'}
                     </span>
                   </Td>
                   <Td>
@@ -115,7 +114,7 @@ export function Orders() {
                     <StatusPill kind="order" status={o.status} label={orderStatusLabel[o.status]} />
                   </Td>
                   <Td align="right" className="font-semibold whitespace-nowrap">
-                    {money(orderTotal(o))}
+                    {money(o.total)}
                   </Td>
                 </tr>
               ))}
@@ -131,20 +130,63 @@ const flow: OrderStatus[] = ['new', 'packing', 'dispatched', 'delivered']
 
 export function OrderDetail() {
   const { id = '' } = useParams()
-  const order = orders.find((o) => o.id === id)
-  const [status, setStatus] = useState<OrderStatus>(order?.status ?? 'new')
+  const { data: order, loading, error, reload } = useOrder(id)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [moving, setMoving] = useState(false)
+
+  /**
+   * Moving a stage is a request now, not a `useState`.
+   *
+   * The prototype's stepper set a local variable, so a packed order was packed
+   * only in that tab and only until it was refreshed. The server owns the
+   * transitions, refuses the ones the pipeline does not allow, and says why in
+   * words meant to be read, so its refusal is shown rather than replaced.
+   */
+  const moveTo = async (next: OrderStatus) => {
+    if (!order || next === order.status) return
+    setMoving(true)
+    const courier =
+      next === 'dispatched' && !order.courier
+        ? (window.prompt('Courier reference for this parcel') ?? '')
+        : undefined
+    const result = await moveOrder(id, next, courier || undefined)
+    setMoving(false)
+    if (result.ok) {
+      setProblem(null)
+      reload()
+    } else {
+      setProblem(result.message)
+    }
+  }
+
+  const togglePaid = async () => {
+    if (!order) return
+    const result = await setOrderPaid(id, !order.paid)
+    if (result.ok) {
+      setProblem(null)
+      reload()
+    } else {
+      setProblem(result.message)
+    }
+  }
+
+  if (loading) {
+    return <PageHeader title="Loading order…" />
+  }
 
   if (!order) {
     return (
       <>
-        <PageHeader title="Order not found" />
+        <PageHeader title="Order not found" intro={error ?? undefined} />
         <Button to="/admin/orders">Back to orders</Button>
       </>
     )
   }
 
-  const goodsTotal = order.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0)
-  const stageIndex = flow.indexOf(status)
+  // Both come from the server, so the receipt on screen is the one the customer
+  // was charged rather than the browser's arithmetic over the same lines.
+  const goodsTotal = order.subtotal
+  const stageIndex = flow.indexOf(order.status)
 
   return (
     <>
@@ -201,7 +243,7 @@ export function OrderDetail() {
                     <Td align="right">{l.qty}</Td>
                     <Td align="right">{money(l.unitPrice)}</Td>
                     <Td align="right" className="font-semibold">
-                      {money(l.unitPrice * l.qty)}
+                      {money(l.amount)}
                     </Td>
                   </tr>
                 ))}
@@ -220,19 +262,21 @@ export function OrderDetail() {
               </div>
               <div className="flex justify-between border-t border-line pt-3 font-display text-base font-bold">
                 <span>Total</span>
-                <span>{money(orderTotal(order))}</span>
+                <span>{money(order.total)}</span>
               </div>
             </div>
           </Card>
 
           <Card>
-            <CardHeader title="Fulfilment" hint="Moving this on notifies the customer by SMS" />
+            <CardHeader title="Fulfilment" hint="Only the next stage can be set" />
+            {problem && <p className="mb-3 text-sm text-brand">{problem}</p>}
             <ol className="flex flex-wrap items-center gap-y-3">
               {flow.map((s, i) => (
                 <li key={s} className="flex items-center">
                   <button
-                    onClick={() => setStatus(s)}
-                    className="flex items-center gap-2"
+                    onClick={() => void moveTo(s)}
+                    disabled={moving || !order.nextAllowed.includes(s)}
+                    className="flex items-center gap-2 disabled:cursor-not-allowed"
                     aria-pressed={i === stageIndex}
                   >
                     <span
@@ -278,9 +322,13 @@ export function OrderDetail() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Status</span>
-                <span className={cx('font-medium', order.paid ? 'text-[#1a6b39]' : 'text-brand')}>
+                <button
+                  type="button"
+                  onClick={() => void togglePaid()}
+                  className={cx('font-medium underline', order.paid ? 'text-[#1a6b39]' : 'text-brand')}
+                >
                   {order.paid ? 'Paid in full' : 'Awaiting payment'}
-                </span>
+                </button>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Placed</span>

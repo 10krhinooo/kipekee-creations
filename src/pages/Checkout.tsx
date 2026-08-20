@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBasket } from '../store/basket'
-import { bySlug, priceOf } from '../data/catalogue'
+import { priceOf } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
 import { Button, Container, cx } from '../components/ui'
@@ -25,6 +26,7 @@ const PAY_LABELS: Record<Pay, string> = {
  * flow, and the real integration lands with the backend.
  */
 export function Checkout() {
+  const { bySlug } = useCatalogue()
   const { cart, subtotal, delivery, total, clear } = useBasket()
   const [pay, setPay] = useState<Pay>('mpesa')
   const [town, setTown] = useState('nairobi')

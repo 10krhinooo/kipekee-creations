@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { categories, categoryBySlug, products, rooms } from '../data/catalogue'
+import { rooms } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import type { Product } from '../data/types'
 import { ProductCard } from '../components/ProductCard'
 import { Button, Container, cx } from '../components/ui'
@@ -25,6 +26,7 @@ const PRICE_MAX = 9000
  * 150 products behind a 16-item category tree.
  */
 export function Shop() {
+  const { products, categories, categoryBySlug } = useCatalogue()
   const [params, setParams] = useSearchParams()
   const [filtersOpen, setFiltersOpen] = useState(false)
 

@@ -1,22 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { money } from '../../lib/format'
 import { cx } from '../../components/ui'
 import { Card, PageHeader, Segmented, Table, Td, Th } from '../components/AdminUI'
-import { orderTotal, orders, quoteTotal, quotes } from '../data/operations'
+import { useCustomers } from '../data/api'
 
 type Filter = 'all' | 'retail' | 'trade' | 'both'
 
-interface CustomerRow {
-  name: string
-  phone: string
-  area: string
-  orderCount: number
-  quoteCount: number
-  spent: number
-  pipeline: number
-  segment: 'retail' | 'trade' | 'both'
-  last: string
-}
 
 /**
  * Customers are derived from the two transaction streams rather than stored
@@ -27,63 +16,20 @@ export function Customers() {
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
 
-  const rows = useMemo<CustomerRow[]>(() => {
-    const map = new Map<string, CustomerRow>()
-
-    for (const o of orders) {
-      const row = map.get(o.customer) ?? {
-        name: o.customer,
-        phone: o.phone,
-        area: o.town,
-        orderCount: 0,
-        quoteCount: 0,
-        spent: 0,
-        pipeline: 0,
-        segment: 'retail' as const,
-        last: o.placedAt,
-      }
-      row.orderCount += 1
-      if (o.status !== 'cancelled') row.spent += orderTotal(o)
-      if (o.placedAt > row.last) row.last = o.placedAt
-      map.set(o.customer, row)
-    }
-
-    for (const q of quotes) {
-      const row = map.get(q.customer) ?? {
-        name: q.customer,
-        phone: q.phone,
-        area: q.area,
-        orderCount: 0,
-        quoteCount: 0,
-        spent: 0,
-        pipeline: 0,
-        segment: 'trade' as const,
-        last: q.requestedAt,
-      }
-      row.quoteCount += 1
-      if (['approved', 'in_production', 'fitted'].includes(q.status)) row.spent += quoteTotal(q)
-      else if (q.status !== 'lost') row.pipeline += quoteTotal(q)
-      if (q.requestedAt > row.last) row.last = q.requestedAt
-      map.set(q.customer, row)
-    }
-
-    const list = [...map.values()].map((r) => ({
-      ...r,
-      segment:
-        r.orderCount > 0 && r.quoteCount > 0
-          ? ('both' as const)
-          : r.quoteCount > 0
-            ? ('trade' as const)
-            : ('retail' as const),
-    }))
-
-    return list.sort((a, b) => b.spent + b.pipeline - (a.spent + a.pipeline))
-  }, [])
+  // Assembled by the backend rather than in the browser. Grouping on the name
+  // string, which is what this page used to do, merges two people called Grace
+  // Njoki and splits one person who typed their name differently on two
+  // orders. The server groups on the account where there is one and on the
+  // phone number where there is not.
+  const { data, loading, error } = useCustomers()
+  const rows = data ?? []
 
   const shown = rows
     .filter((r) => (filter === 'all' ? true : r.segment === filter))
     .filter((r) =>
-      query.trim() ? `${r.name} ${r.area} ${r.phone}`.toLowerCase().includes(query.toLowerCase()) : true,
+      query.trim()
+        ? `${r.name} ${r.area ?? ''} ${r.phone ?? ''}`.toLowerCase().includes(query.toLowerCase())
+        : true,
     )
 
   const options: { id: Filter; label: string; count: number }[] = [
@@ -101,6 +47,9 @@ export function Customers() {
         title="Customers"
         intro="Built from orders and quotes together, so the people worth calling back are visible."
       />
+
+      {loading && <p className="mb-5 text-sm text-muted">Loading customers…</p>}
+      {error && <p className="mb-5 text-sm text-brand">{error}</p>}
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Segmented options={options} value={filter} onChange={setFilter} />

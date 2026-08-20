@@ -11,18 +11,8 @@ import {
   Td,
   Th,
 } from '../components/AdminUI'
-import {
-  fittings,
-  orderStatusLabel,
-  orderTotal,
-  orders,
-  quotePipeline,
-  quoteStatusLabel,
-  quoteTotal,
-  quotes,
-  revenueSeries,
-  stock,
-} from '../data/operations'
+import { orderStatusLabel } from '../data/operations'
+import { useDashboard } from '../data/api'
 
 /**
  * The dashboard answers one question first: what needs a human today. Revenue
@@ -30,29 +20,37 @@ import {
  * unanswered for two days is the most expensive thing that happens here.
  */
 export function Dashboard() {
-  const newQuotes = quotes.filter((q) => q.status === 'new')
-  const awaitingReply = quotes.filter((q) => q.status === 'sent')
-  const toPack = orders.filter((o) => o.status === 'new' || o.status === 'packing')
-  const lowStock = stock.filter((s) => s.mode === 'buy' && s.stock <= s.reorderAt)
+  // Every figure here is computed by the backend and arrives in one answer.
+  // The page used to work them out from the mock arrays, which meant eight
+  // tiles that could each disagree with the screen they linked to.
+  const { data, loading, error } = useDashboard()
 
-  const shopRevenue = orders
-    .filter((o) => o.status !== 'cancelled')
-    .reduce((sum, o) => sum + orderTotal(o), 0)
-  const quoteValueOpen = quotes
-    .filter((q) => !['fitted', 'lost'].includes(q.status))
-    .reduce((sum, q) => sum + quoteTotal(q), 0)
+  const newQuotes = data?.newQuotes ?? []
+  const toPack = data?.toPack ?? []
+  const lowStock = data?.lowStock ?? []
+  const fittings = data?.upcoming ?? []
+  const pipeline = data?.pipeline ?? []
+  const revenueSeries = data?.revenue ?? []
 
-  const won = quotes.filter((q) => ['approved', 'in_production', 'fitted'].includes(q.status)).length
-  const decided = won + quotes.filter((q) => q.status === 'lost').length
-  const winRate = decided ? Math.round((won / decided) * 100) : 0
+  const awaitingReply = pipeline.find((p) => p.stage === 'sent')?.count ?? 0
+  const shopRevenue = data?.counters.shopRevenue14Days ?? 0
+  const quoteValueOpen = data?.counters.openQuoteValue ?? 0
+  const winRate = data?.counters.winRate
+  const pipelineTotal = pipeline.reduce((n, p) => n + p.count, 0)
 
-  const max = Math.max(...revenueSeries.map((d) => d.orders + d.quotes))
+  // Guard the divisor: an empty series would otherwise make every bar NaN tall.
+  const max = Math.max(1, ...revenueSeries.map((d) => d.orders + d.quotes))
 
   return (
     <>
       <PageHeader
-        title="Good morning, Alice"
-        intro="Two new quote requests came in overnight. The oldest has been waiting 3 hours."
+        title="Today"
+        intro={
+          loading
+            ? 'Loading the figures…'
+            : (error ??
+              `${newQuotes.length} new quote ${newQuotes.length === 1 ? 'request' : 'requests'} and ${toPack.length} ${toPack.length === 1 ? 'order' : 'orders'} to pack.`)
+        }
         action={
           <div className="flex gap-2">
             <Button to="/admin/quotes" size="sm">
@@ -68,13 +66,17 @@ export function Dashboard() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="Quotes awaiting action"
-          value={String(newQuotes.length + awaitingReply.length)}
-          hint={`${newQuotes.length} unopened, ${awaitingReply.length} sent and waiting`}
+          value={String(newQuotes.length + awaitingReply)}
+          hint={`${newQuotes.length} unopened, ${awaitingReply} sent and waiting`}
           accent
         />
-        <Stat label="Shop revenue, 14 days" value={money(shopRevenue)} delta={12} />
-        <Stat label="Open quote value" value={money(quoteValueOpen)} delta={31} hint="not yet won" />
-        <Stat label="Quote win rate" value={`${winRate}%`} delta={-4} hint="last 30 days" />
+        <Stat label="Shop revenue, 14 days" value={money(shopRevenue)} />
+        <Stat label="Open quote value" value={money(quoteValueOpen)} hint="not yet won" />
+        <Stat
+          label="Quote win rate"
+          value={winRate === null || winRate === undefined ? 'No decided jobs' : `${winRate}%`}
+          hint="fitted against lost"
+        />
       </div>
 
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
@@ -125,23 +127,21 @@ export function Dashboard() {
         <Card>
           <CardHeader title="Quote pipeline" hint="Where every open job sits" />
           <ul className="space-y-2.5">
-            {quotePipeline.map((stage) => {
-              const inStage = quotes.filter((q) => q.status === stage)
-              const value = inStage.reduce((s, q) => s + quoteTotal(q), 0)
-              const pct = (inStage.length / quotes.length) * 100
+            {pipeline.map((stage) => {
+              const pct = pipelineTotal ? (stage.count / pipelineTotal) * 100 : 0
               return (
-                <li key={stage}>
+                <li key={stage.stage}>
                   <div className="mb-1 flex items-baseline justify-between gap-2 text-[13px]">
-                    <span className="font-medium text-ink">{quoteStatusLabel[stage]}</span>
-                    <span className="text-muted">
-                      {inStage.length}
-                      {value > 0 && <span className="ml-1.5 text-[11px]">{money(value)}</span>}
-                    </span>
+                    <span className="font-medium text-ink">{stage.label}</span>
+                    <span className="text-muted">{stage.count}</span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-shell">
                     <div
-                      className={cx('h-full rounded-full', stage === 'new' ? 'bg-brand' : 'bg-ink')}
-                      style={{ width: `${Math.max(pct, inStage.length ? 6 : 0)}%` }}
+                      className={cx(
+                        'h-full rounded-full',
+                        stage.stage === 'new' ? 'bg-brand' : 'bg-ink',
+                      )}
+                      style={{ width: `${Math.max(pct, stage.count ? 6 : 0)}%` }}
                     />
                   </div>
                 </li>
@@ -184,11 +184,9 @@ export function Dashboard() {
                     <span className="block text-[12px] text-muted">{q.area}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">{q.items[0].product}</span>
-                    {q.items.length > 1 && (
-                      <span className="block text-[12px] text-muted">
-                        +{q.items.length - 1} more
-                      </span>
+                    <span className="text-[13px]">{q.firstProduct ?? 'No lines yet'}</span>
+                    {q.lineCount > 1 && (
+                      <span className="block text-[12px] text-muted">+{q.lineCount - 1} more</span>
                     )}
                   </Td>
                   <Td>
@@ -243,7 +241,7 @@ export function Dashboard() {
                     <StatusPill kind="order" status={o.status} label={orderStatusLabel[o.status]} />
                   </Td>
                   <Td align="right" className="font-semibold">
-                    {money(orderTotal(o))}
+                    {money(o.total)}
                   </Td>
                 </tr>
               ))}

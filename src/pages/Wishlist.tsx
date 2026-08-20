@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { bySlug } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { useSaved } from '../store/saved'
 import { ProductCard } from '../components/ProductCard'
 import { Button, Container, SectionHeading, cx } from '../components/ui'
@@ -16,6 +16,7 @@ import type { Product } from '../data/types'
  * the compare control and quick-add all behave exactly as they do in the shop.
  */
 export function Wishlist() {
+  const { bySlug } = useCatalogue()
   const { saved } = useSaved()
   const items = saved.map((slug) => bySlug(slug)).filter((p) => p !== undefined)
 

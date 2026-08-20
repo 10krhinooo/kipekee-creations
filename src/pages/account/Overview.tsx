@@ -4,7 +4,7 @@ import { AccountPanel, EmptyNote } from './AccountLayout'
 import { Button } from '../../components/ui'
 import { useAuth } from '../../auth/AuthProvider'
 import { api } from '../../lib/api'
-import { bySlug } from '../../data/catalogue'
+import { useCatalogue } from '../../store/catalogue'
 import { money } from '../../lib/format'
 
 /**
@@ -15,6 +15,7 @@ import { money } from '../../lib/format'
  * is what they need once a year; the last order is what they need today.
  */
 export function AccountOverview() {
+  const { bySlug } = useCatalogue()
   const { user } = useAuth()
   const [saved, setSaved] = useState<string[] | null>(null)
 

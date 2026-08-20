@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, cx } from '../../components/ui'
 import { Card, PageHeader, Segmented, Table, Td, Th } from '../components/AdminUI'
-import { stock } from '../data/operations'
+import { adjustStock, useStock } from '../data/api'
 
 type Filter = 'all' | 'buy' | 'quote' | 'low'
 
@@ -16,20 +16,34 @@ type Filter = 'all' | 'buy' | 'quote' | 'low'
 export function Products() {
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
-  const [levels, setLevels] = useState<Record<string, number>>(
-    Object.fromEntries(stock.map((s) => [s.slug, s.stock])),
-  )
+  const { data, loading, error, reload } = useStock()
+  const stock = useMemo(() => data ?? [], [data])
+  /**
+   * What the server said the last time it answered, keyed by slug.
+   *
+   * The plus and minus used to move a number in the browser and stop there, so
+   * a count somebody corrected was gone on refresh. Each click now sends a
+   * delta and takes the level back from the response, which is also why it is a
+   * delta: two people counting the same shelf should both be counted rather
+   * than overwrite each other.
+   */
+  const [levels, setLevels] = useState<Record<string, number>>({})
+  const [saving, setSaving] = useState<string | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  const levelOf = (slug: string, fallback: number) => levels[slug] ?? fallback
 
   const rows = useMemo(() => {
     let list = stock
     if (filter === 'buy' || filter === 'quote') list = list.filter((s) => s.mode === filter)
-    if (filter === 'low') list = list.filter((s) => s.mode === 'buy' && levels[s.slug] <= s.reorderAt)
+    if (filter === 'low')
+      list = list.filter((s) => s.mode === 'buy' && (levels[s.slug] ?? s.stock) <= s.reorderAt)
     if (query.trim()) {
       const q = query.toLowerCase()
       list = list.filter((s) => `${s.name} ${s.category}`.toLowerCase().includes(q))
     }
     return list
-  }, [filter, query, levels])
+  }, [stock, filter, query, levels])
 
   const options: { id: Filter; label: string; count: number }[] = [
     { id: 'all', label: 'All', count: stock.length },
@@ -38,12 +52,24 @@ export function Products() {
     {
       id: 'low',
       label: 'Low stock',
-      count: stock.filter((s) => s.mode === 'buy' && levels[s.slug] <= s.reorderAt).length,
+      count: stock.filter((s) => s.mode === 'buy' && (levels[s.slug] ?? s.stock) <= s.reorderAt).length,
     },
   ]
 
-  const adjust = (slug: string, by: number) =>
-    setLevels((prev) => ({ ...prev, [slug]: Math.max(0, prev[slug] + by) }))
+  const adjust = async (slug: string, by: number) => {
+    setSaving(slug)
+    const result = await adjustStock(slug, by)
+    setSaving(null)
+    if (result.ok) {
+      setLevels((prev) => ({ ...prev, [slug]: result.data.stock }))
+      setProblem(null)
+    } else {
+      // The backend refuses a count against made-to-measure work, and says why
+      // in words meant to be read, so it is shown rather than replaced.
+      setProblem(result.message)
+      reload()
+    }
+  }
 
   return (
     <>
@@ -59,6 +85,9 @@ export function Products() {
           </Button>
         }
       />
+
+      {loading && <p className="mb-5 text-sm text-muted">Loading products…</p>}
+      {(error || problem) && <p className="mb-5 text-sm text-brand">{error ?? problem}</p>}
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Segmented options={options} value={filter} onChange={setFilter} />
@@ -96,7 +125,7 @@ export function Products() {
           </thead>
           <tbody>
             {rows.map((s) => {
-              const level = levels[s.slug]
+              const level = levelOf(s.slug, s.stock)
               const low = s.mode === 'buy' && level <= s.reorderAt
               return (
                 <tr key={s.slug} className="hover:bg-shell">
@@ -149,7 +178,8 @@ export function Products() {
                     {s.mode === 'buy' ? (
                       <div className="inline-flex items-center rounded-full border border-line">
                         <button
-                          onClick={() => adjust(s.slug, -1)}
+                          onClick={() => void adjust(s.slug, -1)}
+                          disabled={saving === s.slug}
                           className="px-2.5 py-1 text-sm hover:text-brand"
                           aria-label={`Reduce stock of ${s.name}`}
                         >
@@ -157,7 +187,8 @@ export function Products() {
                         </button>
                         <span className="px-1 text-[11px] text-muted">adjust</span>
                         <button
-                          onClick={() => adjust(s.slug, 1)}
+                          onClick={() => void adjust(s.slug, 1)}
+                          disabled={saving === s.slug}
                           className="px-2.5 py-1 text-sm hover:text-brand"
                           aria-label={`Increase stock of ${s.name}`}
                         >

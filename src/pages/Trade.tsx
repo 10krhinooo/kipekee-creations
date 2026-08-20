@@ -1,4 +1,4 @@
-import { products } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import { swatch } from '../lib/swatch'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
@@ -10,6 +10,7 @@ import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '.
  * contract specs and a trade account form.
  */
 export function Trade() {
+  const { products } = useCatalogue()
   const contract = products.filter((p) => p.rooms.includes('Hotel & hospitality'))
 
   return (

@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, WhatsAppIcon, cx, whatsappLink } from '../../components/ui'
 import { Card, CardHeader, PageHeader, StatusPill } from '../components/AdminUI'
-import {
-  quotePipeline,
-  quoteStatusLabel,
-  quotes,
-  type QuoteLineItem,
-} from '../data/operations'
+import { quotePipeline, quoteStatusLabel, type QuoteLineItem } from '../data/operations'
+import { priceQuote, sendQuote, useQuote } from '../data/api'
 
-/** Fitting and delivery are quoted as a line, not buried in the item prices. */
+/**
+ * Fitting is quoted as a line, not buried in the item prices.
+ *
+ * This figure is the server's, and is only used here to show the charge while
+ * the toggle is being flipped. The saved amount comes back from the pricing
+ * call, because a rate the browser could send is a rate anybody could set to
+ * zero.
+ */
 const FITTING_PER_WINDOW = 800
 
 /**
@@ -21,18 +24,81 @@ const FITTING_PER_WINDOW = 800
  */
 export function QuoteBuilder() {
   const { id = '' } = useParams()
-  const quote = quotes.find((q) => q.id === id)
+  const { data: quote, loading, error, reload } = useQuote(id)
 
-  const [items, setItems] = useState<QuoteLineItem[]>(quote?.items ?? [])
+  const [items, setItems] = useState<QuoteLineItem[]>([])
   const [discount, setDiscount] = useState(0)
   const [includeFitting, setIncludeFitting] = useState(true)
   const [note, setNote] = useState('')
-  const [sent, setSent] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  // Seeded from the server once it answers, and again after every save, so the
+  // figures on screen are the ones that were stored rather than the ones that
+  // were typed.
+  useEffect(() => {
+    if (!quote) return
+    setItems(quote.lines)
+    setDiscount(quote.discountPercent)
+    setIncludeFitting(quote.fittingAmount > 0)
+    setNote(quote.staffNotes ?? '')
+  }, [quote])
+
+  const save = async () => {
+    setSaving(true)
+    const result = await priceQuote(id, {
+      lines: items.map((i) => ({ id: i.id, pricedTotal: i.pricedTotal })),
+      withFitting: includeFitting,
+      discountPercent: discount,
+      staffNotes: note || null,
+    })
+    setSaving(false)
+    if (result.ok) {
+      setProblem(null)
+      reload()
+    } else {
+      setProblem(result.message)
+    }
+  }
+
+  /**
+   * Saves before sending, so what leaves is what is on the screen.
+   *
+   * The prototype's send button set a local flag. This one prices the job and
+   * then asks the server to email it, and the server refuses if any line is
+   * still unpriced.
+   */
+  const send = async () => {
+    setSaving(true)
+    const priced = await priceQuote(id, {
+      lines: items.map((i) => ({ id: i.id, pricedTotal: i.pricedTotal })),
+      withFitting: includeFitting,
+      discountPercent: discount,
+      staffNotes: note || null,
+    })
+    if (!priced.ok) {
+      setSaving(false)
+      setProblem(priced.message)
+      return
+    }
+    const result = await sendQuote(id)
+    setSaving(false)
+    if (result.ok) {
+      setProblem(null)
+      reload()
+    } else {
+      setProblem(result.message)
+    }
+  }
+
+  if (loading) {
+    return <PageHeader title="Loading quote…" />
+  }
 
   if (!quote) {
     return (
       <>
-        <PageHeader title="Quote not found" />
+        <PageHeader title="Quote not found" intro={error ?? undefined} />
         <Button to="/admin/quotes">Back to quotes</Button>
       </>
     )
@@ -258,20 +324,26 @@ export function QuoteBuilder() {
             </div>
 
             <div className="mt-5 space-y-2.5">
-              <Button full disabled={!priced || sent} onClick={() => setSent(true)}>
-                {sent ? 'Quote sent' : 'Send quote to customer'}
+              <Button full disabled={!priced || saving} onClick={() => void send()}>
+                {quote.sentAt ? 'Send again' : 'Send quote to customer'}
               </Button>
               <Button full variant="outline">
                 Save draft
               </Button>
             </div>
 
+            {problem && <p className="mt-3 text-sm text-brand">{problem}</p>}
+
+            <Button full variant="ghost" disabled={saving} onClick={() => void save()}>
+              {saving ? 'Saving…' : 'Save figures'}
+            </Button>
+
             {!priced && (
               <p className="mt-3 text-center text-[12px] text-brand">
                 Every line needs a price before this can be sent.
               </p>
             )}
-            {sent && (
+            {quote.sentAt && (
               <p className="mt-3 text-center text-[12px] text-[#1a6b39]">
                 Sent by SMS and email. Prototype only, nothing left the building.
               </p>

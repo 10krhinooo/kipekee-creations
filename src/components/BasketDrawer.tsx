@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useBasket, FREE_DELIVERY_THRESHOLD } from '../store/basket'
 import { useSaved } from '../store/saved'
 import { usePhotos } from '../store/photos'
-import { bySlug, priceOf, rooms, stockCapOf } from '../data/catalogue'
+import { priceOf, rooms, stockCapOf } from '../data/catalogue'
+import { useCatalogue } from '../store/catalogue'
 import type { Product, QuoteLine } from '../data/types'
 import { money } from '../lib/format'
 import { swatch } from '../lib/swatch'
@@ -74,6 +75,8 @@ function LineImage({
 }
 
 export function BasketDrawer() {
+
+  const { bySlug } = useCatalogue()
   const basket = useBasket()
   const {
     drawer,
