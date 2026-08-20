@@ -126,6 +126,66 @@ export function Stars({ rating, count }: { rating: number; count?: number }) {
   )
 }
 
+/**
+ * The star control somebody sets, as opposed to {@link Stars} which only draws
+ * one somebody else set.
+ *
+ * A real radio group under the stars rather than five click handlers on SVGs:
+ * that is what makes it reachable by keyboard, announced as "3 of 5 stars", and
+ * submittable. The inputs are visually hidden rather than `display: none`, since
+ * a hidden input is not focusable and the whole point is that it is.
+ *
+ * `name` has to be unique on the page, because radios group by name and two
+ * rating controls sharing one would fight over a single selection.
+ */
+export function StarRatingInput({
+  value,
+  onChange,
+  name,
+  label = 'Your rating',
+}: {
+  value: number
+  onChange: (rating: number) => void
+  name: string
+  label?: string
+}) {
+  return (
+    <fieldset className="border-0 p-0">
+      <legend className="mb-1.5 block text-[13px] font-medium">{label}</legend>
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <label
+            key={star}
+            className="cursor-pointer p-0.5"
+            title={`${star} out of 5`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={star}
+              checked={value === star}
+              onChange={() => onChange(star)}
+              className="sr-only"
+            />
+            <svg
+              viewBox="0 0 20 20"
+              className={cx(
+                'h-7 w-7 transition-colors',
+                star <= value ? 'text-[#e0a422]' : 'text-[#d8d5cf]',
+              )}
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 14.9 4.7 17.6l1-5.8L1.5 7.7l5.9-.9z" />
+            </svg>
+            <span className="sr-only">{star} out of 5</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
 export function SectionHeading({
   eyebrow,
   title,

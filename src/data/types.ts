@@ -51,6 +51,8 @@ export interface SpecRow {
 }
 
 export interface Review {
+  /** Absent on the reviews that came over with the catalogue. */
+  id?: number
   author: string
   location: string
   rating: number
