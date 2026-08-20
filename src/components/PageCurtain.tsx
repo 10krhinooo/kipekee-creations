@@ -174,8 +174,8 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     // transform-only animation on a promoted layer never repaints.
     let live = true
     const running: Animation[] = []
-    const run = (target: Element, frames: Keyframe[], ms: number, easing: string) => {
-      const a = target.animate(frames, { duration: still ? 0 : ms, easing, fill: 'forwards' })
+    const run = (node: Element, frames: Keyframe[], ms: number, easing: string) => {
+      const a = node.animate(frames, { duration: still ? 0 : ms, easing, fill: 'forwards' })
       running.push(a)
       return a.finished
     }
