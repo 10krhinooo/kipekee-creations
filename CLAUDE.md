@@ -130,11 +130,21 @@ Consequences to respect:
 - **`AuthScene` must not draw curtains of its own.** It used to, and once the transition covered
   auth routes too you got cloth drawing across to reveal more cloth — two identical fabrics at
   different scales read as a duplicate. What is left there is the lit room behind them.
-- **React must not set `opacity` on the overlay.** It owns `display`; anime owns `opacity`. Setting
-  both meant every re-render stomped the tween and stranded the cloth mid-screen.
+- **React must not set `opacity` on the overlay.** It owns `display`; the transition effect owns
+  `opacity`. Setting both meant every re-render stomped the tween and stranded the cloth mid-screen.
+- **The panels are tweened with `element.animate`, not with anime.** That is a performance
+  constraint, not taste. A `transform` written from JavaScript on a half-viewport element forces a
+  re-raster every frame; declared as a Web Animation it runs on the compositor and never repaints.
+  Measured across one page change: 1141 raster tasks and 605ms of raster work before, 31 tasks and
+  24ms after. `CURTAIN_EASE_CSS` in `lib/motion.ts` is `CURTAIN_EASE` sampled into a CSS `linear()`
+  from the same exponent, so the curve is identical to the one the visualiser runs on anime's timer.
+  Moving this back onto a per-frame callback undoes the whole fix.
 
 `components/Curtains.tsx` owns the cloth for both, for the same reason `patternDefs` is shared: two
-curtains that do not match read as two products.
+curtains that do not match read as two products. It is HTML and CSS, not SVG: each panel is a
+promoted layer wearing `clothTile()` as a repeating background at a fixed pixel size, so there is a
+bitmap for the compositor to scale and the weave stays square at every viewport instead of being
+stretched by `preserveAspectRatio="none"`.
 
 ### Emails are React, rendered once
 
