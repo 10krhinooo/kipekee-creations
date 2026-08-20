@@ -11,6 +11,7 @@ import {
 import type { CartLine, QuoteLine } from '../data/types'
 import { priceOf, stockCapOf } from '../data/catalogue'
 import { useCatalogue } from './catalogue'
+import { api } from '../lib/api'
 import type { Product } from '../data/types'
 
 /*
@@ -169,8 +170,10 @@ interface BasketApi extends State {
   cartCount: number
   quoteCount: number
   subtotal: number
-  /** Free over KSh 10,000 inside Nairobi, the real policy, not a $200 placeholder. */
+  /** What delivery costs this basket, from the server's own terms. */
   delivery: number
+  /** The subtotal at or above which delivery is free, for the progress banner. */
+  freeDeliveryFrom: number
   total: number
   drawer: DrawerView
   openDrawer: (view: Exclude<DrawerView, null>) => void
@@ -179,8 +182,23 @@ interface BasketApi extends State {
 
 const BasketContext = createContext<BasketApi | null>(null)
 
-export const FREE_DELIVERY_THRESHOLD = 10000
-export const DELIVERY_FEE = 450
+/**
+ * What delivery costs, until the server says otherwise.
+ *
+ * These are the same two numbers as `kipekee.delivery.fee` and
+ * `kipekee.delivery.free-from` in the backend's config, and they used to be the
+ * only copy the shop had. The figure charged has always been the server's,
+ * computed at checkout and never taken from the request, so this was never a
+ * way to underpay; it was a way to be quoted 450 in the basket and charged
+ * something else the day the config changed. `GET /api/delivery` is now the
+ * source and these are the fallback for the moment before it answers.
+ */
+const DEFAULT_TERMS = { fee: 450, freeFrom: 10000 }
+
+interface DeliveryTerms {
+  fee: number
+  freeFrom: number
+}
 
 export function BasketProvider({ children }: { children: ReactNode }) {
   const { bySlug } = useCatalogue()
@@ -189,6 +207,20 @@ export function BasketProvider({ children }: { children: ReactNode }) {
   const [drawer, setDrawer] = useState<DrawerView>(null)
   const [removed, setRemoved] = useState<RemovedLine | null>(null)
   const [ready, setReady] = useState(false)
+  const [terms, setTerms] = useState<DeliveryTerms>(DEFAULT_TERMS)
+
+  // Left on the fallback if this fails. A basket that will not show a total
+  // because the delivery endpoint is down is worse than one showing the figure
+  // that has been right for the life of the shop.
+  useEffect(() => {
+    let live = true
+    void api.get<DeliveryTerms>('/api/delivery').then((result) => {
+      if (live && result.ok && result.data) setTerms(result.data)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
 
   useEffect(() => {
     try {
@@ -236,7 +268,7 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     [state.cart],
   )
 
-  const delivery = subtotal === 0 || subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
+  const delivery = subtotal === 0 || subtotal >= terms.freeFrom ? 0 : terms.fee
 
   const value = useMemo<BasketApi>(
     () => ({
@@ -279,12 +311,13 @@ export function BasketProvider({ children }: { children: ReactNode }) {
       quoteCount: state.quote.length,
       subtotal,
       delivery,
+      freeDeliveryFrom: terms.freeFrom,
       total: subtotal + delivery,
       drawer,
       openDrawer,
       closeDrawer,
     }),
-    [state, subtotal, delivery, drawer, removed, openDrawer, closeDrawer],
+    [state, subtotal, delivery, terms.freeFrom, drawer, removed, openDrawer, closeDrawer],
   )
 
   return <BasketContext.Provider value={value}>{children}</BasketContext.Provider>

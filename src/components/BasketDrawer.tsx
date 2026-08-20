@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useBasket, FREE_DELIVERY_THRESHOLD } from '../store/basket'
+import { useBasket } from '../store/basket'
 import { useSaved } from '../store/saved'
 import { priceOf, rooms, stockCapOf } from '../data/catalogue'
 import { useCatalogue } from '../store/catalogue'
@@ -18,16 +18,16 @@ import { quoteWhatsAppLink } from '../lib/whatsapp'
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-function ProgressToFreeDelivery({ subtotal }: { subtotal: number }) {
-  const remaining = FREE_DELIVERY_THRESHOLD - subtotal
-  const pct = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)
+function ProgressToFreeDelivery({ subtotal, freeFrom }: { subtotal: number; freeFrom: number }) {
+  const remaining = freeFrom - subtotal
+  const pct = Math.min(100, (subtotal / freeFrom) * 100)
 
   return (
     <div className="border-b border-line bg-shell px-5 py-3">
       <p className="mb-2 text-[12px] text-ink-soft">
         {remaining > 0 ? (
           <>
-            Add <strong>{money(remaining)}</strong> more for free Nairobi delivery
+            Add <strong>{money(remaining)}</strong> more for free delivery
           </>
         ) : (
           <strong className="text-[#1a6b39]">Free delivery unlocked</strong>
@@ -83,6 +83,7 @@ export function BasketDrawer() {
     cart,
     quote,
     subtotal,
+    freeDeliveryFrom,
     setCartQty,
     removeFromCart,
     removeFromQuote,
@@ -232,7 +233,9 @@ export function BasketDrawer() {
           </button>
         </div>
 
-        {isCart && cart.length > 0 && <ProgressToFreeDelivery subtotal={subtotal} />}
+        {isCart && cart.length > 0 && (
+          <ProgressToFreeDelivery subtotal={subtotal} freeFrom={freeDeliveryFrom} />
+        )}
 
         <div className="flex-1 overflow-y-auto px-5">
           {isCart ? (
@@ -411,7 +414,7 @@ export function BasketDrawer() {
                   <span className="font-semibold">{money(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted">Delivery (Nairobi)</span>
+                  <span className="text-muted">Delivery</span>
                   <span className={cx('font-semibold', basket.delivery === 0 && 'text-[#1a6b39]')}>
                     {basket.delivery === 0 ? 'Free' : money(basket.delivery)}
                   </span>
