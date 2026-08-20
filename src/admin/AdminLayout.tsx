@@ -47,6 +47,9 @@ const icons = {
       <path d="M17.5 3.5l1 1.6 1.8.3-1.3 1.3.3 1.8-1.8-.9-1.8.9.3-1.8L14.7 5.4l1.8-.3z" />
     </>
   ),
+  reviews: (
+    <path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9l-5.3 2.7 1-5.8-4.2-4.1 5.9-.9z" />
+  ),
   customers: (
     <>
       <circle cx="9" cy="8" r="3.5" />
@@ -100,6 +103,7 @@ export function AdminLayout() {
     { to: '/admin/orders', label: 'Orders', icon: icons.orders, badge: openOrders },
     { to: '/admin/schedule', label: 'Schedule', icon: icons.schedule, badge: upcoming },
     { to: '/admin/products', label: 'Products', icon: icons.products, badge: lowStock, urgent: true },
+    { to: '/admin/reviews', label: 'Reviews', icon: icons.reviews },
     { to: '/admin/customers', label: 'Customers', icon: icons.customers },
     // Managing who works here is an admin's job, so staff are not shown a link
     // to a page that would only refuse them.

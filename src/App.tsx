@@ -50,6 +50,7 @@ import { QuoteBuilder } from './admin/pages/QuoteBuilder'
 import { Orders, OrderDetail } from './admin/pages/Orders'
 import { Products } from './admin/pages/Products'
 import { ProductEditor } from './admin/pages/ProductEditor'
+import { Reviews } from './admin/pages/Reviews'
 import { Schedule } from './admin/pages/Schedule'
 import { Customers } from './admin/pages/Customers'
 import { ProductPhotos } from './admin/pages/ProductPhotos'
@@ -209,6 +210,7 @@ export default function App() {
             <Route path="products/new" element={<ProductEditor />} />
             <Route path="products/:slug/edit" element={<ProductEditor />} />
             <Route path="products/:slug/photos" element={<ProductPhotos />} />
+            <Route path="reviews" element={<Reviews />} />
             <Route path="schedule" element={<Schedule />} />
             <Route path="customers" element={<Customers />} />
             {/* Managing who works here is ADMIN only, on top of the staff gate
