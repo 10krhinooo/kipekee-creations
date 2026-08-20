@@ -31,6 +31,34 @@ const FADE_MS = 340
 const OPEN_REST = 0.1
 
 /**
+ * The motorised reveal, played once a session on the first load.
+ *
+ * The shop sells curtains that are fitted and, increasingly, motorised, so the
+ * front door runs the product instead of describing it: the rail goes up, the
+ * motor arrives at the end of it, and only then does the cloth draw back with
+ * the runners bunching toward the wall the way a real curtain stacks.
+ *
+ * Once a session, and only on the first load. A motor that appeared on every
+ * navigation would stop being a demonstration and start being a toll gate on
+ * getting to the next page.
+ */
+const SEEN = 'kipekee.curtain.seen'
+const RAIL_MS = 560
+const MOTOR_AT = 420
+const MOTOR_MS = 320
+const DRAW_AT = 780
+const DRAW_MS = 1500
+
+/**
+ * How far the runners bunch.
+ *
+ * A floor rather than the panel's own factor, because a stack of rings has a
+ * width of its own: they slide together until they touch and then stop, while
+ * the cloth behind them keeps gathering.
+ */
+const RUNNER_FLOOR = 0.18
+
+/**
  * How wide a panel is, as a transform.
  *
  * `scaleX` and not a width, so the browser can hand the whole tween to the
@@ -99,6 +127,23 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
   const location = useLocation()
   const scope = useRef<HTMLDivElement>(null)
 
+  /**
+   * Whether this load still owes the visitor the motorised reveal.
+   *
+   * Read once, at mount. A Vite SPA has no server render to disagree with, and
+   * the flag is written when the reveal finishes rather than on the way in, so
+   * an interrupted first load still gets it next time.
+   */
+  const [motorised, setMotorised] = useState(() => {
+    try {
+      return sessionStorage.getItem(SEEN) !== '1'
+    } catch {
+      // Private browsing can refuse storage. Playing the reveal is the right
+      // failure: it is the thing the front door is for.
+      return true
+    }
+  })
+
   const [shown, setShown] = useState(location)
   // The first render is a reveal, not a transition: there is no previous page
   // to cover, so the cloth starts closed and simply opens on the site.
@@ -151,7 +196,13 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     if (!el || phase === 'hidden') return
 
     const panels = Array.from(el.querySelectorAll<HTMLElement>('[data-curtain]'))
+    const runners = Array.from(el.querySelectorAll<HTMLElement>('[data-runners]'))
+    const railBar = el.querySelector<HTMLElement>('[data-rail]')
+    const motorBox = el.querySelector<HTMLElement>('[data-motor]')
     const closing = phase === 'closing'
+    // Only ever the first open. A close is covering a page change, and a motor
+    // arriving to shut a curtain nobody asked to shut reads as an obstruction.
+    const reveal = motorised && !closing
     // Motion nobody asked for is skipped rather than played fast. `skip` above
     // only covers navigations; the first load opens on the site without one,
     // and used to play the full 760ms open regardless of the preference.
@@ -163,6 +214,11 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     // distance instead of snapping to the destination first.
     el.style.opacity = '1'
     panels.forEach((p) => (p.style.transform = width(from)))
+    runners.forEach((r) => (r.style.transform = width(Math.max(from, RUNNER_FLOOR))))
+    if (reveal) {
+      if (railBar) railBar.style.transform = width(0)
+      if (motorBox) motorBox.style.opacity = '0'
+    }
 
     // Every tween here is a Web Animation rather than a per-frame style write,
     // and that is a performance decision, not a style one. The panels are half
@@ -174,8 +230,13 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     // transform-only animation on a promoted layer never repaints.
     let live = true
     const running: Animation[] = []
-    const run = (node: Element, frames: Keyframe[], ms: number, easing: string) => {
-      const a = node.animate(frames, { duration: still ? 0 : ms, easing, fill: 'forwards' })
+    const run = (node: Element, frames: Keyframe[], ms: number, easing: string, delay = 0) => {
+      const a = node.animate(frames, {
+        duration: still ? 0 : ms,
+        delay: still ? 0 : delay,
+        easing,
+        fill: 'forwards',
+      })
       running.push(a)
       return a.finished
     }
@@ -194,7 +255,40 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
       a.cancel()
     }
 
-    Promise.all(panels.map((p) => run(p, travel(from, to), closing ? CLOSE_MS : OPEN_MS, CURTAIN_EASE_CSS)))
+    // The cloth waits for the rail to be up and the motor to have arrived. On
+    // every other transition there is nothing to wait for and this is 0.
+    const drawAt = reveal ? DRAW_AT : 0
+    const drawMs = reveal ? DRAW_MS : closing ? CLOSE_MS : OPEN_MS
+
+    if (reveal && railBar) {
+      run(railBar, travel(0, 1), RAIL_MS, 'cubic-bezier(0.45,0,0.55,1)')
+    }
+    if (reveal && motorBox) {
+      // A beat on the motor before anything moves: the pause between pressing
+      // the button and the curtain going is the thing being demonstrated.
+      run(
+        motorBox,
+        [
+          { opacity: 0, transform: 'translateX(-24px)' },
+          { opacity: 1, transform: 'translateX(0)' },
+        ],
+        MOTOR_MS,
+        'cubic-bezier(0.33,1,0.68,1)',
+        MOTOR_AT,
+      )
+    }
+
+    runners.forEach((r) =>
+      run(
+        r,
+        travel(Math.max(from, RUNNER_FLOOR), Math.max(to, RUNNER_FLOOR)),
+        drawMs,
+        CURTAIN_EASE_CSS,
+        drawAt,
+      ),
+    )
+
+    Promise.all(panels.map((p) => run(p, travel(from, to), drawMs, CURTAIN_EASE_CSS, drawAt)))
       .then(() => {
         if (!live) return
         running.forEach(land)
@@ -234,6 +328,17 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
           // interrupted cycle can never flash a strip of cloth down each edge
           // before the next close seeds them.
           panels.forEach((p) => (p.style.transform = width(0)))
+          runners.forEach((r) => (r.style.transform = width(0)))
+          if (reveal) {
+            // Written here rather than on the way in, so a load abandoned
+            // half way through still gets the reveal next time.
+            try {
+              sessionStorage.setItem(SEEN, '1')
+            } catch {
+              // Nothing to do: the reveal simply plays again next load.
+            }
+            setMotorised(false)
+          }
           setPhase('hidden')
         })
       })
@@ -247,7 +352,7 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     // `restingOnAuth` belongs here: it changes in the same commit as the phase
     // that reads it, when `shown` advances to the destination, so React batches
     // them into one run rather than animating to the wrong resting position.
-  }, [phase, restingOnAuth])
+  }, [phase, restingOnAuth, motorised])
 
   return (
     <>
@@ -271,7 +376,14 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
             lands on the one the staging already draws instead of appearing and
             then vanishing. No glow: the staging underneath owns the daylight,
             and a second gradient over the card would wash it out. */}
-        <CurtainCloth className="h-full w-full" glow={false} rail={restingOnAuth} />
+        {/* The rail comes with the motor on the first reveal, and otherwise
+            only when the cloth is going to stay. */}
+        <CurtainCloth
+          className="h-full w-full"
+          glow={false}
+          rail={restingOnAuth || motorised}
+          motor={motorised}
+        />
       </div>
     </>
   )

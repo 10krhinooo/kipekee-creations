@@ -72,6 +72,9 @@ const GLOW = `radial-gradient(62% 62% at 50% 34%,
 
 const RAIL_BAR = 'linear-gradient(180deg, #c9a15e 0%, #8d6a34 50%, #5d4520 100%)'
 
+/** The motor housing, lit from the same angle as the rail it clamps onto. */
+const MOTOR_BODY = 'linear-gradient(180deg, #e6e4e0 0%, #b9b5ae 46%, #86827b 100%)'
+
 /**
  * The rings, as one repeating tile. Drawn at a fixed pixel size so they stay
  * circular whatever the viewport is doing.
@@ -86,11 +89,20 @@ export function CurtainCloth({
   glow = true,
   /** The rail. */
   rail = true,
+  /**
+   * The motor, and with it the runners that gather.
+   *
+   * Off by default, because a motor that appears and vanishes on every
+   * navigation is a gimmick rather than a demonstration. It is on for the
+   * first reveal of a session, where the point is to show the product working.
+   */
+  motor = false,
   className,
   style,
 }: {
   glow?: boolean
   rail?: boolean
+  motor?: boolean
   className?: string
   style?: CSSProperties
 }) {
@@ -107,22 +119,81 @@ export function CurtainCloth({
 
       {/* Above the cloth and fixed, because a real rail is. */}
       {rail && (
-        <div style={{ position: 'absolute', insetInline: 0, top: 0, height: 24 }}>
+        <div data-rail-group style={{ position: 'absolute', insetInline: 0, top: 0, height: 24 }}>
           <div
-            style={{ position: 'absolute', insetInline: 0, top: 0, height: 14, backgroundImage: RAIL_BAR }}
-          />
-          <div
+            data-rail
             style={{
               position: 'absolute',
-              inset: 0,
-              backgroundImage: RAIL_RINGS,
-              backgroundRepeat: 'repeat-x',
-              backgroundSize: '56px 24px',
+              insetInline: 0,
+              top: 0,
+              height: 14,
+              backgroundImage: RAIL_BAR,
+              transformOrigin: 'left center',
+              willChange: 'transform',
             }}
           />
+          {/*
+            One runner strip per side rather than one across the whole rail.
+            A curtain does not slide as a rigid sheet: the runners bunch toward
+            the end it stacks at, and each strip shares its panel's origin so
+            the two gather together.
+          */}
+          <Runners side="left" />
+          <Runners side="right" />
         </div>
       )}
+
+      {/*
+        The motor, at the end of the rail where it is actually fitted. Drawn
+        above the rings because it clamps over them.
+      */}
+      {rail && motor && (
+        <div
+          data-motor
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 56,
+            height: 20,
+            backgroundImage: MOTOR_BODY,
+            borderRight: '1px solid rgba(0,0,0,0.35)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+            willChange: 'transform, opacity',
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+/**
+ * The rings on one half of the rail.
+ *
+ * Scaled rather than redrawn as the curtain gathers, which is why the tile is a
+ * fixed pixel size on a promoted layer: compressing the strip slides the rings
+ * together toward the wall without ever repainting one.
+ */
+function Runners({ side }: { side: 'left' | 'right' }) {
+  const left = side === 'left'
+  return (
+    <div
+      data-runners
+      style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        [left ? 'left' : 'right']: 0,
+        width: '50%',
+        backgroundImage: RAIL_RINGS,
+        backgroundRepeat: 'repeat-x',
+        backgroundSize: '56px 24px',
+        // The stack forms at the wall the curtain is drawn toward, so each
+        // strip compresses outward, away from the middle of the window.
+        transformOrigin: left ? 'left center' : 'right center',
+        willChange: 'transform',
+      }}
+    />
   )
 }
 

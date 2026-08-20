@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# A working note on what the project still needs. Deliberately untracked: it is
+# a snapshot, and it goes stale the moment somebody fixes something in it.
+FINDINGS.md
