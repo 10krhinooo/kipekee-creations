@@ -1,4 +1,5 @@
 import { ContactShadows, Environment, Lightformer } from '@react-three/drei'
+import { useEffect, useState } from 'react'
 
 /**
  * The light rig for every 3D preview.
@@ -21,9 +22,23 @@ import { ContactShadows, Environment, Lightformer } from '@react-three/drei'
  * nothing to reflect and renders as near-black. This is what makes the
  * wrought-iron and the rod hardware read as metal at all.
  */
-function ProceduralEnvironment({ night }: { night: boolean }) {
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: coarse)')
+    const update = () => setCoarse(query.matches)
+    update()
+    query.addEventListener?.('change', update)
+    return () => query.removeEventListener?.('change', update)
+  }, [])
+
+  return coarse
+}
+
+function ProceduralEnvironment({ night, mobile }: { night: boolean; mobile: boolean }) {
   return (
-    <Environment resolution={256}>
+    <Environment resolution={mobile ? 128 : 256}>
       {/* The big soft source in front of the scene. It is what a polished rod or
           a wrought-iron rail actually reflects, so without it metal reads as
           black no matter how bright the direct lights are. */}
@@ -60,9 +75,11 @@ function ProceduralEnvironment({ night }: { night: boolean }) {
 }
 
 export function Stage({ night = false }: { night?: boolean }) {
+  const mobile = useCoarsePointer()
+
   return (
     <>
-      <ProceduralEnvironment night={night} />
+      <ProceduralEnvironment night={night} mobile={mobile} />
 
       {/* A floor for the shadows to sit on, not a light source in its own right. */}
       <ambientLight intensity={night ? 0.2 : 0.4} />
@@ -80,8 +97,8 @@ export function Stage({ night = false }: { night?: boolean }) {
         position={[-3.4, 4.6, 3.6]}
         intensity={night ? 0.35 : 2.1}
         color={night ? '#9fb4d8' : '#fff4e6'}
-        // 1024 leaves visible stair-stepping along a 2.6m curtain edge.
-        shadow-mapSize={[2048, 2048]}
+        // Phones use a smaller map to keep fill-rate and memory predictable.
+        shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
         shadow-camera-near={0.5}
         shadow-camera-far={20}
         // Clamped tight to the room: the map's texels are spread over this
@@ -94,7 +111,7 @@ export function Stage({ night = false }: { night?: boolean }) {
         // from the caster. That gradient is what makes a curtain shadow read as
         // cloth rather than as a cardboard cut-out.
         shadow-radius={6}
-        shadow-blurSamples={16}
+        shadow-blurSamples={mobile ? 8 : 16}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
       />
@@ -114,7 +131,7 @@ export function Stage({ night = false }: { night?: boolean }) {
         position={[0, 0.001, 0]}
         opacity={night ? 0.32 : 0.5}
         scale={12}
-        blur={2.4}
+        blur={mobile ? 1.8 : 2.4}
         far={2}
         frames={1}
       />

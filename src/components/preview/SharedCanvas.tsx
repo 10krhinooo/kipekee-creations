@@ -43,6 +43,9 @@ function FrameDriver({ onReady }: { onReady: (ready: boolean) => void }) {
  */
 export default function SharedCanvas() {
   const { demote, setCanvasReady } = useRenderTier()
+  // Phones and tablets usually expose a coarse pointer. Keep their first
+  // render near DPR 1 instead of immediately filling a high-density screen.
+  const coarsePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
 
   return (
     <Canvas
@@ -73,20 +76,10 @@ export default function SharedCanvas() {
       // PCFSoftShadowMap is deprecated in this version too. VSM is the
       // supported way to get a penumbra that widens with distance.
       shadows={{ type: VSMShadowMap }}
-      // An idle preview must draw zero frames. Everything that moves asks for a
-      // frame explicitly rather than the loop running forever.
-      // KNOWN GAP, owned by the perf pass. The plan calls for `demand` so an
-      // idle preview costs nothing, and that is still the target.
-      //
-      // `demand` does not work with `<View>` as-is: a view mounts from a lazy
-      // chunk long after the canvas, it measures its DOM rect inside a
-      // priority useFrame, and the result is a race where the first paint
-      // lands only sometimes. Shipping a preview that renders intermittently
-      // is far worse than shipping one that costs frames, so this stays
-      // `always` until the perf pass can gate it properly (pause the loop when
-      // no view is on screen, rather than trying to hand-invalidate one).
-      frameloop="always"
-      dpr={[1, 2]}
+      // Idle previews draw zero frames. Mount, viewport changes, scene changes,
+      // and drag input explicitly invalidate the renderer.
+      frameloop="demand"
+      dpr={coarsePointer ? [1, 1.25] : [1, 2]}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
       // Framed on the cloth rather than on the room: close enough that the
       // product fills a portrait preview box, high enough to keep the rod and

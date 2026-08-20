@@ -648,7 +648,8 @@ function SceneContents(props: PreviewProps) {
 }
 
 export default function RoomScene3D(props: PreviewProps) {
-  const { state: orbit, handlers } = useOrbitDrag()
+  const invalidate = useThree((state) => state.invalidate)
+  const { state: orbit, handlers } = useOrbitDrag(invalidate)
 
   return (
     <div className={props.className ?? 'relative h-full w-full'}>
