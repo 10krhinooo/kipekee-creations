@@ -17,6 +17,7 @@ import { Home } from './pages/Home'
 import { Shop } from './pages/Shop'
 import { ProductPage } from './pages/ProductPage'
 import { Checkout } from './pages/Checkout'
+import { QuoteApproval } from './pages/QuoteApproval'
 import { QuoteRequest } from './pages/QuoteRequest'
 import { CustomCurtains } from './pages/CustomCurtains'
 import { MeasureGuide } from './pages/MeasureGuide'
@@ -148,6 +149,7 @@ export default function App() {
             <Route path="/product/:slug" element={<ProductPage />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/quote" element={<QuoteRequest />} />
+            <Route path="/quote/:reference" element={<QuoteApproval />} />
             <Route path="/custom-curtains" element={<CustomCurtains />} />
             <Route path="/measure-guide" element={<MeasureGuide />} />
             <Route path="/hotel-linen" element={<Trade />} />
