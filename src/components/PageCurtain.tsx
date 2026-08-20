@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, type Location } from 'react-router-dom'
-import { animate, utils } from 'animejs'
-import { CURTAIN_EASE, GATHERED, reducedMotion } from '../lib/motion'
+import { CURTAIN_EASE_CSS, GATHERED, OUT_EASE_CSS, reducedMotion } from '../lib/motion'
 import { CurtainCloth } from './Curtains'
 
 /**
@@ -30,6 +29,45 @@ const FADE_MS = 340
  * covering the page.
  */
 const OPEN_REST = 0.1
+
+/**
+ * The motorised reveal, played once a session on the first load.
+ *
+ * The shop sells curtains that are fitted and, increasingly, motorised, so the
+ * front door runs the product instead of describing it: the rail goes up, the
+ * motor arrives at the end of it, and only then does the cloth draw back with
+ * the runners bunching toward the wall the way a real curtain stacks.
+ *
+ * Once a session, and only on the first load. A motor that appeared on every
+ * navigation would stop being a demonstration and start being a toll gate on
+ * getting to the next page.
+ */
+const SEEN = 'kipekee.curtain.seen'
+const RAIL_MS = 560
+const MOTOR_AT = 420
+const MOTOR_MS = 320
+const DRAW_AT = 780
+const DRAW_MS = 1500
+
+/**
+ * How far the runners bunch.
+ *
+ * A floor rather than the panel's own factor, because a stack of rings has a
+ * width of its own: they slide together until they touch and then stop, while
+ * the cloth behind them keeps gathering.
+ */
+const RUNNER_FLOOR = 0.18
+
+/**
+ * How wide a panel is, as a transform.
+ *
+ * `scaleX` and not a width, so the browser can hand the whole tween to the
+ * compositor. `transform` rather than the standalone `scale` property because
+ * `AuthScene` seeds the same panels through anime's `utils.set`, which writes
+ * `transform` - two spellings on one element would multiply.
+ */
+const width = (x: number) => `scaleX(${x})`
+const travel = (from: number, to: number) => [{ transform: width(from) }, { transform: width(to) }]
 
 type Phase = 'hidden' | 'closing' | 'opening'
 
@@ -89,6 +127,23 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
   const location = useLocation()
   const scope = useRef<HTMLDivElement>(null)
 
+  /**
+   * Whether this load still owes the visitor the motorised reveal.
+   *
+   * Read once, at mount. A Vite SPA has no server render to disagree with, and
+   * the flag is written when the reveal finishes rather than on the way in, so
+   * an interrupted first load still gets it next time.
+   */
+  const [motorised, setMotorised] = useState(() => {
+    try {
+      return sessionStorage.getItem(SEEN) !== '1'
+    } catch {
+      // Private browsing can refuse storage. Playing the reveal is the right
+      // failure: it is the thing the front door is for.
+      return true
+    }
+  })
+
   const [shown, setShown] = useState(location)
   // The first render is a reveal, not a transition: there is no previous page
   // to cover, so the cloth starts closed and simply opens on the site.
@@ -140,19 +195,105 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     const el = scope.current
     if (!el || phase === 'hidden') return
 
-    const panels = el.querySelectorAll('[data-curtain]')
+    const panels = Array.from(el.querySelectorAll<HTMLElement>('[data-curtain]'))
+    const runners = Array.from(el.querySelectorAll<HTMLElement>('[data-runners]'))
+    const railBar = el.querySelector<HTMLElement>('[data-rail]')
+    const motorBox = el.querySelector<HTMLElement>('[data-motor]')
     const closing = phase === 'closing'
+    // Only ever the first open. A close is covering a page change, and a motor
+    // arriving to shut a curtain nobody asked to shut reads as an obstruction.
+    const reveal = motorised && !closing
+    // Motion nobody asked for is skipped rather than played fast. `skip` above
+    // only covers navigations; the first load opens on the site without one,
+    // and used to play the full 760ms open regardless of the preference.
+    const still = reducedMotion()
+    const from = closing ? OPEN_REST : 1
+    const to = closing ? 1 : restingOnAuth ? GATHERED : OPEN_REST
 
     // Seed the starting state with no tween, so each leg travels its full
     // distance instead of snapping to the destination first.
-    utils.set(el, { opacity: 1 })
-    utils.set(panels, { scaleX: closing ? OPEN_REST : 1 })
+    el.style.opacity = '1'
+    panels.forEach((p) => (p.style.transform = width(from)))
+    runners.forEach((r) => (r.style.transform = width(Math.max(from, RUNNER_FLOOR))))
+    if (reveal) {
+      if (railBar) railBar.style.transform = width(0)
+      if (motorBox) motorBox.style.opacity = '0'
+    }
 
-    animate(panels, {
-      scaleX: closing ? 1 : restingOnAuth ? GATHERED : OPEN_REST,
-      duration: closing ? CLOSE_MS : OPEN_MS,
-      ease: CURTAIN_EASE,
-      onComplete: () => {
+    // Every tween here is a Web Animation rather than a per-frame style write,
+    // and that is a performance decision, not a style one. The panels are half
+    // the viewport each, filled with a repeating weave under three gradients.
+    // Driving `transform` from JavaScript made the compositor re-rasterise both
+    // of them on every frame: traced across one page change that was 1141
+    // raster tasks and 605ms of raster work. Declared as an animation the
+    // browser owns, the same travel costs 8 tasks and 8ms, because a
+    // transform-only animation on a promoted layer never repaints.
+    let live = true
+    const running: Animation[] = []
+    const run = (node: Element, frames: Keyframe[], ms: number, easing: string, delay = 0) => {
+      const a = node.animate(frames, {
+        duration: still ? 0 : ms,
+        delay: still ? 0 : delay,
+        easing,
+        fill: 'forwards',
+      })
+      running.push(a)
+      return a.finished
+    }
+
+    // `fill: 'forwards'` holds the end state only while the animation lives, so
+    // each leg is committed to inline style and released. That also means an
+    // interrupted leg can be committed where it stands (see the cleanup) rather
+    // than snapping back to where it started.
+    const land = (a: Animation) => {
+      try {
+        a.commitStyles()
+      } catch {
+        // Only throws if the element has left the document, in which case
+        // there is nothing to hold in place.
+      }
+      a.cancel()
+    }
+
+    // The cloth waits for the rail to be up and the motor to have arrived. On
+    // every other transition there is nothing to wait for and this is 0.
+    const drawAt = reveal ? DRAW_AT : 0
+    const drawMs = reveal ? DRAW_MS : closing ? CLOSE_MS : OPEN_MS
+
+    if (reveal && railBar) {
+      run(railBar, travel(0, 1), RAIL_MS, 'cubic-bezier(0.45,0,0.55,1)')
+    }
+    if (reveal && motorBox) {
+      // A beat on the motor before anything moves: the pause between pressing
+      // the button and the curtain going is the thing being demonstrated.
+      run(
+        motorBox,
+        [
+          { opacity: 0, transform: 'translateX(-24px)' },
+          { opacity: 1, transform: 'translateX(0)' },
+        ],
+        MOTOR_MS,
+        'cubic-bezier(0.33,1,0.68,1)',
+        MOTOR_AT,
+      )
+    }
+
+    runners.forEach((r) =>
+      run(
+        r,
+        travel(Math.max(from, RUNNER_FLOOR), Math.max(to, RUNNER_FLOOR)),
+        drawMs,
+        CURTAIN_EASE_CSS,
+        drawAt,
+      ),
+    )
+
+    Promise.all(panels.map((p) => run(p, travel(from, to), drawMs, CURTAIN_EASE_CSS, drawAt)))
+      .then(() => {
+        if (!live) return
+        running.forEach(land)
+        running.length = 0
+
         if (closing) {
           // The whole point of the delay: the new page mounts here, out of
           // sight, and the scroll jump that comes with it goes unseen too.
@@ -164,9 +305,9 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
           // were competing with React building the destination - and the
           // heavier the destination, the worse it looked. Signing out of the
           // console was the clearest case: the whole admin tree unmounts and an
-          // auth screen with two full curtain SVGs mounts, and the cloth
-          // visibly stuttered on the way back. Two frames of a shut curtain
-          // sitting still is invisible; a stutter mid-travel is not.
+          // auth screen with two full curtains mounts, and the cloth visibly
+          // stuttered on the way back. Two frames of a shut curtain sitting
+          // still is invisible; a stutter mid-travel is not.
           requestAnimationFrame(() => requestAnimationFrame(() => setPhase('opening')))
           return
         }
@@ -178,25 +319,40 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
         // On an auth screen the fade is a handoff rather than a disappearance:
         // an identical curtain sits underneath at the same width, so what is
         // left behind is the staging, not bare page.
-        animate(el, {
-          opacity: 0,
-          duration: FADE_MS,
-          ease: 'outQuad',
-          onComplete: () => {
-            // Parked fully open as well as hidden. `display: none` already
-            // removes it, but leaving the panels at their resting width means
-            // an interrupted cycle can never flash a strip of cloth down each
-            // edge before the next close seeds them.
-            utils.set(panels, { scaleX: 0 })
-            setPhase('hidden')
-          },
+        return run(el, [{ opacity: 1 }, { opacity: 0 }], FADE_MS, OUT_EASE_CSS).then(() => {
+          if (!live) return
+          running.forEach((a) => a.cancel())
+          el.style.opacity = '0'
+          // Parked fully open as well as hidden. `display: none` already
+          // removes it, but leaving the panels at their resting width means an
+          // interrupted cycle can never flash a strip of cloth down each edge
+          // before the next close seeds them.
+          panels.forEach((p) => (p.style.transform = width(0)))
+          runners.forEach((r) => (r.style.transform = width(0)))
+          if (reveal) {
+            // Written here rather than on the way in, so a load abandoned
+            // half way through still gets the reveal next time.
+            try {
+              sessionStorage.setItem(SEEN, '1')
+            } catch {
+              // Nothing to do: the reveal simply plays again next load.
+            }
+            setMotorised(false)
+          }
+          setPhase('hidden')
         })
-      },
-    })
+      })
+      // A cancelled leg is somebody navigating again, not a failure.
+      .catch(() => {})
+
+    return () => {
+      live = false
+      running.forEach(land)
+    }
     // `restingOnAuth` belongs here: it changes in the same commit as the phase
     // that reads it, when `shown` advances to the destination, so React batches
     // them into one run rather than animating to the wrong resting position.
-  }, [phase, restingOnAuth])
+  }, [phase, restingOnAuth, motorised])
 
   return (
     <>
@@ -207,11 +363,12 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
         // click would make the site feel broken in a way that is very hard to
         // reproduce on purpose.
         className="pointer-events-none fixed inset-0 z-[70] overflow-hidden"
-        // React owns `display` here and anime owns `opacity`, and the two must
-        // not overlap. Setting `opacity` in this style object as well meant
-        // every re-render rewrote it to 0 mid-tween, which left the cloth
-        // stranded part-way across the screen. `display: none` while hidden is
-        // what keeps the overlay from showing before the effect seeds it.
+        // React owns `display` here and the effect above owns `opacity`, and
+        // the two must not overlap. Setting `opacity` in this style object as
+        // well meant every re-render rewrote it to 0 mid-tween, which left the
+        // cloth stranded part-way across the screen. `display: none` while
+        // hidden is what keeps the overlay from showing before the effect
+        // seeds it.
         style={{ display: phase === 'hidden' ? 'none' : 'block' }}
         aria-hidden
       >
@@ -219,7 +376,14 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
             lands on the one the staging already draws instead of appearing and
             then vanishing. No glow: the staging underneath owns the daylight,
             and a second gradient over the card would wash it out. */}
-        <CurtainCloth className="h-full w-full" glow={false} rail={restingOnAuth} />
+        {/* The rail comes with the motor on the first reveal, and otherwise
+            only when the cloth is going to stay. */}
+        <CurtainCloth
+          className="h-full w-full"
+          glow={false}
+          rail={restingOnAuth || motorised}
+          motor={motorised}
+        />
       </div>
     </>
   )
