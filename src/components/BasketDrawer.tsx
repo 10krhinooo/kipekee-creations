@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBasket, FREE_DELIVERY_THRESHOLD } from '../store/basket'
 import { useSaved } from '../store/saved'
-import { usePhotos } from '../store/photos'
 import { priceOf, rooms, stockCapOf } from '../data/catalogue'
 import { useCatalogue } from '../store/catalogue'
 import type { Product, QuoteLine } from '../data/types'
 import { money } from '../lib/format'
+import { mediaUrl } from '../lib/api'
 import { swatch } from '../lib/swatch'
 import { Button, WhatsAppIcon, cx } from './ui'
 import { quoteWhatsAppLink } from '../lib/whatsapp'
@@ -60,14 +60,13 @@ function LineImage({
   colour: string
   seed: number
 }) {
-  const { photosFor } = usePhotos()
-  const photos = photosFor(product)
+  const photos = product.photos ?? []
   const photo = photos.find((p) => p.colourId === colour) ?? photos[0]
   const variant = product.colours.find((v) => v.id === colour)
 
   return (
     <img
-      src={photo ? photo.src : swatch(product.pattern, variant?.swatch || product.accent, seed)}
+      src={photo ? mediaUrl(photo.src) : swatch(product.pattern, variant?.swatch || product.accent, seed)}
       alt=""
       className="h-20 w-16 shrink-0 rounded-lg object-cover"
     />

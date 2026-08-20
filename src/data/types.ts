@@ -67,7 +67,12 @@ export interface Review {
  * that can, so they are modelled rather than derived.
  */
 export interface ProductPhoto {
-  /** Absolute path under /photos, or an https URL. Never a bare relative path. */
+  /**
+   * `/api/media/{name}` from an upload, an absolute path under `/photos`, or
+   * an https URL. Only the first needs `mediaUrl()` from `src/lib/api.ts`
+   * before it goes in an `<img>`, since it is served by the backend rather
+   * than same-origin.
+   */
   src: string
   alt: string
   /** Ties a photo to a colourway, so choosing a colour surfaces its photos first. */
@@ -104,10 +109,9 @@ export interface Product {
   badges?: string[]
   bestSeller?: boolean
   /**
-   * Photography committed under `public/photos/`. Optional because the client's
-   * shoot has not happened yet: a product without photos simply does not offer
-   * the tab. Staff-uploaded photos live in IndexedDB and are merged on top of
-   * this by `photosFor()` in `src/store/photos.tsx`.
+   * From the backend: both what shipped with the catalogue and whatever staff
+   * have since uploaded through the console, in the same list. Optional
+   * because a product with no photography yet simply does not offer the tab.
    */
   photos?: ProductPhoto[]
 }
