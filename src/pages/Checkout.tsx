@@ -12,18 +12,19 @@ import { post } from '../lib/api'
 
 type Pay = 'mpesa' | 'card' | 'cod'
 
-/** What the receipt calls each method. Customer-facing, so not the raw ids. */
-const PAY_LABELS: Record<Pay, string> = {
-  mpesa: 'M-Pesa',
-  card: 'Card',
-  cod: 'Cash on delivery',
+interface CheckoutOrder {
+  id: string
+  subtotal: number
+  delivery: number
+  total: number
 }
 
 /**
  * Checkout is a single page with three visible steps rather than a multi-page
  * funnel, fewer drop-off points, and the order summary never leaves the
- * screen. Nothing here talks to a payment processor; it is a prototype of the
- * flow, and the real integration lands with the backend.
+ * screen. Nothing here talks to a payment processor yet; the total placed is
+ * the server's own figure from `POST /api/checkout`, not the browser's, since
+ * a shop that lets the client set its own price is a shop anyone can discount.
  */
 export function Checkout() {
   const { bySlug } = useCatalogue()
@@ -38,7 +39,7 @@ export function Checkout() {
   const [email, setEmail] = useState('')
   const [touched, setTouched] = useState({ name: false, phone: false, address: false, email: false })
   const [placing, setPlacing] = useState(false)
-  const [reference, setReference] = useState<string | null>(null)
+  const [order, setOrder] = useState<CheckoutOrder | null>(null)
   const [placeError, setPlaceError] = useState<string | null>(null)
   const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
 
@@ -66,26 +67,19 @@ export function Checkout() {
     setPlaceError(null)
     setPlacing(true)
     const county = KENYA_COUNTIES.find((c) => c.id === town)
-    const result = await post<{ reference: string }>('/api/orders/confirmation', {
+    const result = await post<CheckoutOrder>('/api/checkout', {
       name,
       email,
       phone,
       address,
       county: county?.name ?? null,
-      paymentMethod: PAY_LABELS[pay],
-      deliveryEstimate: deliveryEtaFor(town),
-      deliveryAmount: delivery,
-      lines: cart.map((line) => {
-        const product = bySlug(line.slug)
-        const colour = product?.colours.find((c) => c.id === line.colour)?.label
-        const size = product?.sizes?.find((v) => v.id === line.size)?.label
-        return {
-          productName: product?.name ?? line.slug,
-          detail: [colour, size].filter(Boolean).join(' · ') || null,
-          qty: line.qty,
-          amount: product ? priceOf(product, line.colour, line.size) * line.qty : 0,
-        }
-      }),
+      paymentMethod: pay,
+      lines: cart.map((line) => ({
+        slug: line.slug,
+        qty: line.qty,
+        colour: line.colour,
+        size: line.size ?? null,
+      })),
     })
     setPlacing(false)
 
@@ -94,7 +88,7 @@ export function Checkout() {
       return
     }
 
-    setReference(result.data?.reference ?? null)
+    setOrder(result.data)
     clear('cart')
     setPlaced(true)
   }
@@ -108,9 +102,9 @@ export function Checkout() {
           </svg>
         </div>
         <h1 className="font-display text-3xl font-semibold">Order received</h1>
-        {reference && (
+        {order && (
           <p className="mx-auto mt-4 inline-block rounded-full bg-sand px-4 py-1.5 font-display text-sm font-semibold text-ink">
-            Order {reference}
+            Order {order.id} · {money(order.total)}
           </p>
         )}
         <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
