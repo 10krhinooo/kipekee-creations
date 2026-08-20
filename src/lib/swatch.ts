@@ -180,3 +180,24 @@ export const swatch = (kind: PatternKind, accent: string, seed = 0): string => {
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
+
+/**
+ * One repeat of a pattern, as a CSS-ready `url(...)`.
+ *
+ * `swatch()` bakes a whole product image; this bakes only the tile, so a plain
+ * element can wear the fabric as a repeating background at a fixed pixel size.
+ * `CurtainCloth` uses it: a background image is rasterised once into a
+ * composited layer, where a live `<pattern>` fill is re-tiled every time the
+ * element it fills changes shape.
+ *
+ * Still the same `patternDefs`, so this is the cloth we actually sell.
+ */
+export const clothTile = (kind: PatternKind, accent: string): string => {
+  const size = patternTile(kind) || 64
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <defs>${patternDefs(kind, accent, 'p')}</defs>
+    <rect width="${size}" height="${size}" fill="url(#p)"/>
+  </svg>`
+
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`
+}
