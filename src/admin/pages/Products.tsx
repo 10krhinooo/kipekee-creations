@@ -77,7 +77,7 @@ export function Products() {
         title="Products"
         intro="Prices, stock levels, and whether each product is bought outright or quoted."
         action={
-          <Button size="sm">
+          <Button size="sm" to="/admin/products/new">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -130,7 +130,12 @@ export function Products() {
               return (
                 <tr key={s.slug} className="hover:bg-shell">
                   <Td>
-                    <span className="block text-[13px] font-medium">{s.name}</span>
+                    <Link
+                      to={`/admin/products/${s.slug}/edit`}
+                      className="block text-[13px] font-medium hover:text-brand hover:underline"
+                    >
+                      {s.name}
+                    </Link>
                     <span className="block text-[12px] text-muted">{s.unit}</span>
                   </Td>
                   <Td>
@@ -196,7 +201,9 @@ export function Products() {
                         </button>
                       </div>
                     ) : (
-                      <button className="text-[13px] text-brand hover:underline">Edit rates</button>
+                      <Link to={`/admin/products/${s.slug}/edit`} className="text-[13px] text-brand hover:underline">
+                        Edit rates
+                      </Link>
                     )}
                     </div>
                   </Td>
