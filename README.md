@@ -213,6 +213,22 @@ preview deployments. Merging to `main` triggers the production deploy.
 Client-side routes are served by the SPA rewrite in the same file, so deep links like
 `/product/embroidered-cushion-cover` resolve instead of 404ing.
 
+### Where the backend is
+
+The API is a separate deployment, on Railway. In development the Vite server proxies `/api` to
+`localhost:8080`, so every path in `src/lib/api.ts` is relative and nothing needs configuring.
+Deployed, the two are on different hosts and there is no proxy: the build reads `VITE_API_BASE` and
+prefixes it onto every request, including the `/api/media/...` a photograph is served from.
+
+| Set on | Variable | Value |
+| --- | --- | --- |
+| Vercel | `VITE_API_BASE` | The backend's origin, e.g. `https://backend-production-83b0.up.railway.app` |
+| Railway | `STOREFRONT_ORIGIN` | This site's origin, which the backend allows through CORS |
+
+The two have to agree, and this is the only place they do. `VITE_API_BASE` is read at build time
+rather than at run time, so changing it needs a redeploy and not a restart. Left unset, every path
+stays relative, which is what a local `npm run dev` wants.
+
 ## Not yet built
 
 The prototype stops at the boundary of the backend. Still to come: the API and catalogue data,
