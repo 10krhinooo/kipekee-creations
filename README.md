@@ -84,8 +84,12 @@ quotes and fittings they worked on, which deleting would take with it.
 
 ### Signing in locally
 
-The backend seeds these accounts in dev only. They exist while the backend runs with its dev
-profile and never reach a real deployment.
+The backend is not deployed yet, so the frontend runs on its own: a stand-in in the browser
+(`src/lib/mockApi.ts`) answers every `/api` call in the same shape the real service does. It is on
+unless `VITE_MOCK_API=false` says otherwise, so `npm run dev` needs nothing else running.
+
+These accounts work against the stand-in, and are the same ones the backend seeds in its dev
+profile. They never reach a real deployment.
 
 | Email | Password | Role |
 | --- | --- | --- |
@@ -98,6 +102,13 @@ profile and never reach a real deployment.
 
 Two customers on purpose: the account area is built for the repeat trade buyer as much as the
 one-off shopper, and those two want different things from it.
+
+Anything the real service would email, the stand-in logs to the browser console instead: the
+invite link after adding staff from `/admin/accounts`, and the reset link after a forgotten
+password. Signed-in sessions, profile edits and addresses persist in `localStorage`; clearing
+site data puts the seed accounts back.
+
+Once the backend is live, set `VITE_MOCK_API=false` and the app goes straight back on the wire.
 
 The screen that matters is the **quote builder** at `/admin/quotes/:id`. A request arrives from the
 storefront carrying the customer's measurements; staff price each window, add or waive fitting,
