@@ -168,7 +168,7 @@ export function AdminLayout() {
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
             {initialsOf(adminName)}
           </span>
-          <Link to="/account/profile" className="min-w-0 flex-1" title="Your details">
+          <Link to="/admin/profile" className="min-w-0 flex-1" title="Your details">
             <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
             <span className="block text-[11px] text-white/50">
               {isAdmin ? 'Admin' : 'Staff'} · your details
