@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '../../components/ui'
-import { NOW, fittings, orders, quotes, since, stock } from '../data/operations'
+import { NOW, fittings, since } from '../data/operations'
+import { useOperations } from '../data/store'
 
 /**
  * What needs a person right now, in one list.
@@ -42,7 +43,11 @@ const listOf = (names: string[]) => {
 /** The day part of the prototype's clock, for "today" comparisons. */
 const TODAY = NOW.toISOString().slice(0, 10)
 
-export function alertsNow(): Alert[] {
+export function alertsFrom({
+  quotes,
+  orders,
+  stock,
+}: ReturnType<typeof useOperations>): Alert[] {
   const out: Alert[] = []
 
   const newQuotes = quotes.filter((q) => q.status === 'new')
@@ -119,8 +124,9 @@ function readDismissed(): string[] {
  */
 export function useAlerts() {
   const [dismissed, setDismissed] = useState(readDismissed)
+  const data = useOperations()
 
-  const all = alertsNow()
+  const all = alertsFrom(data)
   const signatures = all.map((a) => a.signature).join('|')
 
   // Only signatures still matching a live alert are worth keeping.
@@ -148,14 +154,14 @@ export function useAlerts() {
   )
 
   const clearAll = useCallback(() => {
-    const next = alertsNow().map((a) => a.signature)
+    const next = all.map((a) => a.signature)
     setDismissed(next)
     try {
       localStorage.setItem(DISMISSED_KEY, JSON.stringify(next))
     } catch {
       // As above.
     }
-  }, [])
+  }, [all])
 
   return { alerts, clearAll }
 }

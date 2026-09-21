@@ -15,15 +15,17 @@ import {
 import {
   quoteStatusLabel,
   quoteTotal,
-  quotes,
   since,
   type QuoteStatus,
 } from '../data/operations'
+import { useOperations } from '../data/store'
 
 type Filter = 'all' | 'action' | QuoteStatus
 
 export function Quotes() {
   const [filter, setFilter] = useState<Filter>('action')
+
+  const { quotes } = useOperations()
 
   // "Needs action" is the default view because it is the only one that maps to
   // the promise made on the storefront: a written quote within one working day.

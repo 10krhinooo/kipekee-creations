@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, cx } from '../../components/ui'
 import { Card, PageHeader, Segmented, Table, Td, Th } from '../components/AdminUI'
-import { stock } from '../data/operations'
+import { adjustStock, useOperations } from '../data/store'
 
 type Filter = 'all' | 'buy' | 'quote' | 'low'
 
@@ -14,10 +14,14 @@ type Filter = 'all' | 'buy' | 'quote' | 'low'
  * consequential field on the row.
  */
 export function Products() {
+  const { stock } = useOperations()
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
-  const [levels, setLevels] = useState<Record<string, number>>(
-    Object.fromEntries(stock.map((s) => [s.slug, s.stock])),
+
+  // Read straight off the store now. The local copy this replaced meant
+  // restocking something never cleared it from the low-stock queue.
+  const levels: Record<string, number> = Object.fromEntries(
+    stock.map((s) => [s.slug, s.stock]),
   )
 
   const rows = useMemo(() => {
@@ -29,7 +33,7 @@ export function Products() {
       list = list.filter((s) => `${s.name} ${s.category}`.toLowerCase().includes(q))
     }
     return list
-  }, [filter, query, levels])
+  }, [stock, filter, query, levels])
 
   const options: { id: Filter; label: string; count: number }[] = [
     { id: 'all', label: 'All', count: stock.length },
@@ -42,8 +46,7 @@ export function Products() {
     },
   ]
 
-  const adjust = (slug: string, by: number) =>
-    setLevels((prev) => ({ ...prev, [slug]: Math.max(0, prev[slug] + by) }))
+  const adjust = adjustStock
 
   return (
     <>

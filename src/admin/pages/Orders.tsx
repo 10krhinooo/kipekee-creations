@@ -16,15 +16,16 @@ import {
 import {
   orderStatusLabel,
   orderTotal,
-  orders,
   type OrderStatus,
 } from '../data/operations'
+import { useOperations, setOrderStatus } from '../data/store'
 
 type Filter = 'all' | OrderStatus
 
 const payLabel = { mpesa: 'M-Pesa', card: 'Card', cod: 'On delivery' } as const
 
 export function Orders() {
+  const { orders } = useOperations()
   const [filter, setFilter] = useState<Filter>('all')
 
   const shown = filter === 'all' ? orders : orders.filter((o) => o.status === filter)
@@ -131,8 +132,13 @@ const flow: OrderStatus[] = ['new', 'packing', 'dispatched', 'delivered']
 
 export function OrderDetail() {
   const { id = '' } = useParams()
+  const { orders } = useOperations()
   const order = orders.find((o) => o.id === id)
-  const [status, setStatus] = useState<OrderStatus>(order?.status ?? 'new')
+
+  // Held in the store rather than here, so moving an order on also empties
+  // the "orders to pack" queue the dashboard, the sidebar and the bell read.
+  const status = order?.status ?? 'new'
+  const setStatus = (next: OrderStatus) => setOrderStatus(id, next)
 
   if (!order) {
     return (

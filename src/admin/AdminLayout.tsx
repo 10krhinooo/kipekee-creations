@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
-import { NOW, orders, quotes, fittings, stock } from './data/operations'
+import { NOW, fittings } from './data/operations'
+import { useOperations } from './data/store'
 import { NotificationsPanel, useAlerts } from './components/Notifications'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -91,6 +92,7 @@ export function AdminLayout() {
   // open over the screen it just sent you to only asks to be dismissed twice.
   useEffect(() => setBellOpen(false), [location.pathname])
 
+  const { quotes, orders, stock } = useOperations()
   const { alerts, clearAll } = useAlerts()
 
   // Live badge counts, so the sidebar doubles as the work queue.
