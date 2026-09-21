@@ -21,6 +21,7 @@ import {
   quoteTotal,
   quotes,
   revenueSeries,
+  since,
   stock,
 } from '../data/operations'
 
@@ -196,7 +197,7 @@ export function Dashboard() {
                   </Td>
                   <Td align="right">
                     <span className="text-[13px] font-semibold text-brand">
-                      {q.id === 'Q-0912' ? '3h' : '5h'}
+                      {since(q.requestedAt)}
                     </span>
                   </Td>
                 </tr>
