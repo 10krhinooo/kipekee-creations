@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '../../components/ui'
 import { NOW, fittings, orders, quotes, since, stock } from '../data/operations'
@@ -21,6 +21,13 @@ export interface Alert {
   title: string
   detail: string
   to: string
+  /**
+   * What this alert is about *right now*, not just which queue it came from.
+   * Clearing stores the signature, so dismissing "2 new quote requests"
+   * acknowledges those two: when a third arrives the signature changes and
+   * the alert comes back. A plain id would have silenced the queue for good.
+   */
+  signature: string
   /** Leads the list and takes the accent colour. */
   urgent?: boolean
 }
@@ -47,6 +54,7 @@ export function alertsNow(): Alert[] {
       title: plural(newQuotes.length, 'new quote request', 'new quote requests'),
       detail: `Oldest waiting ${since(oldest.requestedAt)} · ${oldest.customer}`,
       to: '/admin/quotes',
+      signature: `quotes-new:${newQuotes.map((q) => q.id).sort().join(',')}`,
       urgent: true,
     })
   }
@@ -58,6 +66,7 @@ export function alertsNow(): Alert[] {
       title: plural(toPack.length, 'order to pack', 'orders to pack'),
       detail: `Before 2pm leaves today · ${listOf(toPack.map((o) => o.id))}`,
       to: '/admin/orders',
+      signature: `orders-pack:${toPack.map((o) => o.id).sort().join(',')}`,
     })
   }
 
@@ -68,6 +77,7 @@ export function alertsNow(): Alert[] {
       title: plural(today.length, 'visit today', 'visits today'),
       detail: listOf(today.map((f) => f.area)),
       to: '/admin/schedule',
+      signature: `visits-today:${TODAY}:${today.map((f) => f.id).sort().join(',')}`,
     })
   }
 
@@ -78,11 +88,76 @@ export function alertsNow(): Alert[] {
       title: plural(low.length, 'product low on stock', 'products low on stock'),
       detail: listOf(low.map((s) => s.name)),
       to: '/admin/products',
+      signature: `stock-low:${low.map((s) => s.slug).sort().join(',')}`,
       urgent: true,
     })
   }
 
   return out
+}
+
+const DISMISSED_KEY = 'kipekee.admin.dismissed.v1'
+
+function readDismissed(): string[] {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The alerts worth showing, with the cleared ones taken out.
+ *
+ * Clearing is an acknowledgement of a situation, not of a category: it stores
+ * the signature, so the row returns the moment the situation underneath it
+ * changes. Signatures that match nothing current are dropped on the way
+ * through, which is what stops the store growing forever and is also how an
+ * alert clears itself once the work is actually done.
+ */
+export function useAlerts() {
+  const [dismissed, setDismissed] = useState(readDismissed)
+
+  const all = alertsNow()
+  const signatures = all.map((a) => a.signature).join('|')
+
+  // Only signatures still matching a live alert are worth keeping.
+  useEffect(() => {
+    const live = new Set(signatures.split('|'))
+    setDismissed((current) => {
+      const kept = current.filter((sig) => live.has(sig))
+      if (kept.length === current.length) return current
+      try {
+        localStorage.setItem(DISMISSED_KEY, JSON.stringify(kept))
+      } catch {
+        // Nothing to do if the store is unavailable; the list is still right
+        // for this session.
+      }
+      return kept
+    })
+  }, [signatures])
+
+  const alerts = useMemo(
+    () => all.filter((a) => !dismissed.includes(a.signature)),
+    // `all` is derived fresh each render, so the signature list is what
+    // actually decides whether this needs recomputing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [signatures, dismissed],
+  )
+
+  const clearAll = useCallback(() => {
+    const next = alertsNow().map((a) => a.signature)
+    setDismissed(next)
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(next))
+    } catch {
+      // As above.
+    }
+  }, [])
+
+  return { alerts, clearAll }
 }
 
 /**
@@ -92,9 +167,11 @@ export function alertsNow(): Alert[] {
  */
 export function NotificationsPanel({
   alerts,
+  onClear,
   onClose,
 }: {
   alerts: Alert[]
+  onClear: () => void
   onClose: () => void
 }) {
   const panel = useRef<HTMLDivElement>(null)
@@ -126,8 +203,17 @@ export function NotificationsPanel({
       aria-label="Notifications"
       className="absolute top-full right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-white shadow-lg"
     >
-      <div className="border-b border-line px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
         <h2 className="font-display text-[14px] font-semibold text-ink">Needs you</h2>
+        {alerts.length > 0 && (
+          <button
+            onClick={onClear}
+            className="rounded-lg px-2 py-1 text-[12px] text-muted transition-colors hover:bg-shell hover:text-brand"
+            title="Clear these until something changes"
+          >
+            Clear all
+          </button>
+        )}
       </div>
 
       {alerts.length === 0 ? (

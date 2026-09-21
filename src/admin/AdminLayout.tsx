@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { NOW, orders, quotes, fittings, stock } from './data/operations'
-import { NotificationsPanel, alertsNow } from './components/Notifications'
+import { NotificationsPanel, useAlerts } from './components/Notifications'
 import { useAuth } from '../auth/AuthProvider'
 
 const initialsOf = (name: string) =>
@@ -91,7 +91,7 @@ export function AdminLayout() {
   // open over the screen it just sent you to only asks to be dismissed twice.
   useEffect(() => setBellOpen(false), [location.pathname])
 
-  const alerts = alertsNow()
+  const { alerts, clearAll } = useAlerts()
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -293,7 +293,11 @@ export function AdminLayout() {
               </button>
 
               {bellOpen && (
-                <NotificationsPanel alerts={alerts} onClose={() => setBellOpen(false)} />
+                <NotificationsPanel
+                  alerts={alerts}
+                  onClear={clearAll}
+                  onClose={() => setBellOpen(false)}
+                />
               )}
             </div>
           </div>
