@@ -11,7 +11,7 @@ import { color, font, text } from '../theme.ts'
  * logo file yet, so the wordmark is type, exactly as it is in the site header.
  */
 
-export const WHATSAPP = '254721527797'
+export const WHATSAPP = '254722771321'
 const SHOWROOM = 'Katani Road, off Mombasa Road, Nairobi'
 
 export function Shell({
@@ -111,10 +111,10 @@ export function Shell({
               Mon–Fri 8.30am–5.30pm · Sat 9am–3pm
               <br />
               <Link href={`https://wa.me/${WHATSAPP}`} style={{ color: color.brand, textDecoration: 'none' }}>
-                WhatsApp 0721 527 797
+                WhatsApp 0722 771 321
               </Link>
               {' · '}
-              <Link href="tel:+254721527797" style={{ color: color.brand, textDecoration: 'none' }}>
+              <Link href="tel:+254722771321" style={{ color: color.brand, textDecoration: 'none' }}>
                 Call us
               </Link>
               {' · '}

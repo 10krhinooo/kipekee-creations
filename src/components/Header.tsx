@@ -237,7 +237,7 @@ export function Header() {
             className="hidden shrink-0 items-center gap-1.5 hover:text-brand-200 sm:inline-flex"
           >
             <WhatsAppIcon className="h-3.5 w-3.5" />
-            0721 527 797
+            0722 771 321
           </a>
         </Container>
       </div>
