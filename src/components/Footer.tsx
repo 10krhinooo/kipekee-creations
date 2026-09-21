@@ -114,10 +114,6 @@ export function Footer() {
             </p>
             <p>Mon–Fri 8.30am–5.30pm · Sat 9am–3pm</p>
             <p>
-              <a href="tel:+254721527797" className="inline-block py-1 hover:text-white">
-                0721 527 797
-              </a>{' '}
-              ·{' '}
               <a href="tel:+254722771321" className="inline-block py-1 hover:text-white">
                 0722 771 321
               </a>

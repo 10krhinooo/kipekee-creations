@@ -189,7 +189,7 @@ export function Container({
 }
 
 /** Kipekee's WhatsApp line, the fastest conversion path for a Kenyan shopper. */
-export const WHATSAPP = '254721527797'
+export const WHATSAPP = '254722771321'
 
 /** The workshop and showroom, on Katani Road just off Mombasa Road. */
 export const MAP_URL = 'https://share.google/gXSFZvROvKJS8LonS'

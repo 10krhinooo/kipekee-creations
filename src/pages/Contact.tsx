@@ -73,14 +73,11 @@ export function Contact() {
                   rel="noreferrer"
                   className="font-medium text-brand hover:underline"
                 >
-                  0721 527 797
+                  0722 771 321
                 </a>
               </li>
               <li>
                 <span className="block text-[12px] tracking-wide text-muted uppercase">Phone</span>
-                <a href="tel:+254721527797" className="block font-medium hover:text-brand">
-                  0721 527 797
-                </a>
                 <a href="tel:+254722771321" className="block font-medium hover:text-brand">
                   0722 771 321
                 </a>
