@@ -1,0 +1,637 @@
+{
+  "$comment": [
+    "Source of truth for every photograph on the storefront.",
+    "",
+    "These are placeholders standing in for the client's shoot, all under the",
+    "Unsplash Licence. When the real photography arrives, the swap is: drop the",
+    "files into public/photos/ under the same keys, delete the matching entries",
+    "here, and re-run `npm run photos:fetch`. No component changes.",
+    "",
+    "key       the filename stem. public/photos/<key>-<width>.<format>",
+    "role      product | detail | wide | room | editorial | hero | og.",
+    "          Decides the crop aspect and the width ladder. See fetch.mjs.",
+    "slug      the catalogue product this belongs to, or null for a page image.",
+    "tint      shown while the file downloads. Use the product's accent colour",
+    "          from src/data/catalogue.ts so the placeholder reads as the product.",
+    "alt       required, and written to be useful on its own. It is what a screen",
+    "          reader announces and what a failed load leaves behind."
+  ],
+  "licence": "https://unsplash.com/license",
+  "photos": [
+    {
+      "key": "kitenge-blockout-curtains-1",
+      "role": "product",
+      "slug": "kitenge-blockout-curtains",
+      "source": "unsplash",
+      "photoId": "photo-1600247832921-e896a0daad8a",
+      "credit": "Matteo Badini",
+      "creditUser": "teobadini",
+      "tint": "#8d6f52",
+      "alt": "Deep red blockout curtain cloth in close-up, the weave catching side light"
+    },
+    {
+      "key": "kitenge-blockout-curtains-2",
+      "role": "wide",
+      "slug": "kitenge-blockout-curtains",
+      "source": "unsplash",
+      "photoId": "photo-1552858725-693709cc17c7",
+      "credit": "Jp Valery",
+      "creditUser": "jpvalery",
+      "tint": "#8d6f52",
+      "alt": "A bedroom at night with the curtains drawn and a single lamp lit beside the bed"
+    },
+    {
+      "key": "kitenge-blockout-curtains-3",
+      "role": "detail",
+      "slug": "kitenge-blockout-curtains",
+      "source": "unsplash",
+      "photoId": "photo-1602229235490-d2d76988115a",
+      "credit": "Yura Timoshenko",
+      "creditUser": "yuradesign",
+      "tint": "#8d6f52",
+      "alt": "Printed cloth in blue, red and yellow, photographed close enough to show the weave"
+    },
+
+    {
+      "key": "sheer-linen-voile-1",
+      "role": "product",
+      "slug": "sheer-linen-voile",
+      "source": "unsplash",
+      "photoId": "photo-1573507811472-909cd17e834d",
+      "credit": "Mila Albrecht",
+      "creditUser": "mila_albrecht",
+      "tint": "#cfd6d3",
+      "alt": "White sheer curtains hanging full length at a window, daylight coming through the cloth"
+    },
+    {
+      "key": "sheer-linen-voile-2",
+      "role": "wide",
+      "slug": "sheer-linen-voile",
+      "source": "unsplash",
+      "photoId": "photo-1530914507926-36d0f98a9f1f",
+      "credit": "Christopher Martyn",
+      "creditUser": "finelystrung",
+      "tint": "#cfd6d3",
+      "alt": "A white voile curtain hung from a slim black steel rod against a pale wall"
+    },
+    {
+      "key": "sheer-linen-voile-3",
+      "role": "detail",
+      "slug": "sheer-linen-voile",
+      "source": "unsplash",
+      "photoId": "photo-1682421938316-4b186e25174c",
+      "credit": "Saad Ahmad",
+      "creditUser": "saadahmad_umn",
+      "tint": "#cfd6d3",
+      "alt": "The shadow of a houseplant falling across a sheer curtain in afternoon light"
+    },
+
+    {
+      "key": "kids-cloud-curtains-1",
+      "role": "product",
+      "slug": "kids-cloud-curtains",
+      "source": "unsplash",
+      "photoId": "photo-1688762430740-666f776d1ebe",
+      "credit": "Shiona Das",
+      "creditUser": "shionadas",
+      "tint": "#8d6f52",
+      "alt": "A teddy bear on a windowsill beside light curtains in a child's bedroom"
+    },
+    {
+      "key": "kids-cloud-curtains-2",
+      "role": "wide",
+      "slug": "kids-cloud-curtains",
+      "source": "unsplash",
+      "photoId": "photo-1763478958800-3a2a6321f645",
+      "credit": "Shoham Avisrur",
+      "creditUser": "shoham_avisrur",
+      "tint": "#8d6f52",
+      "alt": "A child's bedroom with a low bed, a desk and curtains at the window"
+    },
+
+    {
+      "key": "velvet-upholstery-fabric-1",
+      "role": "product",
+      "slug": "velvet-upholstery-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1705944601101-fdb49dbf884c",
+      "credit": "Ambitious Studio* | Rick Barrett",
+      "creditUser": "weareambitious",
+      "tint": "#6f7f74",
+      "alt": "Red cotton velvet falling in deep folds against a dark background"
+    },
+    {
+      "key": "velvet-upholstery-fabric-2",
+      "role": "detail",
+      "slug": "velvet-upholstery-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1546951400-ec2a2b43f58c",
+      "credit": "Kristiana Pinne",
+      "creditUser": "kristianapinne",
+      "tint": "#6f7f74",
+      "alt": "Teal velvet photographed flat, the pile shifting tone where the light crosses it"
+    },
+
+    {
+      "key": "blockout-lining-fabric-1",
+      "role": "product",
+      "slug": "blockout-lining-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1715867125247-120c0fc4593b",
+      "credit": "Ksenia Pixelesse",
+      "creditUser": "pixelesse",
+      "tint": "#6f7f74",
+      "alt": "Close-up of dense grey triple-weave lining cloth"
+    },
+    {
+      "key": "blockout-lining-fabric-2",
+      "role": "detail",
+      "slug": "blockout-lining-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1534639077088-d702bcf685e7",
+      "credit": "Ethan Bodnar",
+      "creditUser": "ethanbodnar",
+      "tint": "#6f7f74",
+      "alt": "Bolts of plain white cloth stacked on a workshop shelf"
+    },
+
+    {
+      "key": "embroidered-sheer-fabric-1",
+      "role": "product",
+      "slug": "embroidered-sheer-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1641486447958-ba555715ca58",
+      "credit": "Simona Sergi",
+      "creditUser": "i_am_simoesse",
+      "tint": "#6f7f74",
+      "alt": "A bird embroidered in white thread on fine white cloth"
+    },
+    {
+      "key": "embroidered-sheer-fabric-2",
+      "role": "detail",
+      "slug": "embroidered-sheer-fabric",
+      "source": "unsplash",
+      "photoId": "photo-1768943366936-0e3306abdc6c",
+      "credit": "Phil Hearing",
+      "creditUser": "philhearing",
+      "tint": "#6f7f74",
+      "alt": "Roses worked in embroidery thread on white cloth, the needle still in the work"
+    },
+
+    {
+      "key": "embroidered-cushion-cover-1",
+      "role": "product",
+      "slug": "embroidered-cushion-cover",
+      "source": "unsplash",
+      "photoId": "photo-1650742032309-5f0e1c20abf4",
+      "credit": "Mathias Reding",
+      "creditUser": "matreding",
+      "tint": "#a11c20",
+      "alt": "A pair of white cushions with floral embroidery, propped against each other"
+    },
+    {
+      "key": "embroidered-cushion-cover-2",
+      "role": "wide",
+      "slug": "embroidered-cushion-cover",
+      "source": "unsplash",
+      "photoId": "photo-1785013045142-9c76ec023d08",
+      "credit": "Aliaksei Liohenki",
+      "creditUser": "alexlightart",
+      "tint": "#a11c20",
+      "alt": "A patterned floral cushion on a brown leather sofa"
+    },
+    {
+      "key": "embroidered-cushion-cover-3",
+      "role": "detail",
+      "slug": "embroidered-cushion-cover",
+      "source": "unsplash",
+      "photoId": "photo-1646348207787-27876c97b1ff",
+      "credit": "Mathias Reding",
+      "creditUser": "matreding",
+      "tint": "#a11c20",
+      "alt": "A brown and white cushion resting on a made bed"
+    },
+
+    {
+      "key": "geometric-cushion-cover-1",
+      "role": "product",
+      "slug": "geometric-cushion-cover",
+      "source": "unsplash",
+      "photoId": "photo-1506591608813-bf1cc7ee7400",
+      "credit": "Stefan Maass",
+      "creditUser": "maass",
+      "tint": "#a11c20",
+      "alt": "A red and brown woven cushion on white bed linen"
+    },
+    {
+      "key": "geometric-cushion-cover-2",
+      "role": "wide",
+      "slug": "geometric-cushion-cover",
+      "source": "unsplash",
+      "photoId": "photo-1760533535801-20dc5fca0fb0",
+      "credit": "Tomi Saputra",
+      "creditUser": "udatommo",
+      "tint": "#a11c20",
+      "alt": "Lounge seating dressed with striped woven cushions beside potted plants"
+    },
+
+    {
+      "key": "hotel-bed-linen-set-1",
+      "role": "product",
+      "slug": "hotel-bed-linen-set",
+      "source": "unsplash",
+      "photoId": "photo-1605346434674-a440ca4dc4c0",
+      "credit": "Albert Vincent Wu",
+      "creditUser": "albertvincentwu",
+      "tint": "#dcd6cc",
+      "alt": "Crisp white hotel bed linen made up beside a dark wooden nightstand"
+    },
+    {
+      "key": "hotel-bed-linen-set-2",
+      "role": "wide",
+      "slug": "hotel-bed-linen-set",
+      "source": "unsplash",
+      "photoId": "photo-1690935986319-c11e6cae84f7",
+      "credit": "Andraes Arteaga",
+      "creditUser": "andraes_arteaga",
+      "tint": "#dcd6cc",
+      "alt": "A made-up hotel room with a city view through the window"
+    },
+    {
+      "key": "hotel-bed-linen-set-3",
+      "role": "detail",
+      "slug": "hotel-bed-linen-set",
+      "source": "unsplash",
+      "photoId": "photo-1605459437907-541c4e2c0ed1",
+      "credit": "Martina Bombardieri",
+      "creditUser": "martinaab",
+      "tint": "#dcd6cc",
+      "alt": "Folded grey cloth laid over white bed linen, close enough to read the hem"
+    },
+
+    {
+      "key": "hotel-pool-towels-1",
+      "role": "product",
+      "slug": "hotel-pool-towels",
+      "source": "unsplash",
+      "photoId": "photo-1635352558665-0b01650e9b84",
+      "credit": "Irham Setyaki",
+      "creditUser": "setyaki",
+      "tint": "#dcd6cc",
+      "alt": "A stack of folded towels on a counter"
+    },
+    {
+      "key": "hotel-pool-towels-2",
+      "role": "wide",
+      "slug": "hotel-pool-towels",
+      "source": "unsplash",
+      "photoId": "photo-1762778013318-5bb6fa9aec30",
+      "credit": "pure house on the lake",
+      "creditUser": "pure_house_on_the_lake_",
+      "tint": "#dcd6cc",
+      "alt": "Poolside loungers each dressed with a folded towel"
+    },
+
+    {
+      "key": "egyptian-cotton-towel-set-1",
+      "role": "product",
+      "slug": "egyptian-cotton-towel-set",
+      "source": "unsplash",
+      "photoId": "photo-1617811449482-31093c8cee16",
+      "credit": "Pablo R. Bartol",
+      "creditUser": "pablorbartol",
+      "tint": "#4e7d8c",
+      "alt": "White and blue towels folded on a wooden bathroom shelf"
+    },
+    {
+      "key": "egyptian-cotton-towel-set-2",
+      "role": "detail",
+      "slug": "egyptian-cotton-towel-set",
+      "source": "unsplash",
+      "photoId": "photo-1589898362790-edba11d34869",
+      "credit": "Lukas Schroeder",
+      "creditUser": "lukasschroederdotpng",
+      "tint": "#4e7d8c",
+      "alt": "A white towel hung over a steel rail, showing the woven border"
+    },
+
+    {
+      "key": "ceramic-bathroom-set-1",
+      "role": "product",
+      "slug": "ceramic-bathroom-set",
+      "source": "unsplash",
+      "photoId": "photo-1656214286228-08fdbf520d1e",
+      "credit": "Panos Katsigiannis",
+      "creditUser": "panos_kats",
+      "tint": "#4e7d8c",
+      "alt": "A basin dressed with a matching ceramic soap dispenser and dish"
+    },
+    {
+      "key": "ceramic-bathroom-set-2",
+      "role": "detail",
+      "slug": "ceramic-bathroom-set",
+      "source": "unsplash",
+      "photoId": "photo-1632454672044-db96fe310ad0",
+      "credit": "Gabriel Alenius",
+      "creditUser": "gabrielalenius",
+      "tint": "#4e7d8c",
+      "alt": "A ceramic soap dispenser standing on a white counter"
+    },
+
+    {
+      "key": "woven-table-mats-1",
+      "role": "product",
+      "slug": "woven-table-mats",
+      "source": "unsplash",
+      "photoId": "photo-1758810741861-d206a70a539a",
+      "credit": "Bruno Ngarukiye",
+      "creditUser": "itsbrunoagain",
+      "tint": "#b8763b",
+      "alt": "A woven table mat laid with a plate, napkin and gold spoon"
+    },
+    {
+      "key": "woven-table-mats-2",
+      "role": "wide",
+      "slug": "woven-table-mats",
+      "source": "unsplash",
+      "photoId": "photo-1758810742200-b5593d7d5a1d",
+      "credit": "Bruno Ngarukiye",
+      "creditUser": "itsbrunoagain",
+      "tint": "#b8763b",
+      "alt": "An outdoor table set for six on woven mats with a flower arrangement in the centre"
+    },
+    {
+      "key": "woven-table-mats-3",
+      "role": "detail",
+      "slug": "woven-table-mats",
+      "source": "unsplash",
+      "photoId": "photo-1758810740794-bc456e2afde8",
+      "credit": "Bruno Ngarukiye",
+      "creditUser": "itsbrunoagain",
+      "tint": "#b8763b",
+      "alt": "A gold spoon resting on a woven mat, close enough to read the plait"
+    },
+
+    {
+      "key": "decor-towel-pair-1",
+      "role": "product",
+      "slug": "decor-towel-pair",
+      "source": "unsplash",
+      "photoId": "photo-1628602813528-0264682cdc87",
+      "credit": "Sven Brandsma",
+      "creditUser": "seffen99",
+      "tint": "#b8763b",
+      "alt": "A brown hand towel hanging against white tiles"
+    },
+    {
+      "key": "decor-towel-pair-2",
+      "role": "detail",
+      "slug": "decor-towel-pair",
+      "source": "unsplash",
+      "photoId": "photo-1580750494923-a06004b452cd",
+      "credit": "Giorgio Trovato",
+      "creditUser": "giorgiotrovato",
+      "tint": "#b8763b",
+      "alt": "A green hand towel hung flat on a pale wall"
+    },
+
+    {
+      "key": "wrought-iron-curtain-rail-1",
+      "role": "product",
+      "slug": "wrought-iron-curtain-rail",
+      "source": "unsplash",
+      "photoId": "photo-1606724003287-47f6c2d353ef",
+      "credit": "the blowup",
+      "creditUser": "theblowup",
+      "tint": "#3b3a38",
+      "alt": "A dark iron rail carrying a curtain across the top of a window"
+    },
+    {
+      "key": "wrought-iron-curtain-rail-2",
+      "role": "wide",
+      "slug": "wrought-iron-curtain-rail",
+      "source": "unsplash",
+      "photoId": "photo-1732375717600-2108a75f3adf",
+      "credit": "SIDDHARTH SARMA",
+      "creditUser": "photography__from__sidd",
+      "tint": "#3b3a38",
+      "alt": "A window with a curtain hung from a plain metal rail, seen from across the room"
+    },
+
+    {
+      "key": "wrought-iron-wall-bracket-1",
+      "role": "product",
+      "slug": "wrought-iron-wall-bracket",
+      "source": "unsplash",
+      "photoId": "photo-1559817975-fa7aa9d08a02",
+      "credit": "Claire Brear",
+      "creditUser": "clairebrear",
+      "tint": "#3b3a38",
+      "alt": "A forged black wall bracket mounted against a pale wall"
+    },
+    {
+      "key": "wrought-iron-wall-bracket-2",
+      "role": "detail",
+      "slug": "wrought-iron-wall-bracket",
+      "source": "unsplash",
+      "photoId": "photo-1747763488805-04e81f44f4f1",
+      "credit": "zed akxis",
+      "creditUser": "zedakxis",
+      "tint": "#3b3a38",
+      "alt": "Hand-forged ironwork mounted on a wall, showing the hammer marks"
+    },
+
+    {
+      "key": "four-poster-bed-canopy-1",
+      "role": "product",
+      "slug": "four-poster-bed-canopy",
+      "source": "unsplash",
+      "photoId": "photo-1767741737493-9a82868c198d",
+      "credit": "Gabriel tesserolli",
+      "creditUser": "tessvisual",
+      "tint": "#cfd6d3",
+      "alt": "A four-poster bed dressed with a canopy, a lamp lit on the bedside table"
+    },
+    {
+      "key": "four-poster-bed-canopy-2",
+      "role": "wide",
+      "slug": "four-poster-bed-canopy",
+      "source": "unsplash",
+      "photoId": "photo-1775476793313-434a1e12c0dc",
+      "credit": "Jacques Dillies",
+      "creditUser": "jacques_dillies",
+      "tint": "#cfd6d3",
+      "alt": "A canopied bed made up with patterned linen and stacked pillows"
+    },
+    {
+      "key": "four-poster-bed-canopy-3",
+      "role": "detail",
+      "slug": "four-poster-bed-canopy",
+      "source": "unsplash",
+      "photoId": "photo-1767050371633-675072d4bed7",
+      "credit": "Katie Puzatova",
+      "creditUser": "puzatova",
+      "tint": "#cfd6d3",
+      "alt": "A four-poster frame against a deep blue wall, the canopy cloth gathered at one post"
+    },
+
+    {
+      "key": "kids-play-canopy-1",
+      "role": "product",
+      "slug": "kids-play-canopy",
+      "source": "unsplash",
+      "photoId": "photo-1556265617-02021d9b0fa5",
+      "credit": "Sven Brandsma",
+      "creditUser": "seffen99",
+      "tint": "#cfd6d3",
+      "alt": "A toddler's bed under a fine mesh canopy gathered to a single point"
+    },
+    {
+      "key": "kids-play-canopy-2",
+      "role": "wide",
+      "slug": "kids-play-canopy",
+      "source": "unsplash",
+      "photoId": "photo-1769690399035-2f4e60edf2ea",
+      "credit": "Caroline Badran",
+      "creditUser": "___atmos",
+      "tint": "#cfd6d3",
+      "alt": "A child's bedroom with a teddy bear sitting on a bench at the foot of the bed"
+    },
+
+    {
+      "key": "room-living-room",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1704040686510-b747ff423ebb",
+      "credit": "Ariel Domenden",
+      "creditUser": "hypvisual",
+      "tint": "#8d6f52",
+      "alt": "A furnished living room with curtains framing a large window"
+    },
+    {
+      "key": "room-bedroom",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1765766601467-30b5937fe417",
+      "credit": "Marina Nazina",
+      "creditUser": "nazinamari",
+      "tint": "#8d6f52",
+      "alt": "A bedroom with a wide bed, dark wood floor and curtains drawn back"
+    },
+    {
+      "key": "room-bathroom",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1780399334722-9da715978179",
+      "credit": "Grace Anne Bobadilla",
+      "creditUser": "graceannefully",
+      "tint": "#4e7d8c",
+      "alt": "A bathroom with a warm painted wall, a basin, a mirror and an open window"
+    },
+    {
+      "key": "room-kids-room",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1780042731982-b8db1a86bfcf",
+      "credit": "Margo Evardson",
+      "creditUser": "stadinstudio",
+      "tint": "#8d6f52",
+      "alt": "A child's room with patterned bedding, papered walls and a teddy bear on the nightstand"
+    },
+    {
+      "key": "room-hotel",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1578898887932-dce23a595ad4",
+      "credit": "Febrian Zakaria",
+      "creditUser": "febrianzakaria",
+      "tint": "#dcd6cc",
+      "alt": "A hotel bed made up in white linen beside a black wall light"
+    },
+
+    {
+      "key": "room-kitchen",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1723531812643-4d8e22d1023e",
+      "credit": "Minh",
+      "creditUser": "minhh11hh",
+      "tint": "#b8763b",
+      "alt": "A kitchen with a sink set below a window, daylight across the counter"
+    },
+    {
+      "key": "room-outdoor",
+      "role": "room",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1788927793550-863411aea59b",
+      "credit": "Vincent Yap",
+      "creditUser": "chonky_films",
+      "tint": "#b8763b",
+      "alt": "A shaded open-air terrace with rattan chairs and wooden doors standing open"
+    },
+
+    {
+      "key": "workshop-1",
+      "role": "editorial",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1673201229733-69d19c5c4a87",
+      "credit": "Collab Media",
+      "creditUser": "collab_media",
+      "tint": "#8d6f52",
+      "alt": "A machinist working cloth through an industrial sewing machine"
+    },
+    {
+      "key": "workshop-2",
+      "role": "editorial",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1457972657980-4c9fddebec8d",
+      "credit": "Kris Atomic",
+      "creditUser": "krisatomic",
+      "tint": "#a11c20",
+      "alt": "Hands pinning red cloth on a workbench before it goes under the needle"
+    },
+    {
+      "key": "trade-hospitality",
+      "role": "editorial",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1777169794972-12095816073b",
+      "credit": "Dynamic Hong Kong",
+      "creditUser": "dynamic_hk",
+      "tint": "#dcd6cc",
+      "alt": "A hotel suite dressed in full-length drapes with the city beyond the window"
+    },
+
+    {
+      "key": "hero-home",
+      "role": "hero",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1754611362309-71297e9f42fd",
+      "credit": "EZcurtain Life",
+      "creditUser": "ezcurtainlife",
+      "tint": "#8d6f52",
+      "alt": "A living room in warm neutral tones with full-length curtains at the window"
+    },
+    {
+      "key": "og-default",
+      "role": "og",
+      "slug": null,
+      "source": "unsplash",
+      "photoId": "photo-1754611362309-71297e9f42fd",
+      "credit": "EZcurtain Life",
+      "creditUser": "ezcurtainlife",
+      "tint": "#8d6f52",
+      "alt": "Kipekee Creations: curtains, cushions and hotel linen made in Nairobi"
+    }
+  ]
+}
