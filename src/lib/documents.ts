@@ -45,6 +45,11 @@ interface KindConfig {
   showMeasurements: boolean
   /** Payment instructions. Only on the document that is actually asking to be paid. */
   showPayTo?: boolean
+  /**
+   * Replaces `notice` once the customer has reported a payment. The default
+   * tells them how to pay, which contradicts the code printed beside it.
+   */
+  noticeWhenReported?: string
   /** What the quantity column counts. Windows, for a made-to-measure job. */
   qtyLabel: string
   filePrefix: string
@@ -61,6 +66,10 @@ const KINDS: Record<DocumentKind, KindConfig> = {
     signature: false,
     showMeasurements: false,
     showPayTo: true,
+    noticeWhenReported:
+      '<strong>This is not a tax invoice.</strong> It is a record of your order and the amount due, ' +
+      'and of the payment you have told us about. We confirm it against our statement before dispatch. ' +
+      'A tax invoice follows once payment clears.',
     qtyLabel: 'Qty',
     filePrefix: 'invoice',
   },
@@ -140,6 +149,13 @@ export interface OrderDocument {
   address?: string | null
   county: string | null
   paymentMethod: string
+  /**
+   * The M-Pesa code the customer gave when they paid. When it is set, the
+   * document says the payment has been reported rather than repeating the
+   * instructions for making it: telling somebody how to pay, under a code they
+   * have just handed over, reads as though it did not arrive.
+   */
+  mpesaCode?: string | null
   deliveryEstimate?: string | null
   /** Courier reference, shown on a delivery note once dispatched. */
   courier?: string | null
@@ -298,7 +314,7 @@ export function documentHtml(data: OrderDocument): string {
     </div>
   </div>
 
-  <p class="notice">${kind.notice}</p>
+  <p class="notice">${(data.mpesaCode && kind.noticeWhenReported) || kind.notice}</p>
 
   <div class="cols">
     <section>
@@ -321,15 +337,24 @@ export function documentHtml(data: OrderDocument): string {
       </p>
     </section>
     ${
-      kind.showPayTo
+      data.mpesaCode
         ? `<section class="pay">
+      <h2>Payment reported</h2>
+      <p>
+        <strong>${PAY_TO.method}</strong><br>
+        Code: <strong>${esc(data.mpesaCode)}</strong><br>
+        We check this against our statement before dispatch.
+      </p>
+    </section>`
+        : kind.showPayTo
+          ? `<section class="pay">
       <h2>How to pay</h2>
       <p>
         <strong>${PAY_TO.method}</strong><br>
         ${PAY_TO.steps.join('<br>')}
       </p>
     </section>`
-        : ''
+          : ''
     }
     <section>
       <h2>Order</h2>

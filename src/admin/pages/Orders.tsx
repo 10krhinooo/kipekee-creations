@@ -19,7 +19,7 @@ import {
   type Order,
   type OrderStatus,
 } from '../data/operations'
-import { useOperations, setOrderStatus } from '../data/store'
+import { setOrderPaid, setOrderStatus, useOperations } from '../data/store'
 import {
   downloadDocument,
   printDocument,
@@ -32,10 +32,10 @@ type Filter = 'all' | OrderStatus
 /**
  * An operations order rendered as a printable document.
  *
- * `address` is deliberately null rather than invented: the operations record
- * captures a town and not a street, so a delivery note prints the town and the
- * phone number and the driver rings. Filling that gap is a backend change, not
- * something to paper over here with a plausible-looking line of text.
+ * Orders placed on the site now carry a street address, so the delivery note
+ * has one to print. Seeded and phone orders still do not: those keep a null
+ * rather than an invented line, and the note prints the town and the phone
+ * number so the driver rings.
  */
 function documentFor(order: Order, kind: DocumentKind): OrderDocument {
   const subtotal = order.lines.reduce((sum, l) => sum + l.unitPrice * l.qty, 0)
@@ -45,9 +45,10 @@ function documentFor(order: Order, kind: DocumentKind): OrderDocument {
     issuedAt: new Date(),
     name: order.customer,
     phone: order.phone,
-    address: null,
+    address: order.address ?? null,
     county: order.town,
     paymentMethod: payLabel[order.pay],
+    mpesaCode: order.mpesaCode ?? null,
     courier: order.courier ?? null,
     lines: order.lines.map((l) => ({
       productName: l.name,
@@ -167,7 +168,10 @@ export function Orders() {
                   </Td>
                   <Td>
                     <span className="text-[13px]">
-                      {o.lines.reduce((n, l) => n + l.qty, 0)} items
+                      {(() => {
+                        const n = o.lines.reduce((sum, l) => sum + l.qty, 0)
+                        return `${n} ${n === 1 ? 'item' : 'items'}`
+                      })()}
                     </span>
                     <span className="block max-w-48 truncate text-[12px] text-muted-foreground">
                       {o.lines[0].name}
@@ -406,6 +410,44 @@ export function OrderDetail() {
                 </span>
               </div>
             </div>
+
+            {/*
+              The code the customer gave at checkout. It is a claim, not a
+              confirmation: Pochi la Biashara has no callback, so nothing in
+              this app knows whether the money arrived. Somebody has to look at
+              the statement, which is what the button underneath is for.
+            */}
+            {order.mpesaCode && (
+              <div className="mt-4 rounded-xl border border-line bg-shell p-3">
+                <span className="block text-[12px] text-muted-foreground">
+                  Customer reported paying with
+                </span>
+                <span className="mt-0.5 block font-ui text-[15px] font-semibold tracking-[0.08em]">
+                  {order.mpesaCode}
+                </span>
+                {!order.paid && (
+                  <>
+                    <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                      Check it against the M-Pesa statement for {money(orderTotal(order))} before
+                      marking this paid. The receipt unlocks when you do.
+                    </p>
+                    <Button
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => setOrderPaid(order.id, true)}
+                    >
+                      I have matched it, mark as paid
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {!order.mpesaCode && !order.paid && (
+              <Button size="sm" variant="outline" className="mt-4" onClick={() => setOrderPaid(order.id, true)}>
+                Mark as paid
+              </Button>
+            )}
           </Card>
 
           <Card>

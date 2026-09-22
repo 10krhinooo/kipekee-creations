@@ -6,7 +6,12 @@ import { money } from '../lib/format'
 import { Button, Container, cx } from '../components/ui'
 import { KENYA_COUNTIES, deliveryEtaFor } from '../data/kenya'
 import { downloadDocument, printDocument, type OrderDocument } from '../lib/documents'
-import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
+import {
+  isValidEmail,
+  isValidKenyanPhone,
+  isValidMpesaCode,
+  normaliseMpesaCode,
+} from '../lib/validate'
 import { post } from '../lib/api'
 import { ProductThumb } from '../components/ProductThumb'
 import { useAuth } from '../auth/AuthProvider'
@@ -35,9 +40,24 @@ export function Checkout() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  /**
+   * The code from the customer's M-Pesa confirmation SMS.
+   *
+   * Optional on purpose. Pochi la Biashara has no STK push and no callback, so
+   * nothing here can know whether money arrived; the code is the customer
+   * telling us, and staff match it against the statement. Requiring it would
+   * refuse an order from anyone who has not paid yet, which is most of them.
+   */
+  const [mpesaCode, setMpesaCode] = useState('')
   const [address, setAddress] = useState('')
   const [email, setEmail] = useState('')
-  const [touched, setTouched] = useState({ name: false, phone: false, address: false, email: false })
+  const [touched, setTouched] = useState({
+    name: false,
+    phone: false,
+    address: false,
+    email: false,
+    mpesaCode: false,
+  })
 
   /*
    * Fill the form in for somebody we already know.
@@ -120,11 +140,29 @@ export function Checkout() {
         ? 'Enter a valid email address'
         : 'Enter your email so we can send the receipt'
       : undefined
+  /*
+   * Only checked once something has been typed. An empty box means "not paid
+   * yet", which is a legitimate answer and not an error to be shouted at
+   * somebody on the last screen before an order.
+   */
+  const mpesaCodeFilled = mpesaCode.trim() !== ''
+  const mpesaCodeBad = mpesaCodeFilled && !isValidMpesaCode(mpesaCode)
+  const mpesaCodeError =
+    touched.mpesaCode && mpesaCodeBad
+      ? 'That is not an M-Pesa code. It is 10 letters and numbers, e.g. TEA4XM9KQ2.'
+      : undefined
+
   const canPlaceOrder =
-    name.trim() !== '' && isValidKenyanPhone(phone) && address.trim() !== '' && isValidEmail(email)
+    name.trim() !== '' &&
+    isValidKenyanPhone(phone) &&
+    address.trim() !== '' &&
+    isValidEmail(email) &&
+    // A wrong code is worse than none: it sends staff hunting through a
+    // statement for a payment that was never made under it.
+    !(pay === 'mpesa' && mpesaCodeBad)
 
   const placeOrder = async () => {
-    setTouched({ name: true, phone: true, address: true, email: true })
+    setTouched({ name: true, phone: true, address: true, email: true, mpesaCode: true })
     if (!canPlaceOrder || placing) return
 
     setPlaceError(null)
@@ -158,6 +196,7 @@ export function Checkout() {
       deliveryAmount: delivery,
       total,
       lines,
+      mpesaCode: pay === 'mpesa' && mpesaCodeFilled ? normaliseMpesaCode(mpesaCode) : null,
     })
     setPlacing(false)
 
@@ -180,6 +219,7 @@ export function Checkout() {
         address,
         county: county?.name ?? null,
         paymentMethod: PAY_LABELS[pay],
+        mpesaCode: pay === 'mpesa' && mpesaCodeFilled ? normaliseMpesaCode(mpesaCode) : null,
         deliveryEstimate: deliveryEtaFor(town),
         lines,
         subtotal,
@@ -213,10 +253,26 @@ export function Checkout() {
           two sentences on its confirmation screen has taught the customer to
           phone rather than trust it.
         */}
+        {/*
+          Two endings, because two things have happened. Telling somebody we
+          will ring to arrange payment, seconds after they typed in the code
+          proving they made it, reads as though the money went nowhere.
+        */}
         <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-          We have your order. Someone from the Katani Road workshop will call you on{' '}
-          <strong className="text-ink">{phone}</strong> to confirm the details and arrange payment.
-          Keep your payment invoice below for your records.
+          {invoice?.mpesaCode ? (
+            <>
+              We have your order and your M-Pesa code{' '}
+              <strong className="text-ink">{invoice.mpesaCode}</strong>. We check it against our
+              statement, then call you on <strong className="text-ink">{phone}</strong> to confirm
+              delivery. Keep your payment invoice below for your records.
+            </>
+          ) : (
+            <>
+              We have your order. Someone from the Katani Road workshop will call you on{' '}
+              <strong className="text-ink">{phone}</strong> to confirm the details and arrange
+              payment. Keep your payment invoice below for your records.
+            </>
+          )}
         </p>
 
         {invoice && (
@@ -365,6 +421,58 @@ export function Checkout() {
                 </label>
               ))}
             </div>
+
+            {/*
+              Only under M-Pesa. Card is taken through a link we send later and
+              pay-on-delivery is settled at the door, so neither has a code to
+              give and a box asking for one would read as a step they had
+              missed.
+            */}
+            {pay === 'mpesa' && (
+              <div className="mt-4 rounded-xl border border-line bg-shell p-4">
+                <label htmlFor="mpesa-code" className="block text-sm font-semibold">
+                  Already paid? Enter your M-Pesa code
+                </label>
+                <p className="mt-1 mb-3 text-[13px] leading-relaxed text-muted-foreground">
+                  Send Money on Pochi la Biashara to <strong>0722 771 321</strong> for{' '}
+                  {money(total)}, then copy the code from the confirmation SMS. It looks like{' '}
+                  <span className="font-ui">TEA4XM9KQ2</span>. Leave it blank if you have not paid
+                  yet and we will confirm the order with you first.
+                </p>
+                <input
+                  id="mpesa-code"
+                  value={mpesaCode}
+                  onChange={(e) => setMpesaCode(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, mpesaCode: true }))}
+                  // Uppercase in the box as well as on the way out, so what
+                  // they see matches what the SMS says.
+                  style={{ textTransform: 'uppercase' }}
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={12}
+                  placeholder="TEA4XM9KQ2"
+                  aria-invalid={mpesaCodeError ? true : undefined}
+                  aria-describedby={mpesaCodeError ? 'mpesa-code-error' : undefined}
+                  className={cx(
+                    'w-full rounded-xl border bg-white px-4 py-3 font-ui text-sm tracking-[0.08em] outline-none',
+                    mpesaCodeError ? 'border-brand' : 'border-line focus:border-brand',
+                  )}
+                />
+                {mpesaCodeError ? (
+                  <p id="mpesa-code-error" role="alert" className="mt-2 text-[12.5px] text-brand">
+                    {mpesaCodeError}
+                  </p>
+                ) : (
+                  mpesaCodeFilled &&
+                  !mpesaCodeBad && (
+                    <p className="mt-2 text-[12.5px] text-[#1a6b39]">
+                      Recorded against this order. We check it against our statement before
+                      dispatch.
+                    </p>
+                  )
+                )}
+              </div>
+            )}
           </Step>
 
           <Step n={3} title="Confirm">

@@ -63,6 +63,13 @@ export interface Order {
   delivery: number
   /** Set once dispatched, so the table can show a courier reference. */
   courier?: string
+  /**
+   * The M-Pesa code the customer entered after paying. Present only on orders
+   * placed through the site, and only when they paid before placing it.
+   */
+  mpesaCode?: string
+  /** The street address, on orders that came from checkout with one. */
+  address?: string
 }
 
 export interface QuoteLineItem {

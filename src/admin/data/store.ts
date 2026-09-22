@@ -46,6 +46,14 @@ interface State {
  * nothing joined them. So a customer could measure their windows, send a quote,
  * get a reference back, and staff would never see it. This is the join.
  */
+/** The console's own ids for a payment method, from the label checkout sent. */
+const payMethodOf = (label: string): Order['pay'] => {
+  const value = label.toLowerCase()
+  if (value.includes('card')) return 'card'
+  if (value.includes('delivery')) return 'cod'
+  return 'mpesa'
+}
+
 const incoming = (): Pick<State, 'quotes' | 'orders'> => {
   const { quotes, orders } = submitted()
   return {
@@ -76,15 +84,25 @@ const incoming = (): Pick<State, 'quotes' | 'orders'> => {
     })),
     orders: orders.map<Order>((o) => ({
       id: o.reference,
-      customer: o.email || 'Website customer',
-      phone: '',
-      town: 'From checkout',
+      customer: o.name || o.email || 'Website customer',
+      phone: o.phone,
+      town: o.county ?? 'Not given',
       placedAt: o.placedAt,
       status: 'new',
-      pay: 'mpesa',
-      paid: false,
-      delivery: 0,
-      lines: o.slugs.map((slug) => ({ name: slug, variant: '', qty: 1, unitPrice: 0 })),
+      pay: payMethodOf(o.paymentMethod),
+      paid: o.paid,
+      delivery: o.deliveryAmount,
+      mpesaCode: o.mpesaCode ?? undefined,
+      address: o.address || undefined,
+      lines: o.lines.map((l) => ({
+        name: l.productName || l.slug,
+        variant: l.detail ?? '',
+        qty: l.qty,
+        // The stored amount is the line total, and the table shows a unit
+        // price beside a quantity. Dividing here rather than storing both
+        // keeps one number authoritative.
+        unitPrice: l.qty > 0 ? Math.round(l.amount / l.qty) : l.amount,
+      })),
     })),
   }
 }
@@ -158,6 +176,20 @@ export function setQuoteStatus(id: string, status: QuoteStatus) {
   set({
     ...state,
     quotes: state.quotes.map((q) => (q.id === id ? { ...q, status } : q)),
+  })
+}
+
+/**
+ * Records that the money has been seen.
+ *
+ * Staff-only, and deliberately not something the customer's M-Pesa code does
+ * by itself. The code says a payment was reported; this says somebody found it
+ * on the statement. Only the second one should unlock a receipt.
+ */
+export function setOrderPaid(id: string, paid: boolean) {
+  set({
+    ...state,
+    orders: state.orders.map((o) => (o.id === id ? { ...o, paid } : o)),
   })
 }
 

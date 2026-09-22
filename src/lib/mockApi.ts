@@ -16,6 +16,8 @@
 
 import type { Role } from '../auth/AuthProvider'
 
+import { isValidMpesaCode, normaliseMpesaCode } from './validate'
+
 const STORAGE_KEY = 'kipekee.mock.v1'
 
 /** Roughly what a round trip to Nairobi feels like, so spinners still show. */
@@ -103,6 +105,15 @@ export interface SubmittedQuote {
   }[]
 }
 
+export interface PlacedOrderLine {
+  slug: string
+  productName: string
+  /** Colourway and size, already joined for display. Null when neither applies. */
+  detail: string | null
+  qty: number
+  amount: number
+}
+
 export interface PlacedOrder {
   reference: string
   email: string
@@ -110,6 +121,30 @@ export interface PlacedOrder {
   /** Product slugs on the order, which is all the review check needs. */
   slugs: string[]
   total: number
+  /*
+   * Everything below used to be thrown away at the door. The route kept the
+   * reference, the email and the total, which was enough to verify a reviewer
+   * had bought something and enough for nothing else. The console then showed
+   * website orders as "Website customer" from "From checkout" for KSh 0, so an
+   * order placed on the site could not be packed, delivered or reconciled
+   * against a payment without ringing the customer to ask what they had bought.
+   */
+  name: string
+  phone: string
+  address: string
+  county: string | null
+  paymentMethod: string
+  deliveryAmount: number
+  deliveryEstimate: string
+  lines: PlacedOrderLine[]
+  /**
+   * The code from the customer's M-Pesa confirmation SMS, when they paid before
+   * placing the order. Null when they did not, which is the ordinary case for
+   * card and pay-on-delivery and a perfectly normal one for M-Pesa too.
+   */
+  mpesaCode: string | null
+  /** Set by staff once the code has been matched against the statement. */
+  paid: boolean
 }
 
 export interface Review {
@@ -243,6 +278,22 @@ function migrate(db: Db): Db {
   db.reviews ??= {}
   db.orders ??= []
   db.quoteRequests ??= []
+  // Orders written before the record carried the customer and the lines. The
+  // console reads both without checking, so they get defaults rather than
+  // `undefined.map`.
+  db.orders = db.orders.map((o) => ({
+    ...o,
+    name: o.name ?? '',
+    phone: o.phone ?? '',
+    address: o.address ?? '',
+    county: o.county ?? null,
+    paymentMethod: o.paymentMethod ?? '',
+    deliveryAmount: o.deliveryAmount ?? 0,
+    deliveryEstimate: o.deliveryEstimate ?? '',
+    lines: o.lines ?? [],
+    mpesaCode: o.mpesaCode ?? null,
+    paid: o.paid ?? false,
+  }))
   return db
 }
 
@@ -846,17 +897,41 @@ route('POST', /^\/api\/quotes\/request$/, ({ db, body }) => {
 route('POST', /^\/api\/orders\/confirmation$/, ({ db, body }) => {
   const reference = `KO-${db.reference++}`
 
-  // Kept, not discarded. The invoice needs the reference and the review form
-  // needs to know who bought what.
-  const lines = Array.isArray(body.lines) ? body.lines : []
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+
+  const raw = Array.isArray(body.lines) ? body.lines : []
+  const lines: PlacedOrderLine[] = raw
+    .filter((l): l is Record<string, unknown> => Boolean(l) && typeof l === 'object')
+    .map((l) => ({
+      slug: str(l.slug),
+      productName: str(l.productName),
+      detail: str(l.detail) || null,
+      qty: num(l.qty),
+      amount: num(l.amount),
+    }))
+    .filter((l) => l.slug)
+
+  // A code is only worth storing if it looks like one. A half-typed string
+  // filed against an order sends staff looking through a statement for
+  // something that was never there.
+  const code = normaliseMpesaCode(str(body.mpesaCode))
+
   db.orders.push({
     reference,
     email: str(body.email).toLowerCase(),
     placedAt: iso(),
-    slugs: lines
-      .map((l) => (l && typeof l === 'object' ? str((l as Record<string, unknown>).slug) : ''))
-      .filter(Boolean),
-    total: typeof body.total === 'number' ? body.total : 0,
+    slugs: lines.map((l) => l.slug),
+    total: num(body.total),
+    name: str(body.name),
+    phone: str(body.phone),
+    address: str(body.address),
+    county: str(body.county) || null,
+    paymentMethod: str(body.paymentMethod),
+    deliveryAmount: num(body.deliveryAmount),
+    deliveryEstimate: str(body.deliveryEstimate),
+    lines,
+    mpesaCode: isValidMpesaCode(code) ? code : null,
+    paid: false,
   })
   save(db)
   return ok({ reference })
