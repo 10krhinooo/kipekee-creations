@@ -38,7 +38,7 @@ export function AccountLayout() {
         </span>
         <div className="min-w-0">
           <h1 className="truncate font-display text-2xl font-semibold text-ink">{user.name}</h1>
-          <p className="truncate text-[13px] text-muted">{user.email}</p>
+          <p className="truncate text-[13px] text-muted-foreground">{user.email}</p>
         </div>
         <button
           onClick={() => {
@@ -97,7 +97,7 @@ export function AccountPanel({
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
-          {intro && <p className="mt-1 text-[13px] leading-relaxed text-muted">{intro}</p>}
+          {intro && <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{intro}</p>}
         </div>
         {action}
       </div>
@@ -108,7 +108,7 @@ export function AccountPanel({
 
 export function EmptyNote({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-xl bg-shell px-4 py-6 text-center text-[13.5px] leading-relaxed text-muted">
+    <p className="rounded-xl bg-shell px-4 py-6 text-center text-[13.5px] leading-relaxed text-muted-foreground">
       {children}
     </p>
   )

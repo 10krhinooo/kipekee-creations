@@ -2,8 +2,17 @@ import { useState } from 'react'
 import { Button, Container, MAP_URL, WhatsAppIcon, cx, whatsappLink } from '../components/ui'
 import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
 import { post } from '../lib/api'
+import { useSeo } from '../lib/seo'
 
 export function Contact() {
+
+  useSeo({
+    title: 'Contact us | Kipekee Creations',
+    description:
+      'Call 0722 771 321, message us on WhatsApp, or visit the showroom on Katani Road, off Mombasa Road, Nairobi.',
+    path: '/contact',
+  })
+
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -54,7 +63,7 @@ export function Contact() {
     <Container className="py-8 sm:py-14">
       <header className="mb-10 max-w-2xl">
         <h1 className="font-display text-3xl font-semibold sm:text-4xl">Get in touch</h1>
-        <p className="mt-3 text-[16px] leading-relaxed text-muted">
+        <p className="mt-3 text-[16px] leading-relaxed text-muted-foreground">
           WhatsApp is the fastest way to reach us. We usually reply within the hour during working
           hours. Or come to the showroom on Katani Road, off Mombasa Road, and handle the fabrics yourself.
         </p>
@@ -66,7 +75,7 @@ export function Contact() {
             <h2 className="mb-4 font-display text-base font-semibold">Talk to us</h2>
             <ul className="space-y-4 text-sm">
               <li>
-                <span className="block text-[12px] tracking-wide text-muted uppercase">WhatsApp</span>
+                <span className="block text-[12px] tracking-wide text-muted-foreground uppercase">WhatsApp</span>
                 <a
                   href={whatsappLink('Hello Kipekee,')}
                   target="_blank"
@@ -77,13 +86,13 @@ export function Contact() {
                 </a>
               </li>
               <li>
-                <span className="block text-[12px] tracking-wide text-muted uppercase">Phone</span>
+                <span className="block text-[12px] tracking-wide text-muted-foreground uppercase">Phone</span>
                 <a href="tel:+254722771321" className="block font-medium hover:text-brand">
                   0722 771 321
                 </a>
               </li>
               <li>
-                <span className="block text-[12px] tracking-wide text-muted uppercase">Email</span>
+                <span className="block text-[12px] tracking-wide text-muted-foreground uppercase">Email</span>
                 <a
                   href="mailto:info@kipekeecreations.co.ke"
                   className="font-medium break-all hover:text-brand"
@@ -92,10 +101,10 @@ export function Contact() {
                 </a>
               </li>
               <li>
-                <span className="block text-[12px] tracking-wide text-muted uppercase">Showroom</span>
+                <span className="block text-[12px] tracking-wide text-muted-foreground uppercase">Showroom</span>
                 <p className="font-medium">Katani Road, off Mombasa Road, Nairobi</p>
-                <p className="mt-1 text-muted">Mon–Fri 8.30am–5.30pm</p>
-                <p className="text-muted">Sat 9am–3pm · Sun closed</p>
+                <p className="mt-1 text-muted-foreground">Mon–Fri 8.30am–5.30pm</p>
+                <p className="text-muted-foreground">Sat 9am–3pm · Sun closed</p>
               </li>
             </ul>
             <Button
@@ -111,7 +120,7 @@ export function Contact() {
 
           <div className="rounded-2xl bg-shell p-5">
             <h2 className="mb-2 font-display text-base font-semibold">Delivery &amp; returns</h2>
-            <ul className="space-y-2 text-[14px] leading-relaxed text-muted">
+            <ul className="space-y-2 text-[14px] leading-relaxed text-muted-foreground">
               <li>Next-day delivery across Nairobi, free over KSh 10,000.</li>
               <li>2–4 working days to the rest of Kenya by courier.</li>
               <li>14-day returns on unused ready-made stock.</li>
@@ -204,7 +213,7 @@ export function Contact() {
                     {sendError}
                   </p>
                 )}
-                <p className="mt-3 text-center text-[12px] text-muted">
+                <p className="mt-3 text-center text-[12px] text-muted-foreground">
                   We reply within one working day.
                 </p>
               </>

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { bySlug } from '../data/catalogue'
 import { money } from '../lib/format'
-import { swatch } from '../lib/swatch'
 import { useSaved } from '../store/saved'
+import { ProductThumb } from './ProductThumb'
 
 /**
  * A strip of the products this visitor has already opened.
@@ -32,14 +32,9 @@ export function RecentlyViewed({ exclude, title = 'Recently viewed' }: { exclude
             to={`/product/${p.slug}`}
             className="w-36 shrink-0 rounded-xl border border-line bg-white p-2 transition-colors hover:border-brand"
           >
-            <img
-              src={swatch(p.pattern, p.colours[0].swatch || p.accent, i)}
-              alt=""
-              loading="lazy"
-              className="aspect-4/5 w-full rounded-lg object-cover"
-            />
+            <ProductThumb product={p} index={i} className="aspect-4/5 w-full" sizes="144px" />
             <span className="mt-2 block truncate text-[12px] font-medium text-ink">{p.name}</span>
-            <span className="block text-[11px] text-muted">
+            <span className="block text-[11px] text-muted-foreground">
               {p.mode === 'quote' ? 'from ' : ''}
               {money(p.price)}
             </span>

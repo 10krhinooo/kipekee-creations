@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { products } from '../data/catalogue'
-import { swatch } from '../lib/swatch'
+import { Photo } from '../components/Photo'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
 import {
@@ -10,6 +10,7 @@ import {
   WhatsAppIcon,
   whatsappLink,
 } from '../components/ui'
+import { useSeo } from '../lib/seo'
 
 const faqs = [
   {
@@ -67,6 +68,14 @@ const steps = [
 ]
 
 export function CustomCurtains() {
+
+  useSeo({
+    title: 'Made-to-measure curtains | Kipekee Creations',
+    description:
+      'Free window measure across Nairobi, a fixed written quote in one working day, and curtains sewn to your window in our Katani Road workshop.',
+    path: '/custom-curtains',
+  })
+
   const madeToMeasure = products.filter((p) => p.mode === 'quote').slice(0, 4)
 
   return (
@@ -100,15 +109,34 @@ export function CustomCurtains() {
                 Browse the range
               </Button>
             </div>
-            <p className="mt-5 text-[13px] text-muted">
+            <p className="mt-5 text-[13px] text-muted-foreground">
               Free across Nairobi · No obligation · Written quote in 1 working day
             </p>
           </div>
 
+          {/* Made-to-measure sells on the hang of the cloth and the quality of
+              the hardware, so the collage shows a full drop, a sheer, and the
+              rail it all hangs from. `fill` on the tall cell because its height
+              comes from the two squares beside it rather than from a ratio. */}
           <div className="grid grid-cols-2 gap-4">
-            <img src={swatch('damask', '#8d6f52', 3)} alt="" className="row-span-2 h-full w-full rounded-2xl object-cover shadow-lg" />
-            <img src={swatch('sheer', '#e6e2da', 6)} alt="" className="aspect-square w-full rounded-2xl object-cover shadow-lg" />
-            <img src={swatch('iron', '#3b3a38', 7)} alt="" className="aspect-square w-full rounded-2xl object-cover shadow-lg" />
+            <Photo
+              name="kitenge-blockout-curtains-1"
+              fill
+              className="row-span-2 h-full w-full rounded-2xl shadow-lg"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
+            <Photo
+              name="sheer-linen-voile-2"
+              aspect={1}
+              className="rounded-2xl shadow-lg"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
+            <Photo
+              name="wrought-iron-curtain-rail-1"
+              aspect={1}
+              className="rounded-2xl shadow-lg"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
           </div>
         </Container>
       </section>
@@ -125,7 +153,7 @@ export function CustomCurtains() {
               <li key={s.n} className="border-t-2 border-brand pt-5">
                 <span className="font-display text-2xl font-bold text-brand">{s.n}</span>
                 <h3 className="mt-2 font-display text-base font-semibold">{s.title}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-muted">{s.body}</p>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{s.body}</p>
               </li>
             ))}
           </ol>
@@ -172,13 +200,13 @@ export function CustomCurtains() {
                 <h3 className="font-display text-lg font-semibold">{tier.title}</h3>
                 <p className="mt-3 font-display text-3xl font-bold text-ink">
                   {money(tier.from)}
-                  <span className="ml-1 text-[13px] font-normal text-muted">/ metre, fitted</span>
+                  <span className="ml-1 text-[13px] font-normal text-muted-foreground">/ metre, fitted</span>
                 </p>
-                <p className="mt-3 text-[14px] leading-relaxed text-muted">{tier.body}</p>
+                <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{tier.body}</p>
               </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-[13px] text-muted">
+          <p className="mt-6 text-center text-[13px] text-muted-foreground">
             Not sure what your window needs?{' '}
             <Link to="/measure-guide" className="text-brand underline">
               Read the measuring guide
@@ -217,7 +245,7 @@ export function CustomCurtains() {
                   {f.q}
                   <svg
                     viewBox="0 0 24 24"
-                    className="h-4 w-4 shrink-0 text-muted transition-transform group-open:rotate-45"
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -225,7 +253,7 @@ export function CustomCurtains() {
                     <path d="M12 5v14M5 12h14" />
                   </svg>
                 </summary>
-                <p className="mt-3 text-[15px] leading-relaxed text-muted">{f.a}</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{f.a}</p>
               </details>
             ))}
           </div>

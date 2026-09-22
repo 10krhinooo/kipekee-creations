@@ -100,6 +100,12 @@ export interface Product {
   reviewCount: number
   reviews: Review[]
   stock: number
+  /**
+   * The level at which the console starts asking for a reorder. Only means
+   * anything for `buy` goods: made-to-measure work is cut to order, so there
+   * is no shelf for it to run low on.
+   */
+  reorderAt?: number
   leadTimeDays: number
   badges?: string[]
   bestSeller?: boolean

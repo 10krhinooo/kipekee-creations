@@ -19,7 +19,7 @@ export function NoAccess() {
         title="That part is not open to your account"
         intro="You are signed in, just not with an account that reaches this."
       >
-        <p className="mt-6 text-[13px] leading-relaxed text-muted">
+        <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
           {user ? (
             <>
               You are signed in as <span className="font-medium text-ink">{user.email}</span>. If you

@@ -2,20 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBasket, FREE_DELIVERY_THRESHOLD } from '../store/basket'
 import { useSaved } from '../store/saved'
-import { usePhotos } from '../store/photos'
 import { bySlug, priceOf, rooms, stockCapOf } from '../data/catalogue'
 import type { Product, QuoteLine } from '../data/types'
 import { money } from '../lib/format'
-import { swatch } from '../lib/swatch'
+import { ProductThumb } from './ProductThumb'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from './shadcn/sheet'
 import { Button, WhatsAppIcon, cx } from './ui'
 import { quoteWhatsAppLink } from '../lib/whatsapp'
-
-/**
- * Everything the tab trap will cycle through. The panel itself is excluded by
- * the `tabindex="-1"` clause, so focusing it does not make it a stop.
- */
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 function ProgressToFreeDelivery({ subtotal }: { subtotal: number }) {
   const remaining = FREE_DELIVERY_THRESHOLD - subtotal
@@ -59,16 +58,13 @@ function LineImage({
   colour: string
   seed: number
 }) {
-  const { photosFor } = usePhotos()
-  const photos = photosFor(product)
-  const photo = photos.find((p) => p.colourId === colour) ?? photos[0]
-  const variant = product.colours.find((v) => v.id === colour)
-
   return (
-    <img
-      src={photo ? photo.src : swatch(product.pattern, variant?.swatch || product.accent, seed)}
-      alt=""
-      className="h-20 w-16 shrink-0 rounded-lg object-cover"
+    <ProductThumb
+      product={product}
+      colourId={colour}
+      index={seed}
+      className="h-20 w-16"
+      sizes="64px"
     />
   )
 }
@@ -90,8 +86,6 @@ export function BasketDrawer() {
   } = basket
   const { isSaved, toggleSaved } = useSaved()
 
-  const panelRef = useRef<HTMLElement>(null)
-  const restoreRef = useRef<HTMLElement | null>(null)
   /** Which quote line has its measurement fields open, by index. */
   const [editing, setEditing] = useState<number | null>(null)
 
@@ -99,54 +93,28 @@ export function BasketDrawer() {
   const isCart = drawer === 'cart'
 
   /*
-   * Keyed on whether the panel is open, not on which basket it shows. Swapping
-   * tabs is not a re-open, and re-running this on that change would snatch
-   * focus back to the top of the panel mid-interaction.
+   * The focus trap, the escape key and the scroll lock all used to live here as
+   * about forty lines of `keydown` handling and a `FOCUSABLE` selector string.
+   * Radix's Dialog does every one of them, and does the parts that were missing
+   * too: pointer-down outside, aria-hidden on the rest of the page, and holding
+   * the panel in the DOM long enough for its exit animation to finish.
+   *
+   * Returning focus is the one piece it cannot do for us. Radix hands focus
+   * back to the `SheetTrigger` that opened a dialog, and this drawer has no
+   * trigger: it is opened from the basket store, by the header button, by a
+   * card's Add, and by an empty-state link. With nothing to return to, Radix
+   * drops focus on the body and a keyboard shopper who closes the drawer is
+   * left at the top of the document. So we remember the opener ourselves.
+   *
+   * Keyed on `open` rather than on which basket is shown, because switching
+   * tabs inside the drawer is not a re-open and would otherwise record a
+   * control inside the panel as the thing to go back to.
    */
+  const openerRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
-    if (!open) return
+    if (open) openerRef.current = document.activeElement as HTMLElement | null
+  }, [open])
 
-    restoreRef.current = document.activeElement as HTMLElement | null
-    panelRef.current?.focus()
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeDrawer()
-        return
-      }
-      if (e.key !== 'Tab') return
-
-      const panel = panelRef.current
-      if (!panel) return
-      // Read on each Tab rather than once: lines are removed, the undo strip
-      // appears and disappears, and a cached list would send focus nowhere.
-      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null,
-      )
-      if (items.length === 0) return
-
-      const first = items[0]
-      const last = items[items.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-
-    document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
-      // Back to the cart button that opened it, so a keyboard shopper is not
-      // dropped at the top of the document.
-      restoreRef.current?.focus()
-    }
-  }, [open, closeDrawer])
 
   // A line edited into view then removed would leave the form open over its
   // replacement, so the editor closes whenever the list changes underneath it.
@@ -166,46 +134,44 @@ export function BasketDrawer() {
   }
 
   return (
-    <>
-      <div
-        onClick={closeDrawer}
-        className={cx(
-          'fixed inset-0 z-50 bg-ink/40 transition-opacity duration-300',
-          open ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-        aria-hidden="true"
-      />
-
-      <aside
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={isCart ? 'Shopping cart' : 'Quote list'}
-        tabIndex={-1}
-        /* Off-screen is not out of the tab order. Without `inert` a keyboard
-           shopper tabs straight into a panel they cannot see. */
-        inert={!open}
-        className={cx(
-          'fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl outline-none transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          open ? 'translate-x-0' : 'translate-x-full',
-        )}
+    <Sheet open={open} onOpenChange={(next) => !next && closeDrawer()}>
+      <SheetContent
+        side="right"
+        /* The default sheet is `w-3/4 sm:max-w-sm` with a `gap-4` column. This
+           drawer is full width on a phone and its sections carry their own
+           borders, so both are overridden. `cn` resolving the conflict rather
+           than letting both land is exactly what it is here for. */
+        className="w-full gap-0 sm:max-w-md"
+        /* The panel draws its own close button beside the title, so the one in
+           the corner would be a second control for the same thing. */
+        showCloseButton={false}
+        onCloseAutoFocus={(e) => {
+          const opener = openerRef.current
+          // `isConnected` because the opener is often a card's Add button, and
+          // the card may have been unmounted by a filter change while the
+          // drawer was covering it. Focusing a detached node silently does
+          // nothing, so fall through to Radix's own behaviour instead.
+          if (!opener?.isConnected) return
+          e.preventDefault()
+          opener.focus()
+        }}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <div>
-            <h2 className="font-display text-lg font-semibold">
+            <SheetTitle className="font-display text-lg font-semibold">
               {isCart ? 'Your cart' : 'Your quote list'}
-            </h2>
-            <p className="text-[12px] text-muted">
+            </SheetTitle>
+            <SheetDescription className="text-[12px] text-muted-foreground">
               {isCart
                 ? 'Ready-made stock, pay on checkout'
                 : 'Made-to-measure items we price for you'}
-            </p>
+            </SheetDescription>
           </div>
-          <button onClick={closeDrawer} aria-label="Close" title="Close" className="rounded-full p-2 hover:bg-shell">
+          <SheetClose aria-label="Close" title="Close" className="rounded-full p-2 hover:bg-shell">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
-          </button>
+          </SheetClose>
         </div>
 
         {/* Cross-link so a shopper never loses sight of the other basket. */}
@@ -214,7 +180,7 @@ export function BasketDrawer() {
             onClick={() => basket.openDrawer('cart')}
             className={cx(
               'flex-1 py-2.5 font-medium transition-colors',
-              isCart ? 'border-b-2 border-brand text-brand' : 'text-muted hover:text-ink',
+              isCart ? 'border-b-2 border-brand text-brand' : 'text-muted-foreground hover:text-ink',
             )}
           >
             Cart ({basket.cartCount})
@@ -223,7 +189,7 @@ export function BasketDrawer() {
             onClick={() => basket.openDrawer('quote')}
             className={cx(
               'flex-1 py-2.5 font-medium transition-colors',
-              !isCart ? 'border-b-2 border-brand text-brand' : 'text-muted hover:text-ink',
+              !isCart ? 'border-b-2 border-brand text-brand' : 'text-muted-foreground hover:text-ink',
             )}
           >
             Quote list ({basket.quoteCount})
@@ -261,7 +227,7 @@ export function BasketDrawer() {
                         >
                           {p.name}
                         </Link>
-                        <p className="text-[12px] text-muted">
+                        <p className="text-[12px] text-muted-foreground">
                           {c?.label}
                           {s ? ` · ${s.label}` : ''}
                         </p>
@@ -288,13 +254,13 @@ export function BasketDrawer() {
                           </div>
                           <button
                             onClick={() => saveForLater(i, p.slug)}
-                            className="text-[12px] text-muted underline hover:text-brand"
+                            className="text-[12px] text-muted-foreground underline hover:text-brand"
                           >
                             Save for later
                           </button>
                           <button
                             onClick={() => removeFromCart(i)}
-                            className="text-[12px] text-muted underline hover:text-brand"
+                            className="text-[12px] text-muted-foreground underline hover:text-brand"
                           >
                             Remove
                           </button>
@@ -343,7 +309,7 @@ export function BasketDrawer() {
                         >
                           {p.name}
                         </Link>
-                        <p className="text-[12px] text-muted">
+                        <p className="text-[12px] text-muted-foreground">
                           {c?.label} · {line.room}
                         </p>
                         <p className="mt-1 text-[12px] text-ink-soft">
@@ -359,19 +325,19 @@ export function BasketDrawer() {
                           <button
                             onClick={() => setEditing(isEditing ? null : i)}
                             aria-expanded={isEditing}
-                            className="text-[12px] text-muted underline hover:text-brand"
+                            className="text-[12px] text-muted-foreground underline hover:text-brand"
                           >
                             {isEditing ? 'Done' : 'Edit measurements'}
                           </button>
                           <button
                             onClick={() => removeFromQuote(i)}
-                            className="text-[12px] text-muted underline hover:text-brand"
+                            className="text-[12px] text-muted-foreground underline hover:text-brand"
                           >
                             Remove
                           </button>
                         </div>
                       </div>
-                      <span className="text-[12px] whitespace-nowrap text-muted">
+                      <span className="text-[12px] whitespace-nowrap text-muted-foreground">
                         from {money(p.price)}
                       </span>
                     </div>
@@ -405,11 +371,14 @@ export function BasketDrawer() {
             {isCart ? (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted">Subtotal</span>
+                  <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-semibold">{money(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted">Delivery (Nairobi)</span>
+                  {/* Not "(Nairobi)". `DELIVERY_FEE` is one flat rate applied
+                      to every county, and labelling it Nairobi told everyone
+                      outside Nairobi that the number did not apply to them. */}
+                  <span className="text-muted-foreground">Delivery</span>
                   <span className={cx('font-semibold', basket.delivery === 0 && 'text-[#1a6b39]')}>
                     {basket.delivery === 0 ? 'Free' : money(basket.delivery)}
                   </span>
@@ -424,7 +393,7 @@ export function BasketDrawer() {
               </>
             ) : (
               <>
-                <p className="text-[12px] leading-relaxed text-muted">
+                <p className="text-[12px] leading-relaxed text-muted-foreground">
                   We reply with a fixed, itemised quote within one working day. No obligation.
                 </p>
                 <Button to="/quote" full size="lg" variant="dark" onClick={closeDrawer}>
@@ -447,8 +416,8 @@ export function BasketDrawer() {
             )}
           </div>
         )}
-      </aside>
-    </>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -563,7 +532,7 @@ function QuoteEditor({
           className={cx(fieldClass, 'resize-none')}
         />
       </label>
-      <p className="col-span-2 text-[12px] text-muted">
+      <p className="col-span-2 text-[12px] text-muted-foreground">
         Leave the measurements blank and we take them on site at no charge.
       </p>
     </div>
@@ -584,7 +553,7 @@ function Empty({
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
       <h3 className="font-display text-base font-semibold">{title}</h3>
-      <p className="mt-2 mb-6 max-w-xs text-sm leading-relaxed text-muted">{body}</p>
+      <p className="mt-2 mb-6 max-w-xs text-sm leading-relaxed text-muted-foreground">{body}</p>
       <Button to={cta.to} onClick={onNavigate} variant="outline">
         {cta.label}
       </Button>

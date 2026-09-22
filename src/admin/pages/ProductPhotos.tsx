@@ -92,7 +92,7 @@ export function ProductPhotos() {
         <p className="font-display text-[15px] font-semibold text-ink">
           {busy ? 'Processing…' : 'Drop photographs here'}
         </p>
-        <p className="mx-auto mt-1.5 mb-4 max-w-md text-[13px] text-muted">
+        <p className="mx-auto mt-1.5 mb-4 max-w-md text-[13px] text-muted-foreground">
           JPEG, PNG or WebP, up to {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB each. Each one is
           resized to 2048px and re-encoded, which also strips the location data phone cameras embed.
         </p>
@@ -120,7 +120,7 @@ export function ProductPhotos() {
       )}
 
       {incomplete > 0 && (
-        <p className="mb-4 text-[13px] text-muted">
+        <p className="mb-4 text-[13px] text-muted-foreground">
           {incomplete} photo{incomplete > 1 ? 's' : ''} still need description text. Every generated
           image on this site has one, so an upload without it is the only image a screen reader
           cannot describe.
@@ -129,14 +129,14 @@ export function ProductPhotos() {
 
       {catalogue.length > 0 && (
         <Card className="mb-5">
-          <h2 className="mb-3 text-[13px] font-semibold tracking-wide text-muted uppercase">
+          <h2 className="mb-3 text-[13px] font-semibold tracking-wide text-muted-foreground uppercase">
             From the catalogue
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {catalogue.map((p) => (
               <figure key={p.src} className="overflow-hidden rounded-xl border border-line">
                 <img src={p.src} alt={p.alt} className="aspect-square w-full object-cover" />
-                <figcaption className="px-2 py-1.5 text-[11px] text-muted">
+                <figcaption className="px-2 py-1.5 text-[11px] text-muted-foreground">
                   Committed to the catalogue
                 </figcaption>
               </figure>
@@ -146,7 +146,7 @@ export function ProductPhotos() {
       )}
 
       {!ready ? (
-        <p className="py-12 text-center text-sm text-muted">Loading photos…</p>
+        <p className="py-12 text-center text-sm text-muted-foreground">Loading photos…</p>
       ) : uploads.length === 0 ? (
         <EmptyState
           title="No uploaded photos"
@@ -236,7 +236,7 @@ export function ProductPhotos() {
         </div>
       )}
 
-      <p className="mt-6 text-[12px] text-muted">
+      <p className="mt-6 text-[12px] text-muted-foreground">
         Photos are held in this browser only. Seen on{' '}
         <Link to={`/product/${product.slug}`} className="text-brand hover:underline">
           the product page

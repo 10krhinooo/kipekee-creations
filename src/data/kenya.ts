@@ -70,3 +70,20 @@ export const deliveryEtaFor = (countyId: string): string => {
   if (FAST_TIER.has(countyId)) return '2–3 days'
   return '3–4 days'
 }
+
+/**
+ * The proper name for a county, whatever form it arrives in.
+ *
+ * Addresses have been written with the slug (`nairobi`) and with the label
+ * (`Nairobi`) at different times, and a delivery note that reads "Othaya Road,
+ * nairobi" looks like a mistake to the customer receiving it. Matching on
+ * either and returning the label keeps one spelling on the page. Anything
+ * unrecognised is passed through rather than blanked: an address the app does
+ * not recognise is still where somebody lives.
+ */
+export const countyName = (value: string | null | undefined) => {
+  if (!value) return ''
+  const needle = value.trim().toLowerCase()
+  const match = KENYA_COUNTIES.find((c) => c.id === needle || c.name.toLowerCase() === needle)
+  return match?.name ?? value
+}

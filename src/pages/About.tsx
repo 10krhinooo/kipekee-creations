@@ -1,7 +1,17 @@
-import { swatch } from '../lib/swatch'
+import { Photo } from '../components/Photo'
 import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { useSeo } from '../lib/seo'
 
 export function About() {
+
+  useSeo({
+    title: 'About the workshop | Kipekee Creations',
+    description:
+      'Cutting and sewing soft furnishings on Katani Road, Nairobi, since 2012. Everything made to measure is made by our own team, on our own machines.',
+    path: '/about',
+    image: '/photos/workshop-1-1600.jpg',
+  })
+
   return (
     <>
       <section className="bg-shell">
@@ -18,15 +28,33 @@ export function About() {
               2012. Everything made-to-measure that we sell is made by our own team, on our own
               machines, and hung by the people who sewed it.
             </p>
-            <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
+            <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
               That matters for one practical reason: when something is wrong, there is no supply
               chain to blame. We remake it.
             </p>
           </div>
+          {/* The workshop, not a pattern render. The page claims "we make it
+              ourselves", and that claim is only worth making if you can see the
+              machines. */}
           <div className="grid grid-cols-2 gap-4">
-            <img src={swatch('weave', '#6f7f74', 16)} alt="" className="row-span-2 h-full w-full rounded-2xl object-cover" />
-            <img src={swatch('embroidery', '#a11c20', 17)} alt="" className="aspect-square w-full rounded-2xl object-cover" />
-            <img src={swatch('iron', '#3b3a38', 18)} alt="" className="aspect-square w-full rounded-2xl object-cover" />
+            <Photo
+              name="workshop-1"
+              aspect={16 / 10}
+              className="col-span-2 rounded-2xl"
+              sizes="(min-width: 1024px) 44vw, 92vw"
+            />
+            <Photo
+              name="workshop-2"
+              aspect={1}
+              className="rounded-2xl"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
+            <Photo
+              name="embroidered-sheer-fabric-2"
+              aspect={1}
+              className="rounded-2xl"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
           </div>
         </Container>
       </section>
@@ -42,7 +70,7 @@ export function About() {
             ].map((stat) => (
               <div key={stat.l} className="border-t-2 border-brand pt-5">
                 <p className="font-display text-3xl font-bold text-ink">{stat.n}</p>
-                <p className="mt-1 text-[14px] text-muted">{stat.l}</p>
+                <p className="mt-1 text-[14px] text-muted-foreground">{stat.l}</p>
               </div>
             ))}
           </div>
@@ -77,7 +105,7 @@ export function About() {
             ].map((v) => (
               <div key={v.h} className="rounded-2xl bg-white p-6">
                 <h3 className="font-display text-lg font-semibold">{v.h}</h3>
-                <p className="mt-2 text-[15px] leading-relaxed text-muted">{v.b}</p>
+                <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{v.b}</p>
               </div>
             ))}
           </div>
@@ -87,7 +115,7 @@ export function About() {
       <section className="py-14 sm:py-20">
         <Container className="max-w-3xl text-center">
           <SectionHeading center eyebrow="Who we work with" title="Homes, hotels and the people who design them" />
-          <p className="-mt-4 text-[16px] leading-relaxed text-muted">
+          <p className="-mt-4 text-[16px] leading-relaxed text-muted-foreground">
             About half our work is private homes across Nairobi, one room at a time, or a whole
             house at handover. The other half is contract: lodges, guesthouses and hotels from the
             coast to Naivasha, and the architects and property managers who specify for them.

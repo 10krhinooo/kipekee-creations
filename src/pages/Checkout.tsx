@@ -1,13 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useBasket } from '../store/basket'
 import { bySlug, priceOf } from '../data/catalogue'
 import { money } from '../lib/format'
-import { swatch } from '../lib/swatch'
 import { Button, Container, cx } from '../components/ui'
 import { KENYA_COUNTIES, deliveryEtaFor } from '../data/kenya'
-import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
+import { downloadDocument, printDocument, type OrderDocument } from '../lib/documents'
+import {
+  isValidEmail,
+  isValidKenyanPhone,
+  isValidMpesaCode,
+  normaliseMpesaCode,
+} from '../lib/validate'
 import { post } from '../lib/api'
+import { ProductThumb } from '../components/ProductThumb'
+import { useAuth } from '../auth/AuthProvider'
+import { api } from '../lib/api'
 
 type Pay = 'mpesa' | 'card' | 'cod'
 
@@ -32,13 +40,91 @@ export function Checkout() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  /**
+   * The code from the customer's M-Pesa confirmation SMS.
+   *
+   * Optional on purpose. Pochi la Biashara has no STK push and no callback, so
+   * nothing here can know whether money arrived; the code is the customer
+   * telling us, and staff match it against the statement. Requiring it would
+   * refuse an order from anyone who has not paid yet, which is most of them.
+   */
+  const [mpesaCode, setMpesaCode] = useState('')
   const [address, setAddress] = useState('')
   const [email, setEmail] = useState('')
-  const [touched, setTouched] = useState({ name: false, phone: false, address: false, email: false })
+  const [touched, setTouched] = useState({
+    name: false,
+    phone: false,
+    address: false,
+    email: false,
+    mpesaCode: false,
+  })
+
+  /*
+   * Fill the form in for somebody we already know.
+   *
+   * A signed-in customer had to retype their name, phone, email and address
+   * every time, all of which the account already holds. Their default address
+   * also carries a county, which is what sets the delivery estimate, so it is
+   * applied too.
+   *
+   * Only ever into fields the visitor has not touched. Prefill that overwrites
+   * what somebody is in the middle of typing is worse than no prefill: this
+   * form is the last step before an order, and a delivery address silently
+   * reverting is how a parcel goes to the wrong house.
+   */
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (!user) return
+    setName((v) => (touchedRef.current.name || v ? v : user.name))
+    setEmail((v) => (touchedRef.current.email || v ? v : user.email))
+    if (user.phone) setPhone((v) => (touchedRef.current.phone || v ? v : user.phone ?? ''))
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+    let live = true
+    void (async () => {
+      const result = await api.get<
+        { id: number; line1: string; county: string | null; phone: string | null; isDefault: boolean }[]
+      >('/api/account/addresses')
+      if (!live || !result.ok) return
+
+      const pick = result.data.find((a) => a.isDefault) ?? result.data[0]
+      if (!pick) return
+
+      setAddress((v) => (touchedRef.current.address || v ? v : pick.line1))
+      if (pick.phone) setPhone((v) => (touchedRef.current.phone || v ? v : pick.phone ?? ''))
+
+      // The county drives the delivery estimate and the fee, so it has to
+      // follow the address rather than stay on the Nairobi default.
+      const county = KENYA_COUNTIES.find(
+        (c) => c.name.toLowerCase() === (pick.county ?? '').toLowerCase(),
+      )
+      if (county) setTown((v) => (touchedRef.current.address ? v : county.id))
+    })()
+    return () => {
+      live = false
+    }
+  }, [user])
   const [placing, setPlacing] = useState(false)
   const [reference, setReference] = useState<string | null>(null)
+  /*
+   * A snapshot of the order, taken before `clear('cart')` empties the basket.
+   * The confirmation screen needs it to build the payment invoice, and by then
+   * the only other copy of the lines is gone.
+   */
+  const [invoice, setInvoice] = useState<OrderDocument | null>(null)
   const [placeError, setPlaceError] = useState<string | null>(null)
   const touch = (field: keyof typeof touched) => setTouched((t) => ({ ...t, [field]: true }))
+
+  /*
+   * `touched` as a ref as well as state. The prefill effects need to know what
+   * the visitor has already edited, but must not re-run every time they touch
+   * a field, or a slow address fetch could land on top of typing.
+   */
+  const touchedRef = useRef(touched)
+  touchedRef.current = touched
 
   const nameError = touched.name && !name.trim() ? 'Enter your name' : undefined
   const phoneError =
@@ -54,16 +140,51 @@ export function Checkout() {
         ? 'Enter a valid email address'
         : 'Enter your email so we can send the receipt'
       : undefined
+  /*
+   * Only checked once something has been typed. An empty box means "not paid
+   * yet", which is a legitimate answer and not an error to be shouted at
+   * somebody on the last screen before an order.
+   */
+  const mpesaCodeFilled = mpesaCode.trim() !== ''
+  const mpesaCodeBad = mpesaCodeFilled && !isValidMpesaCode(mpesaCode)
+  const mpesaCodeError =
+    touched.mpesaCode && mpesaCodeBad
+      ? 'That is not an M-Pesa code. It is 10 letters and numbers, e.g. TEA4XM9KQ2.'
+      : undefined
+
   const canPlaceOrder =
-    name.trim() !== '' && isValidKenyanPhone(phone) && address.trim() !== '' && isValidEmail(email)
+    name.trim() !== '' &&
+    isValidKenyanPhone(phone) &&
+    address.trim() !== '' &&
+    isValidEmail(email) &&
+    // A wrong code is worse than none: it sends staff hunting through a
+    // statement for a payment that was never made under it.
+    !(pay === 'mpesa' && mpesaCodeBad)
 
   const placeOrder = async () => {
-    setTouched({ name: true, phone: true, address: true, email: true })
+    setTouched({ name: true, phone: true, address: true, email: true, mpesaCode: true })
     if (!canPlaceOrder || placing) return
 
     setPlaceError(null)
     setPlacing(true)
     const county = KENYA_COUNTIES.find((c) => c.id === town)
+
+    // Hoisted out of the request body: the confirmation screen builds the
+    // payment invoice from exactly these lines, and `clear('cart')` below is
+    // about to remove the only other copy of them.
+    const lines = cart.map((line) => {
+      const product = bySlug(line.slug)
+      const colour = product?.colours.find((c) => c.id === line.colour)?.label
+      const size = product?.sizes?.find((v) => v.id === line.size)?.label
+      return {
+        slug: line.slug,
+        productName: product?.name ?? line.slug,
+        detail: [colour, size].filter(Boolean).join(' · ') || null,
+        qty: line.qty,
+        amount: product ? priceOf(product, line.colour, line.size) * line.qty : 0,
+      }
+    })
+
     const result = await post<{ reference: string }>('/api/orders/confirmation', {
       name,
       email,
@@ -73,17 +194,9 @@ export function Checkout() {
       paymentMethod: PAY_LABELS[pay],
       deliveryEstimate: deliveryEtaFor(town),
       deliveryAmount: delivery,
-      lines: cart.map((line) => {
-        const product = bySlug(line.slug)
-        const colour = product?.colours.find((c) => c.id === line.colour)?.label
-        const size = product?.sizes?.find((v) => v.id === line.size)?.label
-        return {
-          productName: product?.name ?? line.slug,
-          detail: [colour, size].filter(Boolean).join(' · ') || null,
-          qty: line.qty,
-          amount: product ? priceOf(product, line.colour, line.size) * line.qty : 0,
-        }
-      }),
+      total,
+      lines,
+      mpesaCode: pay === 'mpesa' && mpesaCodeFilled ? normaliseMpesaCode(mpesaCode) : null,
     })
     setPlacing(false)
 
@@ -92,7 +205,29 @@ export function Checkout() {
       return
     }
 
-    setReference(result.data?.reference ?? null)
+    const ref = result.data?.reference ?? null
+    setReference(ref)
+
+    if (ref) {
+      setInvoice({
+        kind: 'payment-invoice',
+        reference: ref,
+        issuedAt: new Date(),
+        name,
+        email,
+        phone,
+        address,
+        county: county?.name ?? null,
+        paymentMethod: PAY_LABELS[pay],
+        mpesaCode: pay === 'mpesa' && mpesaCodeFilled ? normaliseMpesaCode(mpesaCode) : null,
+        deliveryEstimate: deliveryEtaFor(town),
+        lines,
+        subtotal,
+        adjustments: [{ label: 'Delivery', amount: delivery, freeWhenZero: true }],
+        total,
+      })
+    }
+
     clear('cart')
     setPlaced(true)
   }
@@ -111,10 +246,53 @@ export function Checkout() {
             Order {reference}
           </p>
         )}
-        <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
-          A confirmation is on its way to your email. Your order leaves the Katani Road workshop
-          this afternoon and you'll get a tracking SMS when the rider is on the way.
+        {/*
+          Rewritten to what actually happens. This promised an email, an
+          afternoon dispatch and a tracking SMS; none of the three is sent by
+          anything in this codebase, and a shop that misses three promises in
+          two sentences on its confirmation screen has taught the customer to
+          phone rather than trust it.
+        */}
+        {/*
+          Two endings, because two things have happened. Telling somebody we
+          will ring to arrange payment, seconds after they typed in the code
+          proving they made it, reads as though the money went nowhere.
+        */}
+        <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted-foreground">
+          {invoice?.mpesaCode ? (
+            <>
+              We have your order and your M-Pesa code{' '}
+              <strong className="text-ink">{invoice.mpesaCode}</strong>. We check it against our
+              statement, then call you on <strong className="text-ink">{phone}</strong> to confirm
+              delivery. Keep your payment invoice below for your records.
+            </>
+          ) : (
+            <>
+              We have your order. Someone from the Katani Road workshop will call you on{' '}
+              <strong className="text-ink">{phone}</strong> to confirm the details and arrange
+              payment. Keep your payment invoice below for your records.
+            </>
+          )}
         </p>
+
+        {invoice && (
+          <div className="mx-auto mb-8 max-w-md rounded-panel border border-line bg-shell p-5 text-left">
+            <p className="font-display text-[15px] font-semibold text-ink">Payment invoice</p>
+            <p className="mt-1 mb-4 text-[13px] leading-relaxed text-muted-foreground">
+              An itemised record of this order and the amount due. Not a tax invoice, we send that
+              once payment clears.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => downloadDocument(invoice)}>
+                Download invoice
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => printDocument(invoice)}>
+                Print or save as PDF
+              </Button>
+            </div>
+          </div>
+        )}
+
         <Button to="/shop" size="lg">Continue shopping</Button>
       </Container>
     )
@@ -124,7 +302,7 @@ export function Checkout() {
     return (
       <Container className="py-24 text-center">
         <h1 className="font-display text-2xl font-semibold">Your cart is empty</h1>
-        <p className="mt-3 mb-6 text-muted">Add something ready-made and come back.</p>
+        <p className="mt-3 mb-6 text-muted-foreground">Add something ready-made and come back.</p>
         <Button to="/shop?mode=buy">Shop ready-made</Button>
       </Container>
     )
@@ -193,17 +371,23 @@ export function Checkout() {
 
           <Step n={2} title="How would you like to pay?">
             <div className="space-y-3">
+              {/*
+                Written to what happens today, not to what the integration will
+                do. Nothing here sends an STK push and there is no payment
+                partner connected, so promising either taught a customer within
+                thirty seconds that this shop says things that are not so.
+              */}
               {(
                 [
                   {
                     id: 'mpesa' as Pay,
                     title: 'M-Pesa',
-                    body: 'You get an STK push on your phone. Enter your PIN there. We never see it.',
+                    body: 'Send Money on Pochi la Biashara to 0722 771 321. The number and the amount are on your invoice. Nothing is taken automatically.',
                   },
                   {
                     id: 'card' as Pay,
                     title: 'Card',
-                    body: 'Visa or Mastercard through our payment partner, on their secure page.',
+                    body: 'Visa or Mastercard. We send a secure payment link once the order is confirmed.',
                   },
                   {
                     id: 'cod' as Pay,
@@ -230,17 +414,69 @@ export function Checkout() {
                   />
                   <span>
                     <span className="block text-sm font-semibold">{option.title}</span>
-                    <span className="mt-0.5 block text-[13px] text-muted">
+                    <span className="mt-0.5 block text-[13px] text-muted-foreground">
                       {option.disabled ? 'Available in Nairobi only' : option.body}
                     </span>
                   </span>
                 </label>
               ))}
             </div>
+
+            {/*
+              Only under M-Pesa. Card is taken through a link we send later and
+              pay-on-delivery is settled at the door, so neither has a code to
+              give and a box asking for one would read as a step they had
+              missed.
+            */}
+            {pay === 'mpesa' && (
+              <div className="mt-4 rounded-xl border border-line bg-shell p-4">
+                <label htmlFor="mpesa-code" className="block text-sm font-semibold">
+                  Already paid? Enter your M-Pesa code
+                </label>
+                <p className="mt-1 mb-3 text-[13px] leading-relaxed text-muted-foreground">
+                  Send Money on Pochi la Biashara to <strong>0722 771 321</strong> for{' '}
+                  {money(total)}, then copy the code from the confirmation SMS. It looks like{' '}
+                  <span className="font-ui">TEA4XM9KQ2</span>. Leave it blank if you have not paid
+                  yet and we will confirm the order with you first.
+                </p>
+                <input
+                  id="mpesa-code"
+                  value={mpesaCode}
+                  onChange={(e) => setMpesaCode(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, mpesaCode: true }))}
+                  // Uppercase in the box as well as on the way out, so what
+                  // they see matches what the SMS says.
+                  style={{ textTransform: 'uppercase' }}
+                  autoComplete="off"
+                  spellCheck={false}
+                  maxLength={12}
+                  placeholder="TEA4XM9KQ2"
+                  aria-invalid={mpesaCodeError ? true : undefined}
+                  aria-describedby={mpesaCodeError ? 'mpesa-code-error' : undefined}
+                  className={cx(
+                    'w-full rounded-xl border bg-white px-4 py-3 font-ui text-sm tracking-[0.08em] outline-none',
+                    mpesaCodeError ? 'border-brand' : 'border-line focus:border-brand',
+                  )}
+                />
+                {mpesaCodeError ? (
+                  <p id="mpesa-code-error" role="alert" className="mt-2 text-[12.5px] text-brand">
+                    {mpesaCodeError}
+                  </p>
+                ) : (
+                  mpesaCodeFilled &&
+                  !mpesaCodeBad && (
+                    <p className="mt-2 text-[12.5px] text-[#1a6b39]">
+                      Recorded against this order. We check it against our statement before
+                      dispatch.
+                    </p>
+                  )
+                )}
+              </div>
+            )}
           </Step>
 
           <Step n={3} title="Confirm">
-            <p className="mb-4 text-[13px] leading-relaxed text-muted">
+            <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
               By placing the order you agree to our delivery and returns terms. Ready-made stock can
               be returned within 14 days unused.
             </p>
@@ -252,7 +488,7 @@ export function Checkout() {
                 {placeError}
               </p>
             )}
-            <p className="mt-3 text-center text-[12px] text-muted">
+            <p className="mt-3 text-center text-[12px] text-muted-foreground">
               No payment is taken on this screen. We confirm the total with you before anything is
               charged.
             </p>
@@ -270,14 +506,16 @@ export function Checkout() {
                 const c = p.colours.find((v) => v.id === line.colour)
                 return (
                   <li key={i} className="flex gap-3">
-                    <img
-                      src={swatch(p.pattern, c?.swatch || p.accent, i)}
-                      alt=""
-                      className="h-14 w-12 shrink-0 rounded-lg object-cover"
+                    <ProductThumb
+                      product={p}
+                      colourId={line.colour}
+                      index={i}
+                      className="h-14 w-12"
+                      sizes="48px"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium">{p.name}</p>
-                      <p className="text-[12px] text-muted">
+                      <p className="text-[12px] text-muted-foreground">
                         {c?.label} · Qty {line.qty}
                       </p>
                     </div>
@@ -300,11 +538,11 @@ export function Checkout() {
                 <span>Total</span>
                 <span>{money(total)}</span>
               </div>
-              <p className="pt-1 text-[12px] text-muted">Inclusive of 16% VAT</p>
+              <p className="pt-1 text-[12px] text-muted-foreground">Inclusive of 16% VAT</p>
             </div>
           </div>
 
-          <p className="mt-4 text-center text-[13px] text-muted">
+          <p className="mt-4 text-center text-[13px] text-muted-foreground">
             Buying made-to-measure too?{' '}
             <Link to="/quote" className="text-brand underline">
               Send your quote list
@@ -372,7 +610,7 @@ function Input({
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className={cx('font-medium', highlight && 'text-[#1a6b39]')}>{value}</span>
     </div>
   )

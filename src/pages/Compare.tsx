@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { bySlug, categoryBySlug } from '../data/catalogue'
 import type { Product } from '../data/types'
 import { leadTime, money } from '../lib/format'
-import { swatch } from '../lib/swatch'
 import { COMPARE_LIMIT, useSaved } from '../store/saved'
 import { Button, Container, SectionHeading, Stars, cx } from '../components/ui'
+import { ProductThumb } from '../components/ProductThumb'
 
 /**
  * Side-by-side comparison, driven entirely by `?slugs=a,b,c`.
@@ -45,7 +45,7 @@ export function Compare() {
       <Container className="py-10">
         <SectionHeading eyebrow="Compare" title="Nothing to compare yet" />
         <div className="rounded-2xl border border-line bg-shell px-6 py-16 text-center">
-          <p className="mx-auto mb-6 max-w-md text-[14px] leading-relaxed text-muted">
+          <p className="mx-auto mb-6 max-w-md text-[14px] leading-relaxed text-muted-foreground">
             Pick up to {COMPARE_LIMIT} products in the shop and they line up here on price, fabric,
             lead time and every specification either of them lists.
           </p>
@@ -86,10 +86,12 @@ export function Compare() {
               {items.map((p, i) => (
                 <th key={p.slug} className="w-56 p-2 align-bottom">
                   <Link to={`/product/${p.slug}`} className="block">
-                    <img
-                      src={swatch(p.pattern, p.colours[0].swatch || p.accent, i)}
-                      alt=""
-                      className="aspect-4/5 w-full rounded-xl object-cover"
+                    <ProductThumb
+                      product={p}
+                      index={i}
+                      className="aspect-4/5 w-full"
+                      sizes="(min-width: 640px) 224px, 45vw"
+                      rounded="rounded-xl"
                     />
                     <span className="mt-2 block font-display text-[14px] leading-snug font-semibold text-ink">
                       {p.name}
@@ -97,7 +99,7 @@ export function Compare() {
                   </Link>
                   <button
                     onClick={() => remove(p.slug)}
-                    className="mt-1 text-[12px] text-muted underline hover:text-brand"
+                    className="mt-1 text-[12px] text-muted-foreground underline hover:text-brand"
                   >
                     Remove
                   </button>
@@ -110,9 +112,9 @@ export function Compare() {
             <Row label="Price" items={items}>
               {(p) => (
                 <span className="font-display text-lg font-semibold text-ink">
-                  {p.mode === 'quote' && <span className="text-[11px] font-normal text-muted">from </span>}
+                  {p.mode === 'quote' && <span className="text-[11px] font-normal text-muted-foreground">from </span>}
                   {money(p.price)}
-                  <span className="block text-[11px] font-normal text-muted">{p.unit}</span>
+                  <span className="block text-[11px] font-normal text-muted-foreground">{p.unit}</span>
                 </span>
               )}
             </Row>
@@ -195,7 +197,7 @@ function Row({
     <tr className="align-top">
       <th
         scope="row"
-        className="sticky left-0 z-10 border-t border-line bg-white p-3 text-[12px] font-semibold tracking-wide text-muted uppercase"
+        className="sticky left-0 z-10 border-t border-line bg-white p-3 text-[12px] font-semibold tracking-wide text-muted-foreground uppercase"
       >
         {label}
       </th>

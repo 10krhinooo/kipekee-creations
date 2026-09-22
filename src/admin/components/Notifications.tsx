@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '../../components/ui'
 import { NOW, fittings, since } from '../data/operations'
+import { type StockRow, isLow, useStock } from '../data/stock'
 import { useOperations } from '../data/store'
 
 /**
@@ -47,7 +48,7 @@ export function alertsFrom({
   quotes,
   orders,
   stock,
-}: ReturnType<typeof useOperations>): Alert[] {
+}: ReturnType<typeof useOperations> & { stock: StockRow[] }): Alert[] {
   const out: Alert[] = []
 
   const newQuotes = quotes.filter((q) => q.status === 'new')
@@ -86,7 +87,7 @@ export function alertsFrom({
     })
   }
 
-  const low = stock.filter((s) => s.mode === 'buy' && s.stock <= s.reorderAt)
+  const low = stock.filter(isLow)
   if (low.length > 0) {
     out.push({
       id: 'stock-low',
@@ -125,8 +126,9 @@ function readDismissed(): string[] {
 export function useAlerts() {
   const [dismissed, setDismissed] = useState(readDismissed)
   const data = useOperations()
+  const stock = useStock()
 
-  const all = alertsFrom(data)
+  const all = alertsFrom({ ...data, stock })
   const signatures = all.map((a) => a.signature).join('|')
 
   // Only signatures still matching a live alert are worth keeping.
@@ -214,7 +216,7 @@ export function NotificationsPanel({
         {alerts.length > 0 && (
           <button
             onClick={onClear}
-            className="rounded-lg px-2 py-1 text-[12px] text-muted transition-colors hover:bg-shell hover:text-brand"
+            className="rounded-lg px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-shell hover:text-brand"
             title="Clear these until something changes"
           >
             Clear all
@@ -223,7 +225,7 @@ export function NotificationsPanel({
       </div>
 
       {alerts.length === 0 ? (
-        <p className="px-4 py-6 text-center text-[13px] text-muted">
+        <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">
           Nothing needs you right now.
         </p>
       ) : (
@@ -243,7 +245,7 @@ export function NotificationsPanel({
                 >
                   {alert.title}
                 </span>
-                <span className="mt-0.5 block text-[12px] leading-relaxed text-muted">
+                <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
                   {alert.detail}
                 </span>
               </Link>

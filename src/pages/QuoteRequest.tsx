@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useBasket } from '../store/basket'
 import { bySlug, rooms } from '../data/catalogue'
 import { money } from '../lib/format'
-import { swatch } from '../lib/swatch'
 import { Button, Container, WhatsAppIcon, cx } from '../components/ui'
 import { quoteWhatsAppLink } from '../lib/whatsapp'
 import { isValidEmail, isValidKenyanPhone } from '../lib/validate'
 import { post } from '../lib/api'
+import { ProductThumb } from '../components/ProductThumb'
+import { downloadDocument, printDocument, type OrderDocument } from '../lib/documents'
 
 /**
  * The quote request is the conversion path for made-to-measure work.
@@ -17,6 +18,12 @@ export function QuoteRequest() {
   const { quote, updateQuote, removeFromQuote, clear } = useBasket()
   const [sent, setSent] = useState(false)
   const [reference, setReference] = useState<string | null>(null)
+  /*
+   * A snapshot for the take-away copy, captured before `clear('quote')` empties
+   * the list. Measurements somebody climbed a ladder for are the last thing
+   * that should exist only in a cleared basket.
+   */
+  const [quoteDoc, setQuoteDoc] = useState<OrderDocument | null>(null)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [preferredTime, setPreferredTime] = useState('As soon as possible')
@@ -74,7 +81,40 @@ export function QuoteRequest() {
 
     // Only cleared once the workshop has it. Clearing first would throw away
     // measurements the visitor took off a window if the request never landed.
-    setReference(result.data?.reference ?? null)
+    const ref = result.data?.reference ?? null
+    setReference(ref)
+
+    if (ref) {
+      setQuoteDoc({
+        kind: 'quote-request',
+        reference: ref,
+        issuedAt: new Date(),
+        name,
+        email: email.trim() || null,
+        phone,
+        address: area.trim() || null,
+        county: null,
+        paymentMethod: 'Not yet quoted',
+        deliveryEstimate: `Preferred measure: ${preferredTime}`,
+        lines: quote.map((line) => {
+          const product = bySlug(line.slug)
+          const colour = product?.colours.find((c) => c.id === line.colour)?.label
+          const size =
+            line.widthCm && line.dropCm ? `${line.widthCm}cm wide x ${line.dropCm}cm drop` : null
+          return {
+            productName: product?.name ?? line.slug,
+            detail: [colour, line.room].filter(Boolean).join(' · ') || null,
+            measurements: [size, line.notes?.trim()].filter(Boolean).join(' · ') || null,
+            qty: line.windows,
+            amount: 0,
+            priced: false,
+          }
+        }),
+        subtotal: 0,
+        total: 0,
+      })
+    }
+
     clear('quote')
     setSent(true)
   }
@@ -100,11 +140,29 @@ export function QuoteRequest() {
             Reference {reference}
           </p>
         )}
-        <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted">
+        <p className="mx-auto mt-3 mb-8 max-w-md text-[15px] leading-relaxed text-muted-foreground">
           One of our fitters will call within one working day to confirm the details and book your
           free measure. Nothing is charged until you approve the written quote.
-          {email.trim() && ' A copy is on its way to your email.'}
         </p>
+
+        {quoteDoc && (
+          <div className="mx-auto mb-8 max-w-md rounded-panel border border-line bg-shell p-5 text-left">
+            <p className="font-display text-[15px] font-semibold text-ink">Your quote request</p>
+            <p className="mt-1 mb-4 text-[13px] leading-relaxed text-muted-foreground">
+              Every room, size and note you entered, with your details and reference {reference}.
+              Keep it so you can check our quotation against what you asked for.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => downloadDocument(quoteDoc)}>
+                Download a copy
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => printDocument(quoteDoc)}>
+                Print or save as PDF
+              </Button>
+            </div>
+          </div>
+        )}
+
         <Button to="/shop" size="lg">Keep browsing</Button>
       </Container>
     )
@@ -114,7 +172,7 @@ export function QuoteRequest() {
     return (
       <Container className="py-24 text-center">
         <h1 className="font-display text-2xl font-semibold">Your quote list is empty</h1>
-        <p className="mx-auto mt-3 mb-6 max-w-md text-muted">
+        <p className="mx-auto mt-3 mb-6 max-w-md text-muted-foreground">
           Add curtains, rails or canopies and we'll come back with a fixed price for the whole job.
         </p>
         <Button to="/shop?mode=quote">Browse made-to-measure</Button>
@@ -126,7 +184,7 @@ export function QuoteRequest() {
     <Container className="py-8 sm:py-12">
       <header className="mb-8 max-w-2xl">
         <h1 className="font-display text-3xl font-semibold">Request your quote</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
           Confirm what you know below. Anything you leave blank, our fitter measures on site for free,
           anywhere in Nairobi. You'll get an itemised written quote within one working day.
         </p>
@@ -141,20 +199,22 @@ export function QuoteRequest() {
             return (
               <div key={i} className="rounded-2xl border border-line p-5">
                 <div className="mb-4 flex gap-4">
-                  <img
-                    src={swatch(p.pattern, c?.swatch || p.accent, i)}
-                    alt=""
-                    className="h-20 w-16 shrink-0 rounded-lg object-cover"
+                  <ProductThumb
+                    product={p}
+                    colourId={line.colour}
+                    index={i}
+                    className="h-20 w-16"
+                    sizes="64px"
                   />
                   <div className="min-w-0 flex-1">
                     <h2 className="font-display text-base font-semibold">{p.name}</h2>
-                    <p className="text-[13px] text-muted">
+                    <p className="text-[13px] text-muted-foreground">
                       {c?.label} · from {money(p.price)} {p.unit}
                     </p>
                   </div>
                   <button
                     onClick={() => removeFromQuote(i)}
-                    className="self-start text-[13px] text-muted underline hover:text-brand"
+                    className="self-start text-[13px] text-muted-foreground underline hover:text-brand"
                   >
                     Remove
                   </button>
@@ -193,7 +253,7 @@ export function QuoteRequest() {
 
                 <label className="mt-3 block">
                   <span className="mb-1.5 block text-[12px] font-medium">
-                    Notes <span className="font-normal text-muted">(optional)</span>
+                    Notes <span className="font-normal text-muted-foreground">(optional)</span>
                   </span>
                   <textarea
                     rows={2}
@@ -267,13 +327,13 @@ export function QuoteRequest() {
         <aside className="h-fit space-y-4 lg:sticky lg:top-28">
           <div className="rounded-2xl border border-line bg-shell p-5">
             <h2 className="mb-1 font-display text-base font-semibold">Indicative total</h2>
-            <p className="mb-4 text-[12px] leading-relaxed text-muted">
+            <p className="mb-4 text-[12px] leading-relaxed text-muted-foreground">
               A rough figure from the sizes you've entered. Your written quote is the real number, and it will never be higher than what you approve.
             </p>
             <p className="font-display text-3xl font-bold text-ink">
               ~{money(Math.round(indicative))}
             </p>
-            <p className="mt-1 text-[12px] text-muted">
+            <p className="mt-1 text-[12px] text-muted-foreground">
               {quote.length} {quote.length === 1 ? 'item' : 'items'} · fitting included in Nairobi
             </p>
 

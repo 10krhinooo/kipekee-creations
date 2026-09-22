@@ -1,8 +1,9 @@
 import { products } from '../data/catalogue'
-import { swatch } from '../lib/swatch'
+import { Photo } from '../components/Photo'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
 import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { useSeo } from '../lib/seo'
 
 /**
  * Hoteliers, architects and property managers buy on volume, specs and terms
@@ -10,6 +11,15 @@ import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '.
  * contract specs and a trade account form.
  */
 export function Trade() {
+
+  useSeo({
+    title: 'Trade and hotel pricing | Kipekee Creations',
+    description:
+      'Volume pricing from 50 units, net-30 accounts, sample boards and a named account manager. For hoteliers, architects, interior designers and property managers.',
+    path: '/hotel-linen',
+    image: '/photos/trade-hospitality-1600.jpg',
+  })
+
   const contract = products.filter((p) => p.rooms.includes('Hotel & hospitality'))
 
   return (
@@ -43,9 +53,22 @@ export function Trade() {
             </div>
           </div>
 
+          {/* A furnished property and the linen that goes in it. This page is
+              read by people who buy on specification, and a specification is
+              easier to believe next to the finished room. */}
           <div className="grid grid-cols-2 gap-4">
-            <img src={swatch('plain', '#eae5db', 14)} alt="" className="aspect-square w-full rounded-2xl object-cover" />
-            <img src={swatch('stripe', '#e8e4dc', 15)} alt="" className="mt-8 aspect-square w-full rounded-2xl object-cover" />
+            <Photo
+              name="room-hotel"
+              aspect={3 / 4}
+              className="rounded-2xl"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
+            <Photo
+              name="trade-hospitality"
+              aspect={3 / 4}
+              className="mt-8 rounded-2xl"
+              sizes="(min-width: 1024px) 22vw, 45vw"
+            />
           </div>
         </Container>
       </section>
@@ -70,9 +93,9 @@ export function Trade() {
                   tier.featured ? 'border-brand bg-brand-50' : 'border-line bg-white'
                 }`}
               >
-                <p className="text-[13px] font-medium text-muted">{tier.band}</p>
+                <p className="text-[13px] font-medium text-muted-foreground">{tier.band}</p>
                 <p className="mt-2 font-display text-2xl font-bold text-ink">{tier.discount}</p>
-                <p className="mt-2 text-[13px] text-muted">{tier.note}</p>
+                <p className="mt-2 text-[13px] text-muted-foreground">{tier.note}</p>
               </div>
             ))}
           </div>
@@ -106,7 +129,7 @@ export function Trade() {
             ].map((x) => (
               <div key={x.h}>
                 <h3 className="mb-2 font-display text-base font-semibold">{x.h}</h3>
-                <p className="text-[14px] leading-relaxed text-muted">{x.b}</p>
+                <p className="text-[14px] leading-relaxed text-muted-foreground">{x.b}</p>
               </div>
             ))}
           </div>
@@ -162,7 +185,7 @@ export function Trade() {
               <Button full size="lg">
                 Request trade pricing
               </Button>
-              <p className="mt-3 text-center text-[12px] text-muted">
+              <p className="mt-3 text-center text-[12px] text-muted-foreground">
                 Minimum order for trade terms is {money(150000)}. Prototype form. Nothing is sent.
               </p>
             </div>

@@ -50,6 +50,30 @@ const DRAW_AT = 780
 const DRAW_MS = 1500
 
 /**
+ * When the content under the cloth starts arriving, published as a CSS variable.
+ *
+ * `App.tsx` and `AdminLayout.tsx` put `animate-page-rise` on their `<main>`, and
+ * that utility used to carry its own hardcoded 420ms delay. Two timelines in two
+ * files, kept in step by hand: moving `OPEN_MS` here silently desynced the
+ * content under it, and there was nothing to notice the drift.
+ *
+ * It also got the skipped case wrong. A navigation that does not curtain -
+ * ticking a shop filter, reduced motion, moving inside the console - advances
+ * `shown` immediately, so the fixed delay held a blank page for 420ms to hide
+ * a curtain that was never drawn.
+ *
+ * So this is written per-navigation from whatever is actually about to happen,
+ * and `animate-page-rise` reads it. Just past half the open: the cloth is
+ * already moving and the eye is following it, so the page is legible by the
+ * time it clears rather than starting from nothing once it has.
+ */
+const RISE_AT = Math.round(OPEN_MS * 0.55)
+
+const publishRise = (ms: number) => {
+  document.documentElement.style.setProperty('--page-rise-delay', `${ms}ms`)
+}
+
+/**
  * How far the runners bunch.
  *
  * A floor rather than the panel's own factor, because a stack of rings has a
@@ -144,6 +168,21 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
     }
   })
 
+  /*
+   * The first load is its own case. A plain open is `RISE_AT` away, but the
+   * motorised reveal spends its first 780ms putting the rail up before the
+   * cloth moves at all, and content rising into that reads as the page
+   * arriving before the thing meant to be revealing it.
+   */
+  const firstRender = useRef(true)
+  if (firstRender.current) {
+    firstRender.current = false
+    // During render, not in an effect. An effect runs after the first paint,
+    // by which point `<main>`'s animation has already started on whatever the
+    // fallback in the stylesheet says.
+    publishRise(motorised ? DRAW_AT : RISE_AT)
+  }
+
   const [shown, setShown] = useState(location)
   // The first render is a reveal, not a transition: there is no previous page
   // to cover, so the cloth starts closed and simply opens on the site.
@@ -182,6 +221,8 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
   useEffect(() => {
     if (!stale) return
     if (skip) {
+      // No cloth to wait for, so the page should simply be there.
+      publishRise(0)
       setShown(target.current)
       setPhase('hidden')
       return
@@ -295,6 +336,12 @@ export function PageCurtain({ children }: { children: (location: Location) => Re
         running.length = 0
 
         if (closing) {
+          // Set before `shown` advances, so the remounted `<main>` is painted
+          // with the delay this particular open needs rather than the last
+          // one's. Same commit, and the property is on the root element, so
+          // there is no frame where the two disagree.
+          publishRise(RISE_AT)
+
           // The whole point of the delay: the new page mounts here, out of
           // sight, and the scroll jump that comes with it goes unseen too.
           setShown(target.current)

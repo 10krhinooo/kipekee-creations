@@ -34,7 +34,7 @@ export function Wishlist() {
       {items.length === 0 ? (
         <div className="rounded-2xl border border-line bg-shell px-6 py-16 text-center">
           <p className="font-display text-lg font-semibold text-ink">Nothing saved yet</p>
-          <p className="mx-auto mt-2 mb-6 max-w-md text-[14px] leading-relaxed text-muted">
+          <p className="mx-auto mt-2 mb-6 max-w-md text-[14px] leading-relaxed text-muted-foreground">
             Tap the heart on any product to keep it here while you decide. Saved products stay on
             this device, so there is nothing to sign up for.
           </p>
@@ -95,7 +95,7 @@ function EmailMyList({ items }: { items: Product[] }) {
       {sent ? (
         <div className="text-center">
           <p className="font-display text-lg font-semibold text-ink">List sent</p>
-          <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-muted">
+          <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-muted-foreground">
             Check {email}. If it is not there in a minute, look in spam, then{' '}
             <button onClick={() => setSent(false)} className="text-brand underline">
               try another address
@@ -106,7 +106,7 @@ function EmailMyList({ items }: { items: Product[] }) {
       ) : (
         <div className="mx-auto max-w-lg text-center">
           <h2 className="font-display text-lg font-semibold text-ink">Email me this list</h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+          <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
             Your saved items live on this device only. Send them to yourself and you can pick up
             where you left off anywhere, no account needed.
           </p>

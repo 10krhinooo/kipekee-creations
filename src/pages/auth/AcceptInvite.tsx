@@ -103,7 +103,7 @@ export function AcceptInvite() {
           title="That link is incomplete"
           intro="Invite links carry a one-time token, and this one arrived without it."
         >
-          <p className="mt-6 text-[13px] leading-relaxed text-muted">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
             Copy the link straight from the email rather than retyping it, or ask whoever set up
             your account to send another.
           </p>
@@ -121,7 +121,7 @@ export function AcceptInvite() {
     return (
       <AuthScene>
         <AuthCard title="That invite has expired" intro={deadLink}>
-          <p className="mt-6 text-[13px] leading-relaxed text-muted">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
             Nothing is wrong with your account - only the link is out of date. A new one takes an
             admin a moment to send from the console.
           </p>
@@ -166,7 +166,7 @@ export function AcceptInvite() {
         {checked && invite && (
           <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
             <div className="rounded-xl border border-line bg-shell px-4 py-3">
-              <p className="text-[12px] text-muted">You will sign in with</p>
+              <p className="text-[12px] text-muted-foreground">You will sign in with</p>
               <p className="mt-0.5 text-sm font-medium break-all text-ink">{invite.email}</p>
             </div>
 

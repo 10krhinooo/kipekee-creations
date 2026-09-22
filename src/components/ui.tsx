@@ -4,20 +4,32 @@ import { Link } from 'react-router-dom'
 export const cx = (...parts: (string | false | null | undefined)[]) =>
   parts.filter(Boolean).join(' ')
 
-type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'dark' | 'whatsapp'
+/*
+ * The storefront's primitives.
+ *
+ * One rule runs through this file since the redesign: the display face is a
+ * serif and it is for headings only. Buttons, badges, eyebrows, nav and prices
+ * wear `font-ui` (Poppins). A serif on a 13px button reads as a typo, and a
+ * sans-serif heading is what made the prototype look like a dashboard.
+ */
+
+type ButtonVariant = 'primary' | 'outline' | 'ghost' | 'dark' | 'brass' | 'whatsapp'
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-700 shadow-sm',
-  outline: 'border border-ink/20 text-ink hover:border-brand hover:text-brand bg-white',
+  primary: 'bg-brand text-white hover:bg-brand-700 shadow-raise',
+  outline: 'border border-line-strong bg-white text-ink hover:border-ink hover:bg-linen',
   ghost: 'text-ink hover:bg-sand',
   dark: 'bg-ink text-white hover:bg-ink-soft',
-  whatsapp: 'bg-[#1da851] text-white hover:bg-[#179145]',
+  /* The secondary call to action. Brass carries the premium weight so the red
+     can stay rare enough to still mean something. */
+  brass: 'bg-brass text-ink hover:bg-brass-deep hover:text-white',
+  whatsapp: 'bg-whatsapp text-white hover:bg-whatsapp-deep',
 }
 
 const sizes = {
-  sm: 'px-3.5 py-2 text-sm',
+  sm: 'px-4 py-2 text-[13px]',
   md: 'px-5 py-3 text-sm',
-  lg: 'px-7 py-4 text-base',
+  lg: 'px-7 py-3.5 text-[15px]',
 }
 
 interface ButtonProps {
@@ -28,6 +40,8 @@ interface ButtonProps {
   onClick?: () => void
   type?: 'button' | 'submit'
   disabled?: boolean
+  /** Shows a spinner and blocks input. Only meaningful on the `<button>` form. */
+  loading?: boolean
   full?: boolean
   className?: string
   children: ReactNode
@@ -41,13 +55,15 @@ export function Button({
   onClick,
   type = 'button',
   disabled,
+  loading,
   full,
   className,
   children,
 }: ButtonProps) {
   const classes = cx(
-    'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-200',
-    'disabled:opacity-45 disabled:pointer-events-none',
+    'inline-flex items-center justify-center gap-2 rounded-full font-ui font-medium',
+    'transition-colors duration-200',
+    'disabled:pointer-events-none disabled:opacity-45',
     variants[variant],
     sizes[size],
     full && 'w-full',
@@ -70,9 +86,30 @@ export function Button({
       </a>
     )
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={classes}>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={classes}
+    >
+      {loading && <Spinner />}
       {children}
     </button>
+  )
+}
+
+function Spinner() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" aria-hidden="true" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
@@ -81,18 +118,19 @@ export function Badge({
   tone = 'neutral',
 }: {
   children: ReactNode
-  tone?: 'neutral' | 'brand' | 'quote' | 'stock'
+  tone?: 'neutral' | 'brand' | 'quote' | 'stock' | 'brass'
 }) {
   const tones = {
-    neutral: 'bg-white/90 text-ink border-line',
+    neutral: 'bg-white/92 text-ink border-line backdrop-blur',
     brand: 'bg-brand text-white border-brand',
     quote: 'bg-ink text-white border-ink',
-    stock: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
+    stock: 'bg-stock-bg text-stock-ink border-stock-line',
+    brass: 'bg-brass/18 text-brass-dark border-brass/45',
   }
   return (
     <span
       className={cx(
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase',
+        'inline-flex items-center rounded-full border px-2.5 py-1 font-ui text-eyebrow font-semibold uppercase',
         tones[tone],
       )}
     >
@@ -101,27 +139,64 @@ export function Badge({
   )
 }
 
+/** A letterspaced Poppins label. Sits above a serif heading, never inside one. */
+export function Eyebrow({
+  children,
+  tone = 'brand',
+  className,
+}: {
+  children: ReactNode
+  tone?: 'brand' | 'muted' | 'brass' | 'light'
+  className?: string
+}) {
+  const tones = {
+    brand: 'text-brand',
+    muted: 'text-muted-foreground',
+    brass: 'text-brass-deep',
+    light: 'text-white/70',
+  }
+  return <p className={cx('eyebrow', tones[tone], className)}>{children}</p>
+}
+
+/**
+ * A star rating.
+ *
+ * A product nobody has reviewed yet gets "No reviews yet" rather than five
+ * empty stars and "(0)". Those read as a bad score to anyone skimming, which
+ * is the wrong thing to say about something that has only just gone up, and
+ * staff can now put products up from the console.
+ */
 export function Stars({ rating, count }: { rating: number; count?: number }) {
+  const unrated = count === 0
+
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm">
+    <span className="inline-flex items-center gap-1.5 font-ui text-sm">
       <span className="flex" aria-hidden="true">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <svg key={i} viewBox="0 0 20 20" className="h-3.5 w-3.5">
-            <defs>
-              <linearGradient id={`s${i}-${Math.round(rating * 10)}`}>
-                <stop offset={`${Math.max(0, Math.min(1, rating - i + 1)) * 100}%`} stopColor="#e0a422" />
-                <stop offset={`${Math.max(0, Math.min(1, rating - i + 1)) * 100}%`} stopColor="#d8d5cf" />
-              </linearGradient>
-            </defs>
-            <path
-              fill={`url(#s${i}-${Math.round(rating * 10)})`}
-              d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 14.9 4.7 17.6l1-5.8L1.5 7.7l5.9-.9z"
-            />
-          </svg>
-        ))}
+        {[1, 2, 3, 4, 5].map((i) => {
+          const id = `s${i}-${Math.round(rating * 10)}`
+          const stop = `${Math.max(0, Math.min(1, rating - i + 1)) * 100}%`
+          return (
+            <svg key={i} viewBox="0 0 20 20" className="h-3.5 w-3.5">
+              <defs>
+                <linearGradient id={id}>
+                  <stop offset={stop} stopColor="var(--color-star)" />
+                  <stop offset={stop} stopColor="var(--color-star-empty)" />
+                </linearGradient>
+              </defs>
+              <path
+                fill={`url(#${id})`}
+                d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 14.9 4.7 17.6l1-5.8L1.5 7.7l5.9-.9z"
+              />
+            </svg>
+          )
+        })}
       </span>
-      <span className="sr-only">{rating} out of 5</span>
-      {count !== undefined && <span className="text-muted">({count})</span>}
+      <span className="sr-only">{unrated ? 'Not yet rated' : `${rating} out of 5`}</span>
+      {unrated ? (
+        <span className="text-[13px] text-muted-foreground">No reviews yet</span>
+      ) : (
+        count !== undefined && <span className="text-[13px] text-muted-foreground">({count})</span>
+      )}
     </span>
   )
 }
@@ -132,28 +207,44 @@ export function SectionHeading({
   intro,
   action,
   center,
+  tone = 'dark',
 }: {
   eyebrow?: string
   title: string
   intro?: string
   action?: ReactNode
   center?: boolean
+  /** `light` for a heading sitting on `bg-ink` or over a photograph. */
+  tone?: 'dark' | 'light'
 }) {
+  const light = tone === 'light'
   return (
     <div
       className={cx(
-        'mb-8 flex flex-col gap-4 sm:mb-10',
+        'mb-10 flex flex-col gap-5 sm:mb-12',
         center ? 'items-center text-center' : 'sm:flex-row sm:items-end sm:justify-between',
       )}
     >
       <div className={cx('max-w-2xl', center && 'mx-auto')}>
         {eyebrow && (
-          <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
+          <Eyebrow tone={light ? 'light' : 'brand'} className="mb-3">
             {eyebrow}
+          </Eyebrow>
+        )}
+        <h2 className={cx('text-title font-semibold', light ? 'text-white' : 'text-ink')}>
+          {title}
+        </h2>
+        {intro && (
+          <p
+            className={cx(
+              'mt-4 text-lede',
+              light ? 'text-white/70' : 'text-muted-foreground',
+              center && 'mx-auto',
+            )}
+          >
+            {intro}
           </p>
         )}
-        <h2 className="text-2xl font-semibold text-ink sm:text-3xl">{title}</h2>
-        {intro && <p className="mt-3 text-[15px] leading-relaxed text-muted">{intro}</p>}
       </div>
       {action}
     </div>
@@ -169,17 +260,20 @@ export function Container({
   children,
   className,
   wide,
+  narrow,
 }: {
   children: ReactNode
   className?: string
   /** Edge to edge with gutters only, for full-bleed bars like the header. */
   wide?: boolean
+  /** A reading measure, for legal pages and long-form copy. */
+  narrow?: boolean
 }) {
   return (
     <div
       className={cx(
         'mx-auto w-full px-4 sm:px-6 lg:px-10',
-        wide ? 'max-w-none' : 'max-w-[1600px]',
+        wide ? 'max-w-none' : narrow ? 'max-w-3xl' : 'max-w-[1600px]',
         className,
       )}
     >

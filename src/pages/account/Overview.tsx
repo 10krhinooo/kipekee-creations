@@ -70,7 +70,7 @@ export function AccountOverview() {
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium text-ink">{p.name}</span>
-                    <span className="block text-[12.5px] text-muted">
+                    <span className="block text-[12.5px] text-muted-foreground">
                       {p.mode === 'quote' ? `from ${money(p.price)}` : money(p.price)}
                     </span>
                   </span>

@@ -25,7 +25,7 @@ export function MeasureGuide() {
         <h1 className="font-display text-3xl font-semibold sm:text-4xl">
           How to measure a window in three minutes
         </h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-muted">
+        <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
           You only need a steel tape and a second pair of hands. If you'd rather not, we measure
           free anywhere in Nairobi, but here's how it works so you know what you're buying.
         </p>
@@ -64,7 +64,7 @@ export function MeasureGuide() {
               <div>
                 <h2 className="font-display text-lg font-semibold">{step.title}</h2>
                 <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{step.body}</p>
-                <p className="mt-3 rounded-lg border-l-2 border-brand bg-shell px-4 py-2.5 text-[14px] leading-relaxed text-muted">
+                <p className="mt-3 rounded-lg border-l-2 border-brand bg-shell px-4 py-2.5 text-[14px] leading-relaxed text-muted-foreground">
                   <strong className="text-ink">Tip:</strong> {step.tip}
                 </p>
               </div>
@@ -76,7 +76,7 @@ export function MeasureGuide() {
         <aside className="h-fit lg:sticky lg:top-28">
           <div className="rounded-2xl border border-line bg-shell p-6">
             <h2 className="mb-1 font-display text-lg font-semibold">Estimate your window</h2>
-            <p className="mb-5 text-[13px] leading-relaxed text-muted">
+            <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
               Rough figures to help you plan. Your written quote is the real price.
             </p>
 
@@ -119,7 +119,7 @@ export function MeasureGuide() {
                       )}
                     >
                       {f.l}
-                      <span className="block text-[11px] text-muted">{f.v}×</span>
+                      <span className="block text-[11px] text-muted-foreground">{f.v}×</span>
                     </button>
                   ))}
                 </div>
@@ -144,7 +144,7 @@ export function MeasureGuide() {
                         className="h-4 w-4 accent-[#a11c20]"
                       />
                       <span className="flex-1">{t.l}</span>
-                      <span className="text-[12px] text-muted">{money(t.v)}/m</span>
+                      <span className="text-[12px] text-muted-foreground">{money(t.v)}/m</span>
                     </label>
                   ))}
                 </div>
@@ -156,7 +156,7 @@ export function MeasureGuide() {
               <Row label="Fabric required" value={`${fabricMetres.toFixed(1)} m`} />
               <Row label="Finished drop" value={`${drop} cm`} />
               <div className="mt-3 border-t border-line pt-3">
-                <p className="text-[12px] text-muted">Indicative, fitted</p>
+                <p className="text-[12px] text-muted-foreground">Indicative, fitted</p>
                 <p className="font-display text-3xl font-bold text-ink">~{money(estimate)}</p>
               </div>
             </div>
@@ -244,7 +244,7 @@ function Slider({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>
   )

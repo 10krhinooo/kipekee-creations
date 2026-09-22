@@ -16,6 +16,8 @@
 
 import type { Role } from '../auth/AuthProvider'
 
+import { isValidMpesaCode, normaliseMpesaCode } from './validate'
+
 const STORAGE_KEY = 'kipekee.mock.v1'
 
 /** Roughly what a round trip to Nairobi feels like, so spinners still show. */
@@ -70,6 +72,98 @@ interface Db {
   nextId: number
   /** Bumped for each quote or order, so references look sequential. */
   reference: number
+  /** Promotional list sign-ups, lowercased email to when they joined. */
+  subscribers: Record<string, string>
+  /** Product reviews, keyed by product slug. */
+  reviews: Record<string, Review[]>
+  /**
+   * Placed orders. The route used to hand back a reference and throw the order
+   * away, which was fine while nothing needed it. Two things do now: the
+   * payment invoice, and deciding whether a reviewer actually bought the thing.
+   */
+  orders: PlacedOrder[]
+  /** Quote requests sent from the storefront, kept whole for the console. */
+  quoteRequests: SubmittedQuote[]
+}
+
+export interface SubmittedQuote {
+  reference: string
+  name: string
+  phone: string
+  email: string | null
+  area: string | null
+  preferredTime: string
+  requestedAt: string
+  lines: {
+    productName: string
+    colour: string | null
+    room: string
+    widthCm: number | null
+    dropCm: number | null
+    windows: number
+    notes: string | null
+  }[]
+}
+
+export interface PlacedOrderLine {
+  slug: string
+  productName: string
+  /** Colourway and size, already joined for display. Null when neither applies. */
+  detail: string | null
+  qty: number
+  amount: number
+}
+
+export interface PlacedOrder {
+  reference: string
+  email: string
+  placedAt: string
+  /** Product slugs on the order, which is all the review check needs. */
+  slugs: string[]
+  total: number
+  /*
+   * Everything below used to be thrown away at the door. The route kept the
+   * reference, the email and the total, which was enough to verify a reviewer
+   * had bought something and enough for nothing else. The console then showed
+   * website orders as "Website customer" from "From checkout" for KSh 0, so an
+   * order placed on the site could not be packed, delivered or reconciled
+   * against a payment without ringing the customer to ask what they had bought.
+   */
+  name: string
+  phone: string
+  address: string
+  county: string | null
+  paymentMethod: string
+  deliveryAmount: number
+  deliveryEstimate: string
+  lines: PlacedOrderLine[]
+  /**
+   * The code from the customer's M-Pesa confirmation SMS, when they paid before
+   * placing the order. Null when they did not, which is the ordinary case for
+   * card and pay-on-delivery and a perfectly normal one for M-Pesa too.
+   */
+  mpesaCode: string | null
+  /** Set by staff once the code has been matched against the statement. */
+  paid: boolean
+}
+
+export interface Review {
+  id: number
+  slug: string
+  author: string
+  /** The account that wrote it, so one customer cannot review twice. */
+  email: string
+  rating: number
+  title: string
+  body: string
+  createdAt: string
+  /**
+   * Earned, not decorative. True when the reviewer's account has an order
+   * containing this product. The prototype used to print this badge on every
+   * review regardless, which is the kind of detail that costs a shop its
+   * credibility the moment somebody notices.
+   */
+  verified: boolean
 }
 
 const iso = (offsetDays = 0) =>
@@ -140,7 +234,7 @@ function seed(): Db {
         recipient: 'Jane Wambui',
         phone: '0701 337 118',
         line1: 'Kileleshwa, Othaya Road, Apt 4B',
-        county: 'nairobi',
+        county: 'Nairobi',
         notes: 'Gate code 1147. Call on arrival.',
         isDefault: true,
       },
@@ -151,7 +245,7 @@ function seed(): Db {
         recipient: 'Sarova Bookings',
         phone: '0729 004 761',
         line1: 'Sarova Stanley, Kimathi Street',
-        county: 'nairobi',
+        county: 'Nairobi',
         notes: null,
         isDefault: true,
       },
@@ -164,7 +258,43 @@ function seed(): Db {
     resets: {},
     nextId: 7,
     reference: 4817,
+    subscribers: {},
+    reviews: {},
+    orders: [],
+    quoteRequests: [],
   }
+}
+
+/**
+ * Fields added after a visitor's store was already written.
+ *
+ * `load()` returns whatever is in localStorage, and a browser that used this
+ * app before reviews existed has a `Db` with no `reviews` key. Every read would
+ * then be `undefined[slug]`. Backfilling on load is cheaper and less alarming
+ * than wiping somebody's basket and sign-in to add a field.
+ */
+function migrate(db: Db): Db {
+  db.subscribers ??= {}
+  db.reviews ??= {}
+  db.orders ??= []
+  db.quoteRequests ??= []
+  // Orders written before the record carried the customer and the lines. The
+  // console reads both without checking, so they get defaults rather than
+  // `undefined.map`.
+  db.orders = db.orders.map((o) => ({
+    ...o,
+    name: o.name ?? '',
+    phone: o.phone ?? '',
+    address: o.address ?? '',
+    county: o.county ?? null,
+    paymentMethod: o.paymentMethod ?? '',
+    deliveryAmount: o.deliveryAmount ?? 0,
+    deliveryEstimate: o.deliveryEstimate ?? '',
+    lines: o.lines ?? [],
+    mpesaCode: o.mpesaCode ?? null,
+    paid: o.paid ?? false,
+  }))
+  return db
 }
 
 function load(): Db {
@@ -172,7 +302,7 @@ function load(): Db {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed?.accounts)) return parsed as Db
+      if (Array.isArray(parsed?.accounts)) return migrate(parsed as Db)
     }
   } catch {
     // A corrupt or unreadable store is not worth failing over: reseed.
@@ -182,6 +312,9 @@ function load(): Db {
   return fresh
 }
 
+/** Fired after any write, so the console can pick up what a shopper just sent. */
+export const DATA_EVENT = 'kipekee:mockdata'
+
 function save(db: Db) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db))
@@ -189,6 +322,23 @@ function save(db: Db) {
     // Private browsing and full quotas both land here. The session still works
     // for this tab, it just will not outlive a reload.
   }
+  // Same tab: `storage` does not fire for the window that wrote, so the admin
+  // store would never hear about a quote submitted in this one.
+  window.dispatchEvent(new Event(DATA_EVENT))
+}
+
+/**
+ * Everything the storefront has submitted, for the console to merge with its
+ * own seed.
+ *
+ * Read straight off the stand-in's store rather than through a route, because
+ * the console is not a client of this API: it is the other half of the same
+ * pretend backend. When the real service lands, both halves start reading it
+ * and this function is what gets deleted.
+ */
+export function submitted() {
+  const db = load()
+  return { quotes: db.quoteRequests, orders: db.orders }
 }
 
 const ok = (body?: unknown): MockResponse => ({ status: body === undefined ? 204 : 200, body })
@@ -706,17 +856,158 @@ const lastAdmin = (db: Db, target: Account) =>
 route('POST', /^\/api\/contact$/, () => ok({ received: true }))
 route('POST', /^\/api\/wishlist\/email$/, () => ok({ sent: true }))
 
-route('POST', /^\/api\/quotes\/request$/, ({ db }) => {
+route('POST', /^\/api\/quotes\/request$/, ({ db, body }) => {
   const reference = `KQ-${db.reference++}`
+
+  /*
+   * Kept, not discarded.
+   *
+   * This route used to mint a reference, throw the body away and return. A
+   * customer measured their windows, typed the numbers in, got a reference
+   * back, and nothing anywhere had any record of it. The console could not
+   * show the quote because nothing had stored it.
+   */
+  const lines = Array.isArray(body.lines) ? body.lines : []
+  db.quoteRequests.push({
+    reference,
+    name: str(body.name),
+    phone: str(body.phone),
+    email: nullable(body.email),
+    area: nullable(body.area),
+    preferredTime: str(body.preferredTime) || 'As soon as possible',
+    requestedAt: iso(),
+    lines: lines.map((raw) => {
+      const l = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+      return {
+        productName: str(l.productName),
+        colour: nullable(l.colour),
+        room: str(l.room),
+        widthCm: typeof l.widthCm === 'number' ? l.widthCm : null,
+        dropCm: typeof l.dropCm === 'number' ? l.dropCm : null,
+        windows: typeof l.windows === 'number' ? l.windows : 1,
+        notes: nullable(l.notes),
+      }
+    }),
+  })
+
   save(db)
   return ok({ reference })
 })
 
-route('POST', /^\/api\/orders\/confirmation$/, ({ db }) => {
+route('POST', /^\/api\/orders\/confirmation$/, ({ db, body }) => {
   const reference = `KO-${db.reference++}`
+
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+
+  const raw = Array.isArray(body.lines) ? body.lines : []
+  const lines: PlacedOrderLine[] = raw
+    .filter((l): l is Record<string, unknown> => Boolean(l) && typeof l === 'object')
+    .map((l) => ({
+      slug: str(l.slug),
+      productName: str(l.productName),
+      detail: str(l.detail) || null,
+      qty: num(l.qty),
+      amount: num(l.amount),
+    }))
+    .filter((l) => l.slug)
+
+  // A code is only worth storing if it looks like one. A half-typed string
+  // filed against an order sends staff looking through a statement for
+  // something that was never there.
+  const code = normaliseMpesaCode(str(body.mpesaCode))
+
+  db.orders.push({
+    reference,
+    email: str(body.email).toLowerCase(),
+    placedAt: iso(),
+    slugs: lines.map((l) => l.slug),
+    total: num(body.total),
+    name: str(body.name),
+    phone: str(body.phone),
+    address: str(body.address),
+    county: str(body.county) || null,
+    paymentMethod: str(body.paymentMethod),
+    deliveryAmount: num(body.deliveryAmount),
+    deliveryEstimate: str(body.deliveryEstimate),
+    lines,
+    mpesaCode: isValidMpesaCode(code) ? code : null,
+    paid: false,
+  })
   save(db)
   return ok({ reference })
 })
+
+// ---------------------------------------------------------------- promotions
+
+/**
+ * Promotional list sign-up.
+ *
+ * Idempotent on purpose: somebody who subscribes twice should be told they are
+ * already on the list, not handed an error or a silent second row. The real
+ * service will want a double opt-in email before it counts anyone as
+ * subscribed; this records the intent and nothing more.
+ */
+route('POST', /^\/api\/newsletter$/, ({ db, body }) => {
+  const email = str(body.email).toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return fail(422, 'Enter a valid email address.')
+  }
+
+  const already = Boolean(db.subscribers[email])
+  if (!already) {
+    db.subscribers[email] = iso()
+    save(db)
+  }
+  return ok({ email, already })
+})
+
+// ---------------------------------------------------------------- reviews
+
+route('GET', /^\/api\/products\/([\w-]+)\/reviews$/, ({ db, params }) => {
+  const list = db.reviews[params[0]] ?? []
+  // Newest first, which is what a shopper scanning for recent experience wants.
+  return ok([...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+})
+
+route(
+  'POST',
+  /^\/api\/products\/([\w-]+)\/reviews$/,
+  signedIn((account, { db, body, params }) => {
+    const slug = params[0]
+    const rating = Number(body.rating)
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return fail(422, 'Choose a rating from one to five stars.')
+    }
+
+    const bodyText = str(body.body)
+    if (bodyText.length < 20) {
+      return fail(422, 'Tell us a little more, at least twenty characters.')
+    }
+
+    const list = (db.reviews[slug] ??= [])
+    if (list.some((r) => r.email === account.email)) {
+      return fail(409, 'You have already reviewed this product.')
+    }
+
+    const review: Review = {
+      id: db.nextId++,
+      slug,
+      author: account.name,
+      email: account.email,
+      rating,
+      title: str(body.title),
+      body: bodyText,
+      createdAt: iso(),
+      // Earned from the order history rather than printed on everything.
+      verified: db.orders.some(
+        (o) => o.email === account.email && o.slugs.includes(slug),
+      ),
+    }
+    list.push(review)
+    save(db)
+    return ok(review)
+  }),
+)
 
 // ---------------------------------------------------------------- entry
 
