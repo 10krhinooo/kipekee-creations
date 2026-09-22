@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
-import { NOW, fittings } from './data/operations'
+import { fittings } from './data/operations'
 import { isLow, useStock } from './data/stock'
 import { useOperations } from './data/store'
 import { NotificationsPanel, useAlerts } from './components/Notifications'
@@ -372,7 +372,10 @@ export function AdminLayout() {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-console text-muted-foreground sm:inline">
-              {NOW.toLocaleDateString('en-KE', {
+              {/* The real date. This read off the seed's frozen clock, so the
+                  console told whoever was using it that today was the 16th of
+                  August, every day, forever. */}
+              {new Date().toLocaleDateString('en-KE', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',

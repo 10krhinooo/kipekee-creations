@@ -350,6 +350,7 @@ export function QuoteBuilder() {
             <ol className="space-y-3 text-console">
               {[
                 { t: 'Request received', d: new Date(quote.requestedAt).toLocaleString('en-KE') },
+                quote.preferredTime ? { t: 'Customer asked for', d: quote.preferredTime } : null,
                 quote.measureSlot ? { t: 'Measure booked', d: quote.measureSlot } : null,
                 quote.sentAt ? { t: 'Quote sent', d: new Date(quote.sentAt).toLocaleString('en-KE') } : null,
               ]

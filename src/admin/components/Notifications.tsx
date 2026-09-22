@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cx } from '../../components/ui'
-import { NOW, fittings, since } from '../data/operations'
+import { toDateKey } from '../data/calendar'
+import { fittings, since } from '../data/operations'
 import { type StockRow, isLow, useStock } from '../data/stock'
 import { useOperations } from '../data/store'
 
@@ -41,8 +42,18 @@ const listOf = (names: string[]) => {
   return `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`
 }
 
-/** The day part of the prototype's clock, for "today" comparisons. */
-const TODAY = NOW.toISOString().slice(0, 10)
+/**
+ * Today, for matching against a fitting's date key.
+ *
+ * Local, not `toISOString().slice(0, 10)`. That is UTC, and Nairobi is three
+ * hours ahead of it, so between midnight and 3am it returns yesterday and the
+ * panel counts the wrong day's visits. The same mistake was behind the
+ * calendar showing every booking on the wrong column.
+ *
+ * Computed per call rather than at module load, because the console is left
+ * open overnight and a constant would keep reporting the day it was opened.
+ */
+const today = () => toDateKey(new Date())
 
 export function alertsFrom({
   quotes,
@@ -76,14 +87,15 @@ export function alertsFrom({
     })
   }
 
-  const today = fittings.filter((f) => f.date === TODAY)
-  if (today.length > 0) {
+  const todayKey = today()
+  const todaysVisits = fittings.filter((f) => f.date === todayKey)
+  if (todaysVisits.length > 0) {
     out.push({
       id: 'visits-today',
-      title: plural(today.length, 'visit today', 'visits today'),
-      detail: listOf(today.map((f) => f.area)),
+      title: plural(todaysVisits.length, 'visit today', 'visits today'),
+      detail: listOf(todaysVisits.map((f) => f.area)),
       to: '/admin/schedule',
-      signature: `visits-today:${TODAY}:${today.map((f) => f.id).sort().join(',')}`,
+      signature: `visits-today:${todayKey}:${todaysVisits.map((f) => f.id).sort().join(',')}`,
     })
   }
 

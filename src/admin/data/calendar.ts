@@ -73,3 +73,22 @@ export function weekLabel(monday: Date): string {
     ? `${monday.getDate()} - ${end.getDate()} ${month(end)}`
     : `${monday.getDate()} ${month(monday)} - ${end.getDate()} ${month(end)}`
 }
+
+/**
+ * A booked slot as staff read it: "Wed 23 Sep, 10:00".
+ *
+ * Takes days from today, not a weekday, because the offset has to carry
+ * tense. A quote marked "measured" needs its visit behind it and one marked
+ * "measure booked" needs it ahead; anchoring both to a weekday of the current
+ * week puts a completed visit in the future for half the week.
+ *
+ * Derived rather than typed for the same reason as the labels above. The seed
+ * had two of these written out by hand, and they stayed on their August dates
+ * while everything around them moved.
+ */
+export function slotLabel(daysFromToday: number, time: string, from: Date = new Date()): string {
+  const d = addDays(from, daysFromToday)
+  const weekday = d.toLocaleDateString('en-KE', { weekday: 'short' })
+  const month = d.toLocaleDateString('en-KE', { month: 'short' })
+  return `${weekday} ${d.getDate()} ${month}, ${time}`
+}
