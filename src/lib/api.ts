@@ -8,6 +8,8 @@
  * window with a tape measure.
  */
 
+import { handleMock, mockEnabled } from './mockApi'
+
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; message: string; status?: number }
 
 /** What Hibernate Validator returns on a 400, so a field error can be surfaced. */
@@ -38,6 +40,14 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (authToken) headers.Authorization = `Bearer ${authToken}`
 
+  // While the backend is not deployed, a stand-in answers in the same shape.
+  // Everything below this point is unchanged either way, so switching it off
+  // with VITE_MOCK_API=false puts the app straight back on the wire.
+  if (mockEnabled) {
+    const mock = await handleMock(method, path, body, authToken)
+    return interpret<T>(mock.status, mock.body)
+  }
+
   let res: Response
   try {
     res = await fetch(path, {
@@ -53,25 +63,32 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   }
 
   const text = await res.text().catch(() => '')
+  return interpret<T>(res.status, text ? safeParse(text) : undefined)
+}
 
-  if (res.ok) {
+/**
+ * Turns a status and a parsed body into a result, for the wire and the
+ * stand-in alike, so the two cannot drift apart in how they report a failure.
+ */
+function interpret<T>(status: number, parsedBody: unknown): ApiResult<T> {
+  if (status >= 200 && status < 300) {
     // 200, 201, 202 and 204 are all success here and only some have a body.
-    return { ok: true, data: (text ? safeParse(text) : undefined) as T }
+    return { ok: true, data: parsedBody as T }
   }
 
-  const parsed = safeParse(text) as ErrorBody | undefined
+  const parsed = parsedBody as ErrorBody | undefined
 
   // The backend's own messages - rate limits, "last admin", "email already
   // used" - are written for a person to read, so they are passed through rather
   // than replaced with something generic.
-  if (parsed?.message) return { ok: false, message: parsed.message, status: res.status }
+  if (parsed?.message) return { ok: false, message: parsed.message, status }
 
   const violation = parsed?.violations?.find((v) => v.message)
   if (violation?.message) {
-    return { ok: false, message: `Check the form: ${violation.message}.`, status: res.status }
+    return { ok: false, message: `Check the form: ${violation.message}.`, status }
   }
 
-  return { ok: false, message: GENERIC, status: res.status }
+  return { ok: false, message: GENERIC, status }
 }
 
 export const api = {

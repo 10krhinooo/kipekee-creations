@@ -15,14 +15,13 @@ import {
   fittings,
   orderStatusLabel,
   orderTotal,
-  orders,
   quotePipeline,
   quoteStatusLabel,
   quoteTotal,
-  quotes,
   revenueSeries,
-  stock,
+  since,
 } from '../data/operations'
+import { useOperations } from '../data/store'
 
 /**
  * The dashboard answers one question first: what needs a human today. Revenue
@@ -30,6 +29,8 @@ import {
  * unanswered for two days is the most expensive thing that happens here.
  */
 export function Dashboard() {
+  const { quotes, orders, stock } = useOperations()
+
   const newQuotes = quotes.filter((q) => q.status === 'new')
   const awaitingReply = quotes.filter((q) => q.status === 'sent')
   const toPack = orders.filter((o) => o.status === 'new' || o.status === 'packing')
@@ -196,7 +197,7 @@ export function Dashboard() {
                   </Td>
                   <Td align="right">
                     <span className="text-[13px] font-semibold text-brand">
-                      {q.id === 'Q-0912' ? '3h' : '5h'}
+                      {since(q.requestedAt)}
                     </span>
                   </Td>
                 </tr>

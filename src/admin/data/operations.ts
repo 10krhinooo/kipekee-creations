@@ -7,6 +7,26 @@
  * separate screen for each rather than one merged "orders" table.
  */
 
+/**
+ * The prototype's "now".
+ *
+ * The data below is fixed, so anything that reads as elapsed time has to be
+ * measured against a fixed clock or the screens drift further out of step with
+ * it every day. Three places had their own copy of this date; they share this
+ * one instead.
+ */
+export const NOW = new Date('2026-08-16T13:00:00')
+
+/**
+ * How long something has been waiting, against the fixed clock above. Shared
+ * so the dashboard, the quote queue and the notifications panel cannot report
+ * different ages for the same row.
+ */
+export const since = (iso: string) => {
+  const hours = Math.round((NOW.getTime() - new Date(iso).getTime()) / 3.6e6)
+  return hours < 24 ? `${hours}h` : `${Math.round(hours / 24)}d`
+}
+
 export type OrderStatus = 'new' | 'packing' | 'dispatched' | 'delivered' | 'cancelled'
 
 export type QuoteStatus =

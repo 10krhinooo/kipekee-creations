@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
-import { orders, quotes, fittings, stock } from './data/operations'
+import { NOW, fittings } from './data/operations'
+import { useOperations } from './data/store'
+import { NotificationsPanel, useAlerts } from './components/Notifications'
 import { useAuth } from '../auth/AuthProvider'
 
 const initialsOf = (name: string) =>
@@ -58,6 +60,7 @@ const icons = {
 
 export function AdminLayout() {
   const [open, setOpen] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, isAdmin } = useAuth()
@@ -84,6 +87,13 @@ export function AdminLayout() {
       document.body.style.overflow = previous
     }
   }, [open])
+
+  // Changing page closes the panel: it describes the queues, and leaving it
+  // open over the screen it just sent you to only asks to be dismissed twice.
+  useEffect(() => setBellOpen(false), [location.pathname])
+
+  const { quotes, orders, stock } = useOperations()
+  const { alerts, clearAll } = useAlerts()
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
@@ -168,7 +178,7 @@ export function AdminLayout() {
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
             {initialsOf(adminName)}
           </span>
-          <Link to="/account/profile" className="min-w-0 flex-1" title="Your details">
+          <Link to="/admin/profile" className="min-w-0 flex-1" title="Your details">
             <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
             <span className="block text-[11px] text-white/50">
               {isAdmin ? 'Admin' : 'Staff'} · your details
@@ -256,21 +266,42 @@ export function AdminLayout() {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-[13px] text-muted sm:inline">
-              {new Date('2026-08-16T12:00:00').toLocaleDateString('en-KE', {
+              {NOW.toLocaleDateString('en-KE', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
               })}
             </span>
-            <button className="relative rounded-full p-2.5 hover:bg-shell" aria-label="Notifications" title="Notifications">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
-                <path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
-                <path d="M13.7 21a2 2 0 01-3.4 0" />
-              </svg>
-              {newQuotes > 0 && (
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand" />
+            <div className="relative">
+              <button
+                onClick={() => setBellOpen((v) => !v)}
+                className="relative rounded-full p-2.5 hover:bg-shell"
+                aria-label={
+                  alerts.length > 0
+                    ? `Notifications, ${alerts.length} needing attention`
+                    : 'Notifications'
+                }
+                aria-expanded={bellOpen}
+                aria-haspopup="dialog"
+                title="Notifications"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+                  <path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
+                  <path d="M13.7 21a2 2 0 01-3.4 0" />
+                </svg>
+                {alerts.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand" />
+                )}
+              </button>
+
+              {bellOpen && (
+                <NotificationsPanel
+                  alerts={alerts}
+                  onClear={clearAll}
+                  onClose={() => setBellOpen(false)}
+                />
               )}
-            </button>
+            </div>
           </div>
         </header>
 

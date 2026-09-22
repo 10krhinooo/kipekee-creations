@@ -26,3 +26,8 @@ dist-ssr
 # A working note on what the project still needs. Deliberately untracked: it is
 # a snapshot, and it goes stale the moment somebody fixes something in it.
 FINDINGS.md
+
+# Local env. .env.example is the committed one.
+.env
+.env.local
+.env.*.local

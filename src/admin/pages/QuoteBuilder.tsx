@@ -6,9 +6,9 @@ import { Card, CardHeader, PageHeader, StatusPill } from '../components/AdminUI'
 import {
   quotePipeline,
   quoteStatusLabel,
-  quotes,
   type QuoteLineItem,
 } from '../data/operations'
+import { setQuoteStatus, useOperations } from '../data/store'
 
 /** Fitting and delivery are quoted as a line, not buried in the item prices. */
 const FITTING_PER_WINDOW = 800
@@ -21,13 +21,17 @@ const FITTING_PER_WINDOW = 800
  */
 export function QuoteBuilder() {
   const { id = '' } = useParams()
+  const { quotes } = useOperations()
   const quote = quotes.find((q) => q.id === id)
 
   const [items, setItems] = useState<QuoteLineItem[]>(quote?.items ?? [])
   const [discount, setDiscount] = useState(0)
   const [includeFitting, setIncludeFitting] = useState(true)
   const [note, setNote] = useState('')
-  const [sent, setSent] = useState(false)
+
+  // Sending moves the quote itself rather than a flag on this screen, so the
+  // request stops being counted as unanswered the moment it is answered.
+  const sent = quote ? quote.status !== 'new' : false
 
   if (!quote) {
     return (
@@ -258,7 +262,7 @@ export function QuoteBuilder() {
             </div>
 
             <div className="mt-5 space-y-2.5">
-              <Button full disabled={!priced || sent} onClick={() => setSent(true)}>
+              <Button full disabled={!priced || sent} onClick={() => setQuoteStatus(id, 'sent')}>
                 {sent ? 'Quote sent' : 'Send quote to customer'}
               </Button>
               <Button full variant="outline">

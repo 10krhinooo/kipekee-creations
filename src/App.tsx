@@ -43,6 +43,7 @@ import { AccountSaved } from './pages/account/Saved'
 import { AccountAddresses } from './pages/account/Addresses'
 import { AccountProfile } from './pages/account/Profile'
 import { Accounts } from './admin/pages/Accounts'
+import { MyDetails } from './admin/pages/MyDetails'
 import { Dashboard } from './admin/pages/Dashboard'
 import { Quotes } from './admin/pages/Quotes'
 import { QuoteBuilder } from './admin/pages/QuoteBuilder'
@@ -208,6 +209,9 @@ export default function App() {
             <Route path="products/:slug/photos" element={<ProductPhotos />} />
             <Route path="schedule" element={<Schedule />} />
             <Route path="customers" element={<Customers />} />
+            {/* Staff editing their own details, so "your details" in the
+                sidebar no longer drops them into the storefront shell. */}
+            <Route path="profile" element={<MyDetails />} />
             {/* Managing who works here is ADMIN only, on top of the staff gate
                 the whole console already sits behind. */}
             <Route
