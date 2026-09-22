@@ -140,15 +140,15 @@ export function Customers() {
             {shown.map((r) => (
               <tr key={r.name} className="hover:bg-shell">
                 <Td>
-                  <span className="block text-[13px] font-medium">{r.name}</span>
-                  <span className="block text-[12px] text-muted-foreground">
+                  <span className="block text-console font-medium">{r.name}</span>
+                  <span className="block text-console-sm text-muted-foreground">
                     {r.area} · {r.phone}
                   </span>
                 </Td>
                 <Td>
                   <span
                     className={cx(
-                      'inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap',
+                      'inline-flex rounded-full border px-2.5 py-1 text-console-xs font-semibold whitespace-nowrap',
                       r.segment === 'both'
                         ? 'border-brand bg-brand text-white'
                         : r.segment === 'trade'

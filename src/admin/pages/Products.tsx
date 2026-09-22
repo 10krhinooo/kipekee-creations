@@ -124,27 +124,27 @@ export function Products() {
                   key={s.slug}
                   className={cx(
                     'transition-colors',
-                    saved === s.slug ? 'bg-[#e8f5ec]' : 'hover:bg-shell',
+                    saved === s.slug ? 'bg-ok-bg' : 'hover:bg-shell',
                   )}
                 >
                   <Td>
                     <button
                       onClick={() => openEdit(s.slug)}
-                      className="block text-left text-[13px] font-medium hover:text-brand hover:underline"
+                      className="block text-left text-console font-medium hover:text-brand hover:underline"
                     >
                       {s.name}
                     </button>
-                    <span className="block text-[12px] text-muted-foreground">{s.unit}</span>
+                    <span className="block text-console-sm text-muted-foreground">{s.unit}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px] text-muted-foreground">{s.category}</span>
+                    <span className="text-console text-muted-foreground">{s.category}</span>
                   </Td>
                   <Td>
                     <span
                       className={cx(
-                        'inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold',
+                        'inline-flex rounded-full border px-2.5 py-1 text-console-xs font-semibold',
                         s.mode === 'buy'
-                          ? 'border-[#bde2c9] bg-[#e8f5ec] text-[#1a6b39]'
+                          ? 'border-ok-line bg-ok-bg text-ok-ink'
                           : 'border-ink bg-ink text-white',
                       )}
                     >
@@ -153,17 +153,17 @@ export function Products() {
                   </Td>
                   <Td align="right" className="font-semibold whitespace-nowrap">
                     {s.mode === 'quote' && (
-                      <span className="text-[11px] font-normal text-muted-foreground">from </span>
+                      <span className="text-console-xs font-normal text-muted-foreground">from </span>
                     )}
                     {money(s.price)}
                   </Td>
                   <Td align="right">
                     {s.mode === 'quote' ? (
-                      <span className="text-[13px] text-muted-foreground">Made to order</span>
+                      <span className="text-console text-muted-foreground">Made to order</span>
                     ) : (
-                      <span className={cx('text-[13px] font-semibold', low ? 'text-brand' : 'text-ink')}>
+                      <span className={cx('text-console font-semibold', low ? 'text-brand' : 'text-ink')}>
                         {s.stock}
-                        {low && <span className="ml-1.5 text-[11px] font-normal">low</span>}
+                        {low && <span className="ml-1.5 text-console-xs font-normal">low</span>}
                       </span>
                     )}
                   </Td>
@@ -171,13 +171,13 @@ export function Products() {
                     <div className="flex items-center justify-end gap-3">
                       <button
                         onClick={() => openEdit(s.slug)}
-                        className="text-[13px] text-brand hover:underline"
+                        className="text-console text-brand hover:underline"
                       >
                         Edit
                       </button>
                       <Link
                         to={`/admin/products/${s.slug}/photos`}
-                        className="text-[13px] text-brand hover:underline"
+                        className="text-console text-brand hover:underline"
                       >
                         Photos
                       </Link>
@@ -192,7 +192,7 @@ export function Products() {
                           >
                             &minus;
                           </button>
-                          <span className="px-1 text-[11px] text-muted-foreground">adjust</span>
+                          <span className="px-1 text-console-xs text-muted-foreground">adjust</span>
                           <button
                             onClick={() => adjustStock(s.slug, 1)}
                             className="px-2.5 py-1 text-sm hover:text-brand"

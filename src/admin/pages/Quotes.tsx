@@ -100,15 +100,15 @@ export function Quotes() {
                       >
                         {q.id}
                       </Link>
-                      <span className="block text-[11px] text-muted-foreground capitalize">{q.source}</span>
+                      <span className="block text-console-xs text-muted-foreground capitalize">{q.source}</span>
                     </Td>
                     <Td>
-                      <span className="block text-[13px] font-medium">{q.customer}</span>
-                      <span className="block text-[12px] text-muted-foreground">{q.area}</span>
+                      <span className="block text-console font-medium">{q.customer}</span>
+                      <span className="block text-console-sm text-muted-foreground">{q.area}</span>
                     </Td>
                     <Td>
-                      <span className="block text-[13px]">{q.items[0].product}</span>
-                      <span className="block text-[12px] text-muted-foreground">
+                      <span className="block text-console">{q.items[0].product}</span>
+                      <span className="block text-console-sm text-muted-foreground">
                         {q.items.length > 1
                           ? `+${q.items.length - 1} more, `
                           : ''}
@@ -121,7 +121,7 @@ export function Quotes() {
                     <Td>
                       <span
                         className={
-                          q.owner === 'Unassigned' ? 'text-[13px] text-brand' : 'text-[13px] text-muted-foreground'
+                          q.owner === 'Unassigned' ? 'text-console text-brand' : 'text-console text-muted-foreground'
                         }
                       >
                         {q.owner}
@@ -131,7 +131,7 @@ export function Quotes() {
                       {total > 0 ? money(total) : <span className="text-muted-foreground">Not priced</span>}
                     </Td>
                     <Td align="right">
-                      <span className="text-[13px] whitespace-nowrap text-muted-foreground">
+                      <span className="text-console whitespace-nowrap text-muted-foreground">
                         {since(q.requestedAt)}
                       </span>
                     </Td>

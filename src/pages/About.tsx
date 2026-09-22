@@ -1,5 +1,5 @@
 import { Photo } from '../components/Photo'
-import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { Button, Container, Eyebrow, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
 import { useSeo } from '../lib/seo'
 
 export function About() {
@@ -14,12 +14,10 @@ export function About() {
 
   return (
     <>
-      <section className="bg-shell">
-        <Container className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
+      <section className="section bg-shell">
+        <Container className="grid items-center gap-10 lg:grid-cols-2">
           <div>
-            <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
-              About us
-            </p>
+            <Eyebrow className="mb-4">About us</Eyebrow>
             <h1 className="font-display text-4xl leading-[1.1] font-bold text-ink sm:text-5xl">
               We are a workshop, not an importer
             </h1>
@@ -59,7 +57,7 @@ export function About() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -77,7 +75,7 @@ export function About() {
         </Container>
       </section>
 
-      <section className="bg-sand py-14 sm:py-20">
+      <section className="section bg-sand">
         <Container>
           <SectionHeading
             eyebrow="How we work"
@@ -112,7 +110,7 @@ export function About() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container className="max-w-3xl text-center">
           <SectionHeading center eyebrow="Who we work with" title="Homes, hotels and the people who design them" />
           <p className="-mt-4 text-[16px] leading-relaxed text-muted-foreground">

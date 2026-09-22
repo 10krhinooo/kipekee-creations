@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { money } from '../lib/format'
-import { Button, Container, SectionHeading, WhatsAppIcon, cx, whatsappLink } from '../components/ui'
+import {
+  Button,
+  Container,
+  Eyebrow,
+  SectionHeading,
+  WhatsAppIcon,
+  cx,
+  whatsappLink,
+} from '../components/ui'
 
 /**
  * A measuring guide with a live calculator. This is the highest-intent content
@@ -19,9 +27,7 @@ export function MeasureGuide() {
   return (
     <Container className="py-8 sm:py-12">
       <header className="mb-12 max-w-2xl">
-        <p className="mb-3 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
-          Measuring guide
-        </p>
+        <Eyebrow className="mb-3">Measuring guide</Eyebrow>
         <h1 className="font-display text-3xl font-semibold sm:text-4xl">
           How to measure a window in three minutes
         </h1>

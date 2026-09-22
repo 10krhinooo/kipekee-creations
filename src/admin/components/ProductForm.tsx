@@ -105,14 +105,14 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium">{label}</span>
+      <span className="mb-1.5 block text-console font-medium">{label}</span>
       {children}
       {error ? (
-        <span role="alert" className="mt-1 block text-[12px] text-brand">
+        <span role="alert" className="mt-1 block text-console-sm text-brand">
           {error}
         </span>
       ) : (
-        hint && <span className="mt-1 block text-[12px] text-muted-foreground">{hint}</span>
+        hint && <span className="mt-1 block text-console-sm text-muted-foreground">{hint}</span>
       )}
     </label>
   )
@@ -196,7 +196,7 @@ export function ProductForm({
           <DialogTitle className="font-display text-lg">
             {product ? `Edit ${product.name}` : 'Add a product'}
           </DialogTitle>
-          <DialogDescription className="text-[13px]">
+          <DialogDescription className="text-console">
             {product
               ? 'Changes show on the shop straight away.'
               : 'It goes live on the shop as soon as you save. Photographs and colourways are added afterwards.'}

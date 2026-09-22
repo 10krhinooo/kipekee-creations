@@ -87,7 +87,7 @@ export function Dashboard() {
             title="Revenue, last 14 days"
             hint="Shop orders against approved quote value"
             action={
-              <div className="flex items-center gap-3 text-[12px]">
+              <div className="flex items-center gap-3 text-console-sm">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-sm bg-brand" />
                   Shop
@@ -112,10 +112,10 @@ export function Dashboard() {
                     className="w-full rounded-t-sm bg-brand transition-opacity group-hover:opacity-80"
                     style={{ height: `${(d.orders / max) * 100}%` }}
                   />
-                  <span className="mt-1.5 block truncate text-center text-[10px] text-muted-foreground">
+                  <span className="mt-1.5 block truncate text-center text-console-2xs text-muted-foreground">
                     {d.day.split(' ')[0]}
                   </span>
-                  <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-[11px] whitespace-nowrap text-white group-hover:block">
+                  <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-console-xs whitespace-nowrap text-white group-hover:block">
                     {d.day}: {money(total)}
                   </div>
                 </div>
@@ -134,11 +134,11 @@ export function Dashboard() {
               const pct = (inStage.length / quotes.length) * 100
               return (
                 <li key={stage}>
-                  <div className="mb-1 flex items-baseline justify-between gap-2 text-[13px]">
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-console">
                     <span className="font-medium text-ink">{quoteStatusLabel[stage]}</span>
                     <span className="text-muted-foreground">
                       {inStage.length}
-                      {value > 0 && <span className="ml-1.5 text-[11px]">{money(value)}</span>}
+                      {value > 0 && <span className="ml-1.5 text-console-xs">{money(value)}</span>}
                     </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-shell">
@@ -162,7 +162,7 @@ export function Dashboard() {
               title="New quote requests"
               hint="Reply within one working day, as promised on the site"
               action={
-                <Link to="/admin/quotes" className="text-[13px] text-brand hover:underline">
+                <Link to="/admin/quotes" className="text-console text-brand hover:underline">
                   View all
                 </Link>
               }
@@ -184,21 +184,21 @@ export function Dashboard() {
                     <Link to={`/admin/quotes/${q.id}`} className="font-medium hover:text-brand">
                       {q.customer}
                     </Link>
-                    <span className="block text-[12px] text-muted-foreground">{q.area}</span>
+                    <span className="block text-console-sm text-muted-foreground">{q.area}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">{q.items[0].product}</span>
+                    <span className="text-console">{q.items[0].product}</span>
                     {q.items.length > 1 && (
-                      <span className="block text-[12px] text-muted-foreground">
+                      <span className="block text-console-sm text-muted-foreground">
                         +{q.items.length - 1} more
                       </span>
                     )}
                   </Td>
                   <Td>
-                    <span className="text-[12px] text-muted-foreground capitalize">{q.source}</span>
+                    <span className="text-console-sm text-muted-foreground capitalize">{q.source}</span>
                   </Td>
                   <Td align="right">
-                    <span className="text-[13px] font-semibold text-brand">
+                    <span className="text-console font-semibold text-brand">
                       {since(q.requestedAt)}
                     </span>
                   </Td>
@@ -215,7 +215,7 @@ export function Dashboard() {
               title="Orders to pack"
               hint="Before 2pm leaves the workshop today"
               action={
-                <Link to="/admin/orders" className="text-[13px] text-brand hover:underline">
+                <Link to="/admin/orders" className="text-console text-brand hover:underline">
                   View all
                 </Link>
               }
@@ -239,8 +239,8 @@ export function Dashboard() {
                     </Link>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">{o.customer}</span>
-                    <span className="block text-[12px] text-muted-foreground">{o.town}</span>
+                    <span className="text-console">{o.customer}</span>
+                    <span className="block text-console-sm text-muted-foreground">{o.town}</span>
                   </Td>
                   <Td>
                     <StatusPill kind="order" status={o.status} label={orderStatusLabel[o.status]} />
@@ -260,7 +260,7 @@ export function Dashboard() {
             title="Out on the road"
             hint="Next visits booked"
             action={
-              <Link to="/admin/schedule" className="text-[13px] text-brand hover:underline">
+              <Link to="/admin/schedule" className="text-console text-brand hover:underline">
                 Full schedule
               </Link>
             }
@@ -270,19 +270,19 @@ export function Dashboard() {
               <li key={f.id} className="flex items-center gap-3">
                 <span
                   className={cx(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold',
-                    f.kind === 'measure' ? 'bg-brand-50 text-brand' : 'bg-[#e8f5ec] text-[#1a6b39]',
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-console-xs font-bold',
+                    f.kind === 'measure' ? 'bg-brand-50 text-brand' : 'bg-ok-bg text-ok-ink',
                   )}
                 >
                   {f.time.slice(0, 2)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium">{f.customer}</span>
-                  <span className="block text-[12px] text-muted-foreground">
+                  <span className="block truncate text-console font-medium">{f.customer}</span>
+                  <span className="block text-console-sm text-muted-foreground">
                     {f.kind === 'measure' ? 'Measure' : 'Fitting'} · {f.area} · {f.windows} windows
                   </span>
                 </span>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{f.fitter}</span>
+                <span className="shrink-0 text-console-sm text-muted-foreground">{f.fitter}</span>
               </li>
             ))}
           </ul>
@@ -294,7 +294,7 @@ export function Dashboard() {
             title="Running low"
             hint="Below reorder level"
             action={
-              <Link to="/admin/products" className="text-[13px] text-brand hover:underline">
+              <Link to="/admin/products" className="text-console text-brand hover:underline">
                 Manage stock
               </Link>
             }
@@ -303,19 +303,19 @@ export function Dashboard() {
             {lowStock.map((s) => (
               <li key={s.slug} className="flex items-center gap-3">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium">{s.name}</span>
-                  <span className="block text-[12px] text-muted-foreground">
+                  <span className="block truncate text-console font-medium">{s.name}</span>
+                  <span className="block text-console-sm text-muted-foreground">
                     Reorder at {s.reorderAt} {s.unit}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block text-[13px] font-bold text-brand">{s.stock}</span>
-                  <span className="block text-[11px] text-muted-foreground">left</span>
+                  <span className="block text-console font-bold text-brand">{s.stock}</span>
+                  <span className="block text-console-xs text-muted-foreground">left</span>
                 </span>
               </li>
             ))}
             {lowStock.length === 0 && (
-              <li className="py-4 text-center text-[13px] text-muted-foreground">Everything is above its reorder level.</li>
+              <li className="py-4 text-center text-console text-muted-foreground">Everything is above its reorder level.</li>
             )}
           </ul>
         </Card>

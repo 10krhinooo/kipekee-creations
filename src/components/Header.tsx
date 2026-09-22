@@ -33,6 +33,20 @@ const primary = [
  * through it and Enter opens the active hit, so the fastest path through the
  * catalogue does not require reaching for the mouse.
  */
+/**
+ * The product that stands for a category in the menu.
+ *
+ * Derived rather than mapped. A hand-written category-to-image table is the
+ * kind of thing that silently points at the wrong product the first time
+ * somebody reorders the catalogue or retires a line, and staff can now add and
+ * retire products from the console. The best seller leads where there is one,
+ * because that is the shot the category is most likely to be recognised by.
+ */
+const faceOf = (categorySlug: string) => {
+  const inCategory = products.filter((p) => p.category === categorySlug)
+  return inCategory.find((p) => p.bestSeller) ?? inCategory[0]
+}
+
 function Search({ onDone }: { onDone?: () => void }) {
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(false)
@@ -283,27 +297,45 @@ export function Header() {
               </NavLink>
 
               {shopOpen && (
-                <div className="absolute top-full left-0 w-[560px] rounded-2xl border border-line bg-white p-3 shadow-xl">
+                <div className="absolute top-full left-0 w-[620px] rounded-2xl border border-line bg-white p-3 shadow-xl">
                   <div className="grid grid-cols-2 gap-1">
-                    {categories.map((c) => (
-                      <Link
-                        key={c.slug}
-                        to={`/shop?category=${c.slug}`}
-                        className="rounded-xl px-3 py-2.5 transition-colors hover:bg-shell"
-                      >
-                        <span className="flex items-center gap-2 text-sm font-medium text-ink">
-                          {c.name}
-                          {c.mode === 'quote' && (
-                            <span className="rounded bg-sand px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-ink-soft uppercase">
-                              Quoted
-                            </span>
+                    {categories.map((c, i) => {
+                      const face = faceOf(c.slug)
+                      return (
+                        <Link
+                          key={c.slug}
+                          to={`/shop?category=${c.slug}`}
+                          className="group flex gap-3 rounded-xl p-2 transition-colors hover:bg-shell"
+                        >
+                          {/* A category with nothing in it yet has no face to
+                              show, and an empty grey box beside the ones that
+                              do reads as a broken image rather than an empty
+                              shelf. The row simply goes back to text. */}
+                          {face && (
+                            <ProductThumb
+                              product={face}
+                              index={i}
+                              className="h-14 w-14"
+                              sizes="56px"
+                              rounded="rounded-lg"
+                            />
                           )}
-                        </span>
-                        <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
-                          {c.blurb}
-                        </span>
-                      </Link>
-                    ))}
+                          <span className="min-w-0 flex-1 py-0.5">
+                            <span className="flex items-center gap-2 text-sm font-medium text-ink group-hover:text-brand">
+                              {c.name}
+                              {c.mode === 'quote' && (
+                                <span className="rounded bg-sand px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-ink-soft uppercase">
+                                  Quoted
+                                </span>
+                              )}
+                            </span>
+                            <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
+                              {c.blurb}
+                            </span>
+                          </span>
+                        </Link>
+                      )
+                    })}
                   </div>
                 </div>
               )}
