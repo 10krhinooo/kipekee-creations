@@ -2,7 +2,7 @@ import { products } from '../data/catalogue'
 import { Photo } from '../components/Photo'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
-import { Button, Container, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
+import { Button, Container, Eyebrow, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
 import { useSeo } from '../lib/seo'
 
 /**
@@ -24,12 +24,12 @@ export function Trade() {
 
   return (
     <>
-      <section className="bg-ink text-white">
-        <Container className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
+      <section className="section bg-ink text-white">
+        <Container className="grid items-center gap-10 lg:grid-cols-2">
           <div>
-            <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-brand-400 uppercase">
+            <Eyebrow tone="brandLight" className="mb-4">
               Trade &amp; contract
-            </p>
+            </Eyebrow>
             <h1 className="font-display text-4xl leading-[1.1] font-bold sm:text-5xl">
               Furnishing a hotel, lodge or development
             </h1>
@@ -73,7 +73,7 @@ export function Trade() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container>
           <SectionHeading
             eyebrow="Volume pricing"
@@ -102,7 +102,7 @@ export function Trade() {
         </Container>
       </section>
 
-      <section className="bg-shell py-14 sm:py-20">
+      <section className="section bg-shell">
         <Container>
           <SectionHeading
             eyebrow="Why properties reorder"
@@ -136,7 +136,7 @@ export function Trade() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container>
           <SectionHeading eyebrow="Contract range" title="Specified for hospitality" />
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -147,7 +147,7 @@ export function Trade() {
         </Container>
       </section>
 
-      <section id="trade-account" className="scroll-mt-28 pb-14 sm:pb-20">
+      <section id="trade-account" className="section-b scroll-mt-28">
         <Container className="max-w-3xl">
           <div className="rounded-3xl border border-line p-6 sm:p-10">
             <SectionHeading

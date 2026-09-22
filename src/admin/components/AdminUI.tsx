@@ -5,20 +5,20 @@ import type { OrderStatus, QuoteStatus } from '../data/operations'
 /** Status pills. Colour carries meaning: red needs action, green is settled. */
 const orderTones: Record<OrderStatus, string> = {
   new: 'bg-brand-50 text-brand border-brand-200',
-  packing: 'bg-[#fdf6e3] text-[#8a6a12] border-[#f0e0b8]',
-  dispatched: 'bg-[#eef3fb] text-[#2f5596] border-[#cfdcf2]',
-  delivered: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
+  packing: 'bg-warn-bg text-warn-ink border-warn-line',
+  dispatched: 'bg-info-bg text-info-ink border-info-line',
+  delivered: 'bg-ok-bg text-ok-ink border-ok-line',
   cancelled: 'bg-shell text-muted-foreground border-line',
 }
 
 const quoteTones: Record<QuoteStatus, string> = {
   new: 'bg-brand-50 text-brand border-brand-200',
-  measure_booked: 'bg-[#fdf6e3] text-[#8a6a12] border-[#f0e0b8]',
-  measured: 'bg-[#fdf6e3] text-[#8a6a12] border-[#f0e0b8]',
-  sent: 'bg-[#eef3fb] text-[#2f5596] border-[#cfdcf2]',
-  approved: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
-  in_production: 'bg-[#f0edfa] text-[#54419b] border-[#dbd3f2]',
-  fitted: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
+  measure_booked: 'bg-warn-bg text-warn-ink border-warn-line',
+  measured: 'bg-warn-bg text-warn-ink border-warn-line',
+  sent: 'bg-info-bg text-info-ink border-info-line',
+  approved: 'bg-ok-bg text-ok-ink border-ok-line',
+  in_production: 'bg-work-bg text-work-ink border-work-line',
+  fitted: 'bg-ok-bg text-ok-ink border-ok-line',
   lost: 'bg-shell text-muted-foreground border-line',
 }
 
@@ -38,7 +38,7 @@ export function StatusPill({
   return (
     <span
       className={cx(
-        'inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap',
+        'inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-console-xs font-semibold whitespace-nowrap',
         tone,
       )}
     >
@@ -81,8 +81,8 @@ export function CardHeader({
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h2 className="font-display text-[15px] font-semibold text-ink">{title}</h2>
-        {hint && <p className="mt-0.5 text-[12px] text-muted-foreground">{hint}</p>}
+        <h2 className="font-display text-console-lg font-semibold text-ink">{title}</h2>
+        {hint && <p className="mt-0.5 text-console-sm text-muted-foreground">{hint}</p>}
       </div>
       {action}
     </div>
@@ -112,14 +112,14 @@ export function Stat({
   const good = delta === undefined ? false : invert ? delta < 0 : delta > 0
   return (
     <Card className={cx(accent && 'border-brand-200 bg-brand-50')}>
-      <p className="text-[12px] font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
+      <p className="text-console-sm font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="mt-2 font-display text-2xl font-bold text-ink">{value}</p>
       <div className="mt-1.5 flex items-center gap-2">
         {delta !== undefined && (
           <span
             className={cx(
-              'inline-flex items-center gap-0.5 text-[12px] font-semibold',
-              good ? 'text-[#1a6b39]' : 'text-brand',
+              'inline-flex items-center gap-0.5 text-console-sm font-semibold',
+              good ? 'text-ok-ink' : 'text-brand',
             )}
           >
             <svg
@@ -134,7 +134,7 @@ export function Stat({
             {Math.abs(delta)}%
           </span>
         )}
-        {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
+        {hint && <span className="text-console-sm text-muted-foreground">{hint}</span>}
       </div>
     </Card>
   )
@@ -159,7 +159,7 @@ export function Th({
     <th
       scope="col"
       className={cx(
-        'border-b border-line px-4 py-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase',
+        'border-b border-line px-4 py-3 text-console-xs font-semibold tracking-wide text-muted-foreground uppercase',
         align === 'right' && 'text-right',
       )}
     >
@@ -212,7 +212,7 @@ export function PageHeader({
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 className="font-display text-2xl font-semibold text-ink">{title}</h1>
-        {intro && <p className="mt-1.5 max-w-2xl text-[14px] text-muted-foreground">{intro}</p>}
+        {intro && <p className="mt-1.5 max-w-2xl text-console-md text-muted-foreground">{intro}</p>}
       </div>
       {action}
     </header>
@@ -236,7 +236,7 @@ export function Segmented<T extends string>({
           key={o.id}
           onClick={() => onChange(o.id)}
           className={cx(
-            'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-console font-medium transition-colors',
             value === o.id ? 'bg-white text-ink shadow-sm' : 'text-muted-foreground hover:text-ink',
           )}
         >
@@ -244,7 +244,7 @@ export function Segmented<T extends string>({
           {o.count !== undefined && (
             <span
               className={cx(
-                'rounded-full px-1.5 text-[11px]',
+                'rounded-full px-1.5 text-console-xs',
                 value === o.id ? 'bg-shell text-ink' : 'text-muted-foreground',
               )}
             >

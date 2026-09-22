@@ -212,11 +212,11 @@ export function NotificationsPanel({
       className="absolute top-full right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-line bg-white shadow-lg"
     >
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <h2 className="font-display text-[14px] font-semibold text-ink">Needs you</h2>
+        <h2 className="font-display text-console-md font-semibold text-ink">Needs you</h2>
         {alerts.length > 0 && (
           <button
             onClick={onClear}
-            className="rounded-lg px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-shell hover:text-brand"
+            className="rounded-lg px-2 py-1 text-console-sm text-muted-foreground transition-colors hover:bg-shell hover:text-brand"
             title="Clear these until something changes"
           >
             Clear all
@@ -225,7 +225,7 @@ export function NotificationsPanel({
       </div>
 
       {alerts.length === 0 ? (
-        <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">
+        <p className="px-4 py-6 text-center text-console text-muted-foreground">
           Nothing needs you right now.
         </p>
       ) : (
@@ -239,13 +239,13 @@ export function NotificationsPanel({
               >
                 <span
                   className={cx(
-                    'block text-[13px] font-medium',
+                    'block text-console font-medium',
                     alert.urgent ? 'text-brand' : 'text-ink',
                   )}
                 >
                   {alert.title}
                 </span>
-                <span className="mt-0.5 block text-[12px] leading-relaxed text-muted-foreground">
+                <span className="mt-0.5 block text-console-sm leading-relaxed text-muted-foreground">
                   {alert.detail}
                 </span>
               </Link>

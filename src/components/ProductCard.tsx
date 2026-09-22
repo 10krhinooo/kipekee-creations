@@ -192,7 +192,7 @@ export function ProductCard({
           {isQuote ? (
             <span className="eyebrow text-brass-deep">Made to measure</span>
           ) : product.leadTimeDays === 0 ? (
-            <span className="eyebrow text-stock-ink">In stock</span>
+            <span className="eyebrow text-ok-ink">In stock</span>
           ) : (
             <span className="eyebrow text-muted-foreground">{product.leadTimeDays} day lead time</span>
           )}
