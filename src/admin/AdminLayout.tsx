@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
 import { NOW, fittings } from './data/operations'
+import { isLow, useStock } from './data/stock'
 import { useOperations } from './data/store'
 import { NotificationsPanel, useAlerts } from './components/Notifications'
 import { useAuth } from '../auth/AuthProvider'
@@ -58,6 +59,125 @@ const icons = {
   ),
 }
 
+/**
+ * Console search.
+ *
+ * This was a styled `<input>` with no `value`, no `onChange` and no handler:
+ * furniture that looked like a feature. Staff typed an order number into it
+ * and nothing happened, which is a worse outcome than not offering a search at
+ * all, because they had to discover it was decoration before they stopped
+ * trying.
+ *
+ * It searches what the console actually holds: orders by reference, customer
+ * or town; quotes by reference, customer or area. Enter goes to the first hit,
+ * which is what somebody pasting a reference in wants.
+ */
+function ConsoleSearch() {
+  const { orders, quotes } = useOperations()
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const term = q.trim().toLowerCase()
+  const hits = term
+    ? [
+        ...orders
+          .filter((o) =>
+            [o.id, o.customer, o.town].some((v) => v.toLowerCase().includes(term)),
+          )
+          .slice(0, 4)
+          .map((o) => ({
+            key: `o-${o.id}`,
+            to: `/admin/orders/${o.id}`,
+            kind: 'Order',
+            title: o.id,
+            detail: `${o.customer} · ${o.town}`,
+          })),
+        ...quotes
+          .filter((x) =>
+            [x.id, x.customer, x.area].some((v) => v.toLowerCase().includes(term)),
+          )
+          .slice(0, 4)
+          .map((x) => ({
+            key: `q-${x.id}`,
+            to: `/admin/quotes/${x.id}`,
+            kind: 'Quote',
+            title: x.id,
+            detail: `${x.customer} · ${x.area}`,
+          })),
+      ]
+    : []
+
+  const go = (to: string) => {
+    setQ('')
+    setOpen(false)
+    navigate(to)
+  }
+
+  return (
+    <div className="relative hidden max-w-sm flex-1 sm:block">
+      <input
+        value={q}
+        onChange={(e) => {
+          setQ(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        // A blur that fires before the click lands would close the list out
+        // from under the pointer, so it waits a frame.
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && hits[0]) go(hits[0].to)
+          if (e.key === 'Escape') setOpen(false)
+        }}
+        placeholder="Search orders, quotes, customers"
+        aria-label="Search the console"
+        className="w-full rounded-full border border-line bg-shell py-2 pr-4 pl-10 text-sm outline-none focus:border-brand focus:bg-white"
+      />
+      <svg
+        viewBox="0 0 24 24"
+        className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="M20 20l-3.5-3.5" />
+      </svg>
+
+      {open && term !== '' && (
+        <div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-line bg-white shadow-xl">
+          {hits.length === 0 ? (
+            <p className="px-4 py-3 text-[13px] text-muted-foreground">
+              Nothing matches &ldquo;{q.trim()}&rdquo;.
+            </p>
+          ) : (
+            hits.map((hit) => (
+              <button
+                key={hit.key}
+                onClick={() => go(hit.to)}
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-shell"
+              >
+                <span className="shrink-0 rounded-full bg-sand px-2 py-0.5 font-ui text-[10px] font-semibold tracking-wide text-ink uppercase">
+                  {hit.kind}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium text-ink">
+                    {hit.title}
+                  </span>
+                  <span className="block truncate text-[12px] text-muted-foreground">
+                    {hit.detail}
+                  </span>
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function AdminLayout() {
   const [open, setOpen] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
@@ -92,14 +212,15 @@ export function AdminLayout() {
   // open over the screen it just sent you to only asks to be dismissed twice.
   useEffect(() => setBellOpen(false), [location.pathname])
 
-  const { quotes, orders, stock } = useOperations()
+  const { quotes, orders } = useOperations()
+  const stock = useStock()
   const { alerts, clearAll } = useAlerts()
 
   // Live badge counts, so the sidebar doubles as the work queue.
   const newQuotes = quotes.filter((q) => q.status === 'new').length
   const openOrders = orders.filter((o) => o.status === 'new' || o.status === 'packing').length
   const upcoming = fittings.length
-  const lowStock = stock.filter((s) => s.mode === 'buy' && s.stock <= s.reorderAt).length
+  const lowStock = stock.filter(isLow).length
 
   const nav = [
     { to: '/admin', label: 'Dashboard', icon: icons.dashboard, end: true },
@@ -247,25 +368,10 @@ export function AdminLayout() {
             </svg>
           </button>
 
-          <div className="relative hidden max-w-sm flex-1 sm:block">
-            <input
-              placeholder="Search orders, quotes, customers"
-              className="w-full rounded-full border border-line bg-shell py-2 pr-4 pl-10 text-sm outline-none focus:border-brand focus:bg-white"
-            />
-            <svg
-              viewBox="0 0 24 24"
-              className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M20 20l-3.5-3.5" />
-            </svg>
-          </div>
+          <ConsoleSearch />
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden text-[13px] text-muted sm:inline">
+            <span className="hidden text-[13px] text-muted-foreground sm:inline">
               {NOW.toLocaleDateString('en-KE', {
                 weekday: 'long',
                 day: 'numeric',

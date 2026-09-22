@@ -113,7 +113,7 @@ export function Customers() {
           />
           <svg
             viewBox="0 0 24 24"
-            className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted"
+            className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -141,7 +141,7 @@ export function Customers() {
               <tr key={r.name} className="hover:bg-shell">
                 <Td>
                   <span className="block text-[13px] font-medium">{r.name}</span>
-                  <span className="block text-[12px] text-muted">
+                  <span className="block text-[12px] text-muted-foreground">
                     {r.area} · {r.phone}
                   </span>
                 </Td>
@@ -159,16 +159,16 @@ export function Customers() {
                     {segmentLabel[r.segment]}
                   </span>
                 </Td>
-                <Td align="right">{r.orderCount || <span className="text-muted">0</span>}</Td>
-                <Td align="right">{r.quoteCount || <span className="text-muted">0</span>}</Td>
+                <Td align="right">{r.orderCount || <span className="text-muted-foreground">0</span>}</Td>
+                <Td align="right">{r.quoteCount || <span className="text-muted-foreground">0</span>}</Td>
                 <Td align="right" className="font-semibold whitespace-nowrap">
-                  {r.spent ? money(r.spent) : <span className="font-normal text-muted">none yet</span>}
+                  {r.spent ? money(r.spent) : <span className="font-normal text-muted-foreground">none yet</span>}
                 </Td>
                 <Td align="right" className="whitespace-nowrap">
                   {r.pipeline ? (
                     <span className="font-semibold text-brand">{money(r.pipeline)}</span>
                   ) : (
-                    <span className="text-muted">nothing open</span>
+                    <span className="text-muted-foreground">nothing open</span>
                   )}
                 </Td>
               </tr>
@@ -176,7 +176,7 @@ export function Customers() {
           </tbody>
         </Table>
         {shown.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted">No customers match that search.</p>
+          <p className="py-12 text-center text-sm text-muted-foreground">No customers match that search.</p>
         )}
       </Card>
     </>

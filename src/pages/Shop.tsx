@@ -6,6 +6,7 @@ import { ProductCard } from '../components/ProductCard'
 import { Button, Container, cx } from '../components/ui'
 import { money } from '../lib/format'
 import { RecentlyViewed } from '../components/RecentlyViewed'
+import { useSeo } from '../lib/seo'
 
 type Sort = 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest'
 
@@ -25,6 +26,14 @@ const PRICE_MAX = 9000
  * 150 products behind a 16-item category tree.
  */
 export function Shop() {
+
+  useSeo({
+    title: 'Shop curtains, linen and decor | Kipekee Creations',
+    description:
+      'Made-to-measure curtains and blinds, plus ready-to-ship cushion covers, towels, hotel linen and wrought iron. Priced up front, delivered across Kenya.',
+    path: '/shop',
+  })
+
   const [params, setParams] = useSearchParams()
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -174,7 +183,7 @@ export function Shop() {
           className="w-full accent-[#a11c20]"
           aria-label="Maximum price"
         />
-        <p className="mt-1 text-[13px] text-muted">
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Up to <strong className="text-ink">{money(maxPrice)}</strong>
           {maxPrice >= PRICE_MAX && ' (no limit)'}
         </p>
@@ -201,7 +210,7 @@ export function Shop() {
     <Container className="py-8 sm:py-12">
       <header className="mb-8">
         <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">{heading}</h1>
-        {subheading && <p className="mt-3 max-w-2xl text-[15px] text-muted">{subheading}</p>}
+        {subheading && <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground">{subheading}</p>}
       </header>
 
       <div className="flex gap-10">
@@ -215,7 +224,7 @@ export function Shop() {
                 <button
                   onClick={() => setSingle('q', '')}
                   aria-label="Clear the search"
-                  className="text-muted hover:text-brand"
+                  className="text-muted-foreground hover:text-brand"
                 >
                   &times;
                 </button>
@@ -224,7 +233,7 @@ export function Shop() {
           )}
 
           <div className="mb-6 flex items-center justify-between gap-4 border-b border-line pb-4">
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               <strong className="text-ink">{results.length}</strong>{' '}
               {results.length === 1 ? 'product' : 'products'}
             </p>
@@ -263,7 +272,7 @@ export function Shop() {
           {results.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-line py-20 text-center">
               <h2 className="font-display text-lg font-semibold">Nothing matches those filters</h2>
-              <p className="mx-auto mt-2 mb-6 max-w-sm text-sm text-muted">
+              <p className="mx-auto mt-2 mb-6 max-w-sm text-sm text-muted-foreground">
                 Try widening the price range, or tell us what you're after and we'll make it.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
@@ -351,7 +360,7 @@ function Check({
         className="h-4 w-4 accent-[#a11c20]"
       />
       <span className="flex-1">{label}</span>
-      {count !== undefined && <span className="text-[12px] text-muted">{count}</span>}
+      {count !== undefined && <span className="text-[12px] text-muted-foreground">{count}</span>}
     </label>
   )
 }

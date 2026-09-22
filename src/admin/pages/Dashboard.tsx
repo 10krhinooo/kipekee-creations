@@ -21,6 +21,7 @@ import {
   revenueSeries,
   since,
 } from '../data/operations'
+import { isLow, useStock } from '../data/stock'
 import { useOperations } from '../data/store'
 
 /**
@@ -29,12 +30,13 @@ import { useOperations } from '../data/store'
  * unanswered for two days is the most expensive thing that happens here.
  */
 export function Dashboard() {
-  const { quotes, orders, stock } = useOperations()
+  const { quotes, orders } = useOperations()
+  const stock = useStock()
 
   const newQuotes = quotes.filter((q) => q.status === 'new')
   const awaitingReply = quotes.filter((q) => q.status === 'sent')
   const toPack = orders.filter((o) => o.status === 'new' || o.status === 'packing')
-  const lowStock = stock.filter((s) => s.mode === 'buy' && s.stock <= s.reorderAt)
+  const lowStock = stock.filter(isLow)
 
   const shopRevenue = orders
     .filter((o) => o.status !== 'cancelled')
@@ -110,7 +112,7 @@ export function Dashboard() {
                     className="w-full rounded-t-sm bg-brand transition-opacity group-hover:opacity-80"
                     style={{ height: `${(d.orders / max) * 100}%` }}
                   />
-                  <span className="mt-1.5 block truncate text-center text-[10px] text-muted">
+                  <span className="mt-1.5 block truncate text-center text-[10px] text-muted-foreground">
                     {d.day.split(' ')[0]}
                   </span>
                   <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-[11px] whitespace-nowrap text-white group-hover:block">
@@ -134,7 +136,7 @@ export function Dashboard() {
                 <li key={stage}>
                   <div className="mb-1 flex items-baseline justify-between gap-2 text-[13px]">
                     <span className="font-medium text-ink">{quoteStatusLabel[stage]}</span>
-                    <span className="text-muted">
+                    <span className="text-muted-foreground">
                       {inStage.length}
                       {value > 0 && <span className="ml-1.5 text-[11px]">{money(value)}</span>}
                     </span>
@@ -182,18 +184,18 @@ export function Dashboard() {
                     <Link to={`/admin/quotes/${q.id}`} className="font-medium hover:text-brand">
                       {q.customer}
                     </Link>
-                    <span className="block text-[12px] text-muted">{q.area}</span>
+                    <span className="block text-[12px] text-muted-foreground">{q.area}</span>
                   </Td>
                   <Td>
                     <span className="text-[13px]">{q.items[0].product}</span>
                     {q.items.length > 1 && (
-                      <span className="block text-[12px] text-muted">
+                      <span className="block text-[12px] text-muted-foreground">
                         +{q.items.length - 1} more
                       </span>
                     )}
                   </Td>
                   <Td>
-                    <span className="text-[12px] text-muted capitalize">{q.source}</span>
+                    <span className="text-[12px] text-muted-foreground capitalize">{q.source}</span>
                   </Td>
                   <Td align="right">
                     <span className="text-[13px] font-semibold text-brand">
@@ -238,7 +240,7 @@ export function Dashboard() {
                   </Td>
                   <Td>
                     <span className="text-[13px]">{o.customer}</span>
-                    <span className="block text-[12px] text-muted">{o.town}</span>
+                    <span className="block text-[12px] text-muted-foreground">{o.town}</span>
                   </Td>
                   <Td>
                     <StatusPill kind="order" status={o.status} label={orderStatusLabel[o.status]} />
@@ -276,11 +278,11 @@ export function Dashboard() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-medium">{f.customer}</span>
-                  <span className="block text-[12px] text-muted">
+                  <span className="block text-[12px] text-muted-foreground">
                     {f.kind === 'measure' ? 'Measure' : 'Fitting'} · {f.area} · {f.windows} windows
                   </span>
                 </span>
-                <span className="shrink-0 text-[12px] text-muted">{f.fitter}</span>
+                <span className="shrink-0 text-[12px] text-muted-foreground">{f.fitter}</span>
               </li>
             ))}
           </ul>
@@ -302,18 +304,18 @@ export function Dashboard() {
               <li key={s.slug} className="flex items-center gap-3">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-medium">{s.name}</span>
-                  <span className="block text-[12px] text-muted">
+                  <span className="block text-[12px] text-muted-foreground">
                     Reorder at {s.reorderAt} {s.unit}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block text-[13px] font-bold text-brand">{s.stock}</span>
-                  <span className="block text-[11px] text-muted">left</span>
+                  <span className="block text-[11px] text-muted-foreground">left</span>
                 </span>
               </li>
             ))}
             {lowStock.length === 0 && (
-              <li className="py-4 text-center text-[13px] text-muted">Everything is above its reorder level.</li>
+              <li className="py-4 text-center text-[13px] text-muted-foreground">Everything is above its reorder level.</li>
             )}
           </ul>
         </Card>

@@ -1,6 +1,6 @@
 import { bySlug } from '../data/catalogue'
-import { swatch } from '../lib/swatch'
 import { useSaved } from '../store/saved'
+import { ProductThumb } from './ProductThumb'
 import { Button, Container } from './ui'
 
 /**
@@ -35,11 +35,7 @@ export function CompareBar() {
                 aria-label={`Remove ${p.name} from compare`}
                 className="group relative shrink-0"
               >
-                <img
-                  src={swatch(p.pattern, p.colours[0].swatch || p.accent, i)}
-                  alt=""
-                  className="h-12 w-10 rounded-lg object-cover"
-                />
+                <ProductThumb product={p} index={i} className="h-12 w-10" sizes="40px" />
                 <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-[10px] leading-none text-white">
                   &times;
                 </span>
@@ -47,7 +43,7 @@ export function CompareBar() {
             ))}
             <button
               onClick={clearCompare}
-              className="shrink-0 px-2 text-[12px] text-muted underline hover:text-brand"
+              className="shrink-0 px-2 text-[12px] text-muted-foreground underline hover:text-brand"
             >
               Clear
             </button>

@@ -54,7 +54,7 @@ export function DetailsForm({ intro }: { intro?: string }) {
 
   return (
     <form onSubmit={save} noValidate className="flex max-w-md flex-col gap-4">
-      {intro && <p className="text-[13px] leading-relaxed text-muted">{intro}</p>}
+      {intro && <p className="text-[13px] leading-relaxed text-muted-foreground">{intro}</p>}
 
       <AuthField
         label="Full name"
@@ -85,10 +85,10 @@ export function DetailsForm({ intro }: { intro?: string }) {
           and folding that into "edit profile" is how accounts get lost. */}
       <div>
         <span className="mb-1.5 block text-[13px] font-medium text-ink-soft">Email</span>
-        <p className="rounded-xl border border-line bg-shell px-4 py-3 text-sm text-muted">
+        <p className="rounded-xl border border-line bg-shell px-4 py-3 text-sm text-muted-foreground">
           {user?.email}
         </p>
-        <p className="mt-1.5 text-[12px] text-muted">
+        <p className="mt-1.5 text-[12px] text-muted-foreground">
           This is what you sign in with. Message us on WhatsApp to change it.
         </p>
       </div>

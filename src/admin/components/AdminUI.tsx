@@ -8,7 +8,7 @@ const orderTones: Record<OrderStatus, string> = {
   packing: 'bg-[#fdf6e3] text-[#8a6a12] border-[#f0e0b8]',
   dispatched: 'bg-[#eef3fb] text-[#2f5596] border-[#cfdcf2]',
   delivered: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
-  cancelled: 'bg-shell text-muted border-line',
+  cancelled: 'bg-shell text-muted-foreground border-line',
 }
 
 const quoteTones: Record<QuoteStatus, string> = {
@@ -19,7 +19,7 @@ const quoteTones: Record<QuoteStatus, string> = {
   approved: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
   in_production: 'bg-[#f0edfa] text-[#54419b] border-[#dbd3f2]',
   fitted: 'bg-[#e8f5ec] text-[#1a6b39] border-[#bde2c9]',
-  lost: 'bg-shell text-muted border-line',
+  lost: 'bg-shell text-muted-foreground border-line',
 }
 
 export function StatusPill({
@@ -82,7 +82,7 @@ export function CardHeader({
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         <h2 className="font-display text-[15px] font-semibold text-ink">{title}</h2>
-        {hint && <p className="mt-0.5 text-[12px] text-muted">{hint}</p>}
+        {hint && <p className="mt-0.5 text-[12px] text-muted-foreground">{hint}</p>}
       </div>
       {action}
     </div>
@@ -112,7 +112,7 @@ export function Stat({
   const good = delta === undefined ? false : invert ? delta < 0 : delta > 0
   return (
     <Card className={cx(accent && 'border-brand-200 bg-brand-50')}>
-      <p className="text-[12px] font-medium tracking-wide text-muted uppercase">{label}</p>
+      <p className="text-[12px] font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
       <p className="mt-2 font-display text-2xl font-bold text-ink">{value}</p>
       <div className="mt-1.5 flex items-center gap-2">
         {delta !== undefined && (
@@ -134,7 +134,7 @@ export function Stat({
             {Math.abs(delta)}%
           </span>
         )}
-        {hint && <span className="text-[12px] text-muted">{hint}</span>}
+        {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
       </div>
     </Card>
   )
@@ -159,7 +159,7 @@ export function Th({
     <th
       scope="col"
       className={cx(
-        'border-b border-line px-4 py-3 text-[11px] font-semibold tracking-wide text-muted uppercase',
+        'border-b border-line px-4 py-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase',
         align === 'right' && 'text-right',
       )}
     >
@@ -194,7 +194,7 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-line py-16 text-center">
       <h3 className="font-display text-base font-semibold">{title}</h3>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{body}</p>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
     </div>
   )
 }
@@ -212,7 +212,7 @@ export function PageHeader({
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 className="font-display text-2xl font-semibold text-ink">{title}</h1>
-        {intro && <p className="mt-1.5 max-w-2xl text-[14px] text-muted">{intro}</p>}
+        {intro && <p className="mt-1.5 max-w-2xl text-[14px] text-muted-foreground">{intro}</p>}
       </div>
       {action}
     </header>
@@ -237,7 +237,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.id)}
           className={cx(
             'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-            value === o.id ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink',
+            value === o.id ? 'bg-white text-ink shadow-sm' : 'text-muted-foreground hover:text-ink',
           )}
         >
           {o.label}
@@ -245,7 +245,7 @@ export function Segmented<T extends string>({
             <span
               className={cx(
                 'rounded-full px-1.5 text-[11px]',
-                value === o.id ? 'bg-shell text-ink' : 'text-muted',
+                value === o.id ? 'bg-shell text-ink' : 'text-muted-foreground',
               )}
             >
               {o.count}

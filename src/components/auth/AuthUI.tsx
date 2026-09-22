@@ -33,7 +33,7 @@ export function AuthCard({
 
       <div className="mt-7">
         <h1 className="font-display text-[19px] font-semibold text-ink">{title}</h1>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{intro}</p>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{intro}</p>
       </div>
 
       {children}
@@ -44,7 +44,7 @@ export function AuthCard({
 const fieldClasses = (error?: string) =>
   cx(
     'w-full rounded-xl border bg-shell px-4 py-3 text-sm text-ink outline-none transition-colors duration-200',
-    'placeholder:text-muted focus:bg-white focus:shadow-[0_0_0_4px_rgba(161,28,32,0.12)]',
+    'placeholder:text-muted-foreground focus:bg-white focus:shadow-[0_0_0_4px_rgba(161,28,32,0.12)]',
     'disabled:opacity-60',
     error ? 'border-brand' : 'border-line focus:border-brand',
   )
@@ -60,7 +60,7 @@ export function AuthField({
     <label htmlFor={id} className="flex flex-col gap-1.5">
       <span className="flex items-baseline justify-between gap-3">
         <span className="text-[13px] font-medium text-ink-soft">{label}</span>
-        {hint && <span className="text-[11px] text-muted">{hint}</span>}
+        {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
       </span>
       <input
         {...input}
@@ -111,7 +111,7 @@ export function PasswordField({
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="flex items-baseline justify-between gap-3">
         <span className="text-[13px] font-medium text-ink-soft">{label}</span>
-        {hint && <span className="text-[11px] text-muted">{hint}</span>}
+        {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
       </label>
 
       <div className="relative">
@@ -133,7 +133,7 @@ export function PasswordField({
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
           title={visible ? 'Hide password' : 'Show password'}
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-2 text-muted transition-colors hover:text-ink"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-2 text-muted-foreground transition-colors hover:text-ink"
         >
           <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
@@ -181,7 +181,7 @@ function StrengthMeter({ password }: { password: string }) {
       </div>
       <p className={cx('mt-1.5 text-[11.5px]', textTone)}>
         <span className="font-medium">{label}</span>
-        {hint && <span className="text-muted"> · {hint}</span>}
+        {hint && <span className="text-muted-foreground"> · {hint}</span>}
       </p>
     </div>
   )
@@ -284,12 +284,12 @@ export function AuthDone({ title, children }: { title: string; children: ReactNo
         </svg>
       </span>
       <h2 className="font-display text-[17px] font-semibold text-ink">{title}</h2>
-      <div className="mt-2 text-[13px] leading-relaxed text-muted">{children}</div>
+      <div className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{children}</div>
     </div>
   )
 }
 
 /** The line under every auth form: the other thing you might have meant to do. */
 export function AuthFooter({ children }: { children: ReactNode }) {
-  return <p className="mt-6 text-center text-[12.5px] leading-relaxed text-muted">{children}</p>
+  return <p className="mt-6 text-center text-[12.5px] leading-relaxed text-muted-foreground">{children}</p>
 }

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, WhatsAppIcon, cx, whatsappLink } from '../../components/ui'
 import { Card, CardHeader, PageHeader, StatusPill } from '../components/AdminUI'
+import { downloadDocument, printDocument, type OrderDocument } from '../../lib/documents'
 import {
   quotePipeline,
   quoteStatusLabel,
@@ -50,6 +51,57 @@ export function QuoteBuilder() {
   const total = subtotal - discountValue
   const priced = items.every((i) => i.pricedTotal !== null && i.pricedTotal > 0)
 
+  /*
+   * The quotation as a printable document.
+   *
+   * Built on demand rather than memoised: it reads the prices staff are still
+   * typing, and a stale copy is the one thing a quotation must never be. An
+   * unpriced line is passed through as unpriced, so a half-built quote prints
+   * honestly instead of claiming those windows cost nothing.
+   */
+  const quotation = (): OrderDocument => ({
+    kind: 'quotation',
+    reference: quote.id,
+    issuedAt: new Date(),
+    name: quote.customer,
+    phone: quote.phone,
+    address: quote.area,
+    county: null,
+    paymentMethod: 'Quoted, nothing payable yet',
+    deliveryEstimate: includeFitting ? 'Fitting included' : 'Supply only, no fitting',
+    lines: [
+      ...items.map((item) => ({
+        productName: item.product,
+        detail: [item.colour, item.room].filter(Boolean).join(' · ') || null,
+        measurements:
+          [
+            item.widthCm && item.dropCm ? `${item.widthCm}cm x ${item.dropCm}cm` : null,
+            item.notes,
+          ]
+            .filter(Boolean)
+            .join(' · ') || null,
+        qty: item.windows,
+        amount: item.pricedTotal ?? 0,
+        priced: item.pricedTotal !== null && item.pricedTotal > 0,
+      })),
+      ...(includeFitting
+        ? [
+            {
+              productName: 'Fitting',
+              detail: `${windows} ${windows === 1 ? 'window' : 'windows'}`,
+              measurements: null,
+              qty: windows,
+              amount: fitting,
+              priced: true,
+            },
+          ]
+        : []),
+    ],
+    subtotal,
+    adjustments: discountValue > 0 ? [{ label: `Discount ${discount}%`, amount: -discountValue }] : [],
+    total,
+  })
+
   const setPrice = (index: number, value: number | null) =>
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, pricedTotal: value } : it)))
 
@@ -57,7 +109,7 @@ export function QuoteBuilder() {
 
   return (
     <>
-      <nav className="mb-4 flex items-center gap-1.5 text-[13px] text-muted">
+      <nav className="mb-4 flex items-center gap-1.5 text-[13px] text-muted-foreground">
         <Link to="/admin/quotes" className="hover:text-brand">
           Quotes
         </Link>
@@ -78,8 +130,11 @@ export function QuoteBuilder() {
               <WhatsAppIcon />
               Message
             </Button>
-            <Button size="sm" variant="outline">
-              Book a measure
+            <Button size="sm" variant="outline" onClick={() => printDocument(quotation())}>
+              Print quotation
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => downloadDocument(quotation())}>
+              Download
             </Button>
           </div>
         }
@@ -99,7 +154,7 @@ export function QuoteBuilder() {
                       'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
                       done && 'bg-[#e8f5ec] text-[#1a6b39]',
                       current && 'bg-brand text-white',
-                      !done && !current && 'bg-shell text-muted',
+                      !done && !current && 'bg-shell text-muted-foreground',
                     )}
                   >
                     {done ? '✓' : i + 1}
@@ -107,7 +162,7 @@ export function QuoteBuilder() {
                   <span
                     className={cx(
                       'text-[12px] whitespace-nowrap',
-                      current ? 'font-semibold text-ink' : 'text-muted',
+                      current ? 'font-semibold text-ink' : 'text-muted-foreground',
                     )}
                   >
                     {quoteStatusLabel[stage]}
@@ -138,7 +193,7 @@ export function QuoteBuilder() {
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="font-display text-[15px] font-semibold">{item.product}</h3>
-                      <p className="mt-0.5 text-[13px] text-muted">
+                      <p className="mt-0.5 text-[13px] text-muted-foreground">
                         {item.colour} · {item.room} · {item.windows}{' '}
                         {item.windows === 1 ? 'window' : 'windows'}
                       </p>
@@ -162,7 +217,7 @@ export function QuoteBuilder() {
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-medium">Price for this line</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted">KSh</span>
+                        <span className="text-[13px] text-muted-foreground">KSh</span>
                         <input
                           type="number"
                           value={item.pricedTotal ?? ''}
@@ -187,7 +242,7 @@ export function QuoteBuilder() {
                     )}
 
                     {item.pricedTotal ? (
-                      <span className="ml-auto text-[12px] text-muted">
+                      <span className="ml-auto text-[12px] text-muted-foreground">
                         {money(Math.round(item.pricedTotal / item.windows))} per window
                       </span>
                     ) : null}
@@ -224,7 +279,7 @@ export function QuoteBuilder() {
               <Row label={`Items (${items.length})`} value={itemsTotal ? money(itemsTotal) : 'Not priced'} />
 
               <label className="flex cursor-pointer items-center justify-between gap-2">
-                <span className="flex items-center gap-2 text-muted">
+                <span className="flex items-center gap-2 text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={includeFitting}
@@ -237,7 +292,7 @@ export function QuoteBuilder() {
               </label>
 
               <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 text-muted">
+                <span className="flex items-center gap-2 text-muted-foreground">
                   Discount
                   <input
                     type="number"
@@ -258,7 +313,7 @@ export function QuoteBuilder() {
                 <span>Total</span>
                 <span>{money(total)}</span>
               </div>
-              <p className="text-[12px] text-muted">Inclusive of VAT. Valid 30 days.</p>
+              <p className="text-[12px] text-muted-foreground">Inclusive of VAT. Valid 30 days.</p>
             </div>
 
             <div className="mt-5 space-y-2.5">
@@ -304,7 +359,7 @@ export function QuoteBuilder() {
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                     <span>
                       <span className="block font-medium">{e.t}</span>
-                      <span className="block text-[12px] text-muted">{e.d}</span>
+                      <span className="block text-[12px] text-muted-foreground">{e.d}</span>
                     </span>
                   </li>
                 ))}
@@ -319,7 +374,7 @@ export function QuoteBuilder() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="text-muted">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>
   )

@@ -1,31 +1,47 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, cx } from '../../components/ui'
 import { Card, CardHeader, PageHeader } from '../components/AdminUI'
 import { fittings } from '../data/operations'
+import { addDays, startOfWeek, toDateKey, weekDays, weekLabel } from '../data/calendar'
 
 /**
  * The fitters' week. Measure visits and fittings are the physical half of the
  * business, and the storefront promises a measure within 48 hours, so this
  * board is what makes that promise keepable.
  */
-const DAYS = [
-  { date: '2026-08-18', label: 'Mon 18' },
-  { date: '2026-08-19', label: 'Tue 19' },
-  { date: '2026-08-20', label: 'Wed 20' },
-  { date: '2026-08-21', label: 'Thu 21' },
-  { date: '2026-08-22', label: 'Fri 22' },
-  { date: '2026-08-23', label: 'Sat 23' },
-]
-
+/*
+ * This was a hardcoded list of six dates in August 2026, with two problems.
+ *
+ * It never moved, so the board showed an empty past week from the moment that
+ * week ended. And the weekday names were typed beside the dates rather than
+ * derived from them, so they were wrong: 18 August 2026 is a Tuesday and the
+ * column said "Mon 18", which put every visit on the board one day away from
+ * the day a fitter would read it under. Both come from the same mistake, of
+ * treating a calendar as text.
+ */
 export function Schedule() {
-  const measures = fittings.filter((f) => f.kind === 'measure').length
-  const fits = fittings.filter((f) => f.kind === 'fitting').length
+  const [monday, setMonday] = useState(() => startOfWeek())
+
+  const days = useMemo(() => weekDays(monday), [monday])
+  const inWeek = useMemo(() => {
+    const keys = new Set(days.map((d) => d.date))
+    return fittings.filter((f) => keys.has(f.date))
+  }, [days])
+
+  const measures = inWeek.filter((f) => f.kind === 'measure').length
+  const fits = inWeek.filter((f) => f.kind === 'fitting').length
+  const isThisWeek = toDateKey(monday) === toDateKey(startOfWeek())
 
   return (
     <>
       <PageHeader
         title="Schedule"
-        intro={`${measures} measures and ${fits} fittings booked this week across two fitters.`}
+        intro={
+          inWeek.length === 0
+            ? `Nothing booked for ${weekLabel(monday)}.`
+            : `${measures} ${measures === 1 ? 'measure' : 'measures'} and ${fits} ${fits === 1 ? 'fitting' : 'fittings'} booked for ${weekLabel(monday)} across two fitters.`
+        }
         action={
           <Button size="sm">
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -35,6 +51,32 @@ export function Schedule() {
           </Button>
         }
       />
+
+      {/* Week navigation. A diary that cannot be moved off the current week is
+          no use to anyone booking a visit for next Tuesday. */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => setMonday((m) => addDays(m, -7))}>
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+          Previous
+        </Button>
+        <Button
+          size="sm"
+          variant={isThisWeek ? 'ghost' : 'outline'}
+          disabled={isThisWeek}
+          onClick={() => setMonday(startOfWeek())}
+        >
+          This week
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setMonday((m) => addDays(m, 7))}>
+          Next
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </Button>
+        <span className="ml-1 font-ui text-[13px] text-muted-foreground">{weekLabel(monday)}</span>
+      </div>
 
       <div className="mb-5 flex flex-wrap gap-4 text-[13px]">
         <span className="flex items-center gap-2">
@@ -48,15 +90,22 @@ export function Schedule() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {DAYS.map((day) => {
+        {days.map((day) => {
           const dayJobs = fittings
             .filter((f) => f.date === day.date)
             .sort((a, b) => a.time.localeCompare(b.time))
           return (
             <Card key={day.date} padded={false} className="flex flex-col">
               <div className="border-b border-line px-4 py-3">
-                <p className="font-display text-[14px] font-semibold">{day.label}</p>
-                <p className="text-[12px] text-muted">
+                <p className="font-display text-[14px] font-semibold">
+                  {day.label}
+                  {day.isToday && (
+                    <span className="ml-2 rounded-full bg-brand px-2 py-0.5 align-middle font-ui text-[10px] font-semibold tracking-wide text-white uppercase">
+                      Today
+                    </span>
+                  )}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
                   {dayJobs.length === 0
                     ? 'Nothing booked'
                     : `${dayJobs.length} ${dayJobs.length === 1 ? 'visit' : 'visits'}`}
@@ -92,7 +141,7 @@ export function Schedule() {
                 ))}
 
                 {dayJobs.length === 0 && (
-                  <button className="w-full rounded-xl border border-dashed border-line py-6 text-[12px] text-muted hover:border-brand hover:text-brand">
+                  <button className="w-full rounded-xl border border-dashed border-line py-6 text-[12px] text-muted-foreground hover:border-brand hover:text-brand">
                     Add a visit
                   </button>
                 )}
@@ -115,7 +164,7 @@ export function Schedule() {
                 <li key={fitter}>
                   <div className="mb-1 flex justify-between text-[13px]">
                     <span className="font-medium">{fitter}</span>
-                    <span className="text-muted">
+                    <span className="text-muted-foreground">
                       {count} visits, {windows} windows
                     </span>
                   </div>
@@ -144,7 +193,7 @@ export function Schedule() {
               .map(([area, n]) => (
                 <li key={area} className="flex justify-between">
                   <span>{area}</span>
-                  <span className="text-muted">
+                  <span className="text-muted-foreground">
                     {n} {n === 1 ? 'visit' : 'visits'}
                   </span>
                 </li>

@@ -2,59 +2,78 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { money } from '../../lib/format'
 import { Button, cx } from '../../components/ui'
+import { adjustStock, useCatalogue } from '../../data/catalogueStore'
+import type { Product } from '../../data/types'
 import { Card, PageHeader, Segmented, Table, Td, Th } from '../components/AdminUI'
-import { adjustStock, useOperations } from '../data/store'
+import { ProductForm } from '../components/ProductForm'
+import { isLow, rowOf } from '../data/stock'
 
 type Filter = 'all' | 'buy' | 'quote' | 'low'
 
 /**
- * Catalogue and stock in one table. The mode column is the important one: it
- * decides whether the storefront shows "Add to cart" or "Get a quote", which
- * decides whether the storefront offers a price or a quote, so it is the most
- * consequential field on the row.
+ * The catalogue, as staff work on it.
+ *
+ * Every row here is a product the shop is selling, read from the same
+ * catalogue the shop renders. It used to be a separate list of thirteen
+ * hand-written rows, which meant five products - the entire hotel linen range
+ * among them - could not be seen or edited from the console at all, and the
+ * ones that could showed stock counts the shop disagreed with.
+ *
+ * The mode column is the consequential one: it decides whether the storefront
+ * offers "Add to cart" or "Request a quote", so it decides whether a shopper
+ * can buy the thing without anyone speaking to them.
  */
 export function Products() {
-  const { stock } = useOperations()
+  const catalogue = useCatalogue()
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
-
-  // Read straight off the store now. The local copy this replaced meant
-  // restocking something never cleared it from the low-stock queue.
-  const levels: Record<string, number> = Object.fromEntries(
-    stock.map((s) => [s.slug, s.stock]),
-  )
+  const [editing, setEditing] = useState<Product | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  /** The row just saved, highlighted briefly so a change is visibly a change. */
+  const [saved, setSaved] = useState<string | null>(null)
 
   const rows = useMemo(() => {
-    let list = stock
+    let list = catalogue.map(rowOf)
     if (filter === 'buy' || filter === 'quote') list = list.filter((s) => s.mode === filter)
-    if (filter === 'low') list = list.filter((s) => s.mode === 'buy' && levels[s.slug] <= s.reorderAt)
+    if (filter === 'low') list = list.filter(isLow)
     if (query.trim()) {
       const q = query.toLowerCase()
       list = list.filter((s) => `${s.name} ${s.category}`.toLowerCase().includes(q))
     }
     return list
-  }, [stock, filter, query, levels])
+  }, [catalogue, filter, query])
+
+  const all = useMemo(() => catalogue.map(rowOf), [catalogue])
 
   const options: { id: Filter; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: stock.length },
-    { id: 'buy', label: 'Ready-made', count: stock.filter((s) => s.mode === 'buy').length },
-    { id: 'quote', label: 'Made to measure', count: stock.filter((s) => s.mode === 'quote').length },
-    {
-      id: 'low',
-      label: 'Low stock',
-      count: stock.filter((s) => s.mode === 'buy' && levels[s.slug] <= s.reorderAt).length,
-    },
+    { id: 'all', label: 'All', count: all.length },
+    { id: 'buy', label: 'Ready-made', count: all.filter((s) => s.mode === 'buy').length },
+    { id: 'quote', label: 'Made to measure', count: all.filter((s) => s.mode === 'quote').length },
+    { id: 'low', label: 'Low stock', count: all.filter(isLow).length },
   ]
 
-  const adjust = adjustStock
+  const openNew = () => {
+    setEditing(null)
+    setFormOpen(true)
+  }
+
+  const openEdit = (slug: string) => {
+    setEditing(catalogue.find((p) => p.slug === slug) ?? null)
+    setFormOpen(true)
+  }
+
+  const onSaved = (slug: string) => {
+    setSaved(slug)
+    window.setTimeout(() => setSaved((s) => (s === slug ? null : s)), 2500)
+  }
 
   return (
     <>
       <PageHeader
         title="Products"
-        intro="Prices, stock levels, and whether each product is bought outright or quoted."
+        intro="Prices, stock levels, and whether each product is bought outright or quoted. Everything here is live on the shop."
         action={
-          <Button size="sm">
+          <Button size="sm" onClick={openNew}>
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -74,7 +93,7 @@ export function Products() {
           />
           <svg
             viewBox="0 0 24 24"
-            className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted"
+            className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -99,16 +118,26 @@ export function Products() {
           </thead>
           <tbody>
             {rows.map((s) => {
-              const level = levels[s.slug]
-              const low = s.mode === 'buy' && level <= s.reorderAt
+              const low = isLow(s)
               return (
-                <tr key={s.slug} className="hover:bg-shell">
+                <tr
+                  key={s.slug}
+                  className={cx(
+                    'transition-colors',
+                    saved === s.slug ? 'bg-[#e8f5ec]' : 'hover:bg-shell',
+                  )}
+                >
                   <Td>
-                    <span className="block text-[13px] font-medium">{s.name}</span>
-                    <span className="block text-[12px] text-muted">{s.unit}</span>
+                    <button
+                      onClick={() => openEdit(s.slug)}
+                      className="block text-left text-[13px] font-medium hover:text-brand hover:underline"
+                    >
+                      {s.name}
+                    </button>
+                    <span className="block text-[12px] text-muted-foreground">{s.unit}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px] text-muted">{s.category}</span>
+                    <span className="text-[13px] text-muted-foreground">{s.category}</span>
                   </Td>
                   <Td>
                     <span
@@ -123,53 +152,56 @@ export function Products() {
                     </span>
                   </Td>
                   <Td align="right" className="font-semibold whitespace-nowrap">
-                    {s.mode === 'quote' && <span className="text-[11px] font-normal text-muted">from </span>}
+                    {s.mode === 'quote' && (
+                      <span className="text-[11px] font-normal text-muted-foreground">from </span>
+                    )}
                     {money(s.price)}
                   </Td>
                   <Td align="right">
                     {s.mode === 'quote' ? (
-                      <span className="text-[13px] text-muted">Made to order</span>
+                      <span className="text-[13px] text-muted-foreground">Made to order</span>
                     ) : (
-                      <span
-                        className={cx(
-                          'text-[13px] font-semibold',
-                          low ? 'text-brand' : 'text-ink',
-                        )}
-                      >
-                        {level}
+                      <span className={cx('text-[13px] font-semibold', low ? 'text-brand' : 'text-ink')}>
+                        {s.stock}
                         {low && <span className="ml-1.5 text-[11px] font-normal">low</span>}
                       </span>
                     )}
                   </Td>
                   <Td align="right">
                     <div className="flex items-center justify-end gap-3">
-                    <Link
-                      to={`/admin/products/${s.slug}/photos`}
-                      className="text-[13px] text-brand hover:underline"
-                    >
-                      Photos
-                    </Link>
-                    {s.mode === 'buy' ? (
-                      <div className="inline-flex items-center rounded-full border border-line">
-                        <button
-                          onClick={() => adjust(s.slug, -1)}
-                          className="px-2.5 py-1 text-sm hover:text-brand"
-                          aria-label={`Reduce stock of ${s.name}`}
-                        >
-                          &minus;
-                        </button>
-                        <span className="px-1 text-[11px] text-muted">adjust</span>
-                        <button
-                          onClick={() => adjust(s.slug, 1)}
-                          className="px-2.5 py-1 text-sm hover:text-brand"
-                          aria-label={`Increase stock of ${s.name}`}
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="text-[13px] text-brand hover:underline">Edit rates</button>
-                    )}
+                      <button
+                        onClick={() => openEdit(s.slug)}
+                        className="text-[13px] text-brand hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <Link
+                        to={`/admin/products/${s.slug}/photos`}
+                        className="text-[13px] text-brand hover:underline"
+                      >
+                        Photos
+                      </Link>
+                      {/* Quoted work is cut to order, so there is no shelf to
+                          count up or down and the control would do nothing. */}
+                      {s.mode === 'buy' && (
+                        <div className="inline-flex items-center rounded-full border border-line">
+                          <button
+                            onClick={() => adjustStock(s.slug, -1)}
+                            className="px-2.5 py-1 text-sm hover:text-brand"
+                            aria-label={`Reduce stock of ${s.name}`}
+                          >
+                            &minus;
+                          </button>
+                          <span className="px-1 text-[11px] text-muted-foreground">adjust</span>
+                          <button
+                            onClick={() => adjustStock(s.slug, 1)}
+                            className="px-2.5 py-1 text-sm hover:text-brand"
+                            aria-label={`Increase stock of ${s.name}`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </Td>
                 </tr>
@@ -178,9 +210,18 @@ export function Products() {
           </tbody>
         </Table>
         {rows.length === 0 && (
-          <p className="py-12 text-center text-sm text-muted">No products match that search.</p>
+          <p className="py-12 text-center text-sm text-muted-foreground">
+            No products match that search.
+          </p>
         )}
       </Card>
+
+      <ProductForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        product={editing}
+        onSaved={onSaved}
+      />
     </>
   )
 }

@@ -4,7 +4,7 @@ import { categories, categoryBySlug, products } from '../data/catalogue'
 import { useBasket } from '../store/basket'
 import { useSaved } from '../store/saved'
 import { homeFor, useAuth } from '../auth/AuthProvider'
-import { swatch } from '../lib/swatch'
+import { ProductThumb } from './ProductThumb'
 import { Button, Container, WhatsAppIcon, cx, whatsappLink } from './ui'
 import { money } from '../lib/format'
 
@@ -138,7 +138,7 @@ function Search({ onDone }: { onDone?: () => void }) {
       />
       <svg
         viewBox="0 0 24 24"
-        className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted"
+        className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -154,7 +154,7 @@ function Search({ onDone }: { onDone?: () => void }) {
           className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-line bg-white shadow-xl"
         >
           {hits.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-muted">No products match “{q.trim()}”.</p>
+            <p className="px-4 py-4 text-sm text-muted-foreground">No products match “{q.trim()}”.</p>
           ) : (
             hits.map((p, i) => (
               <button
@@ -169,18 +169,14 @@ function Search({ onDone }: { onDone?: () => void }) {
                   i === active ? 'bg-shell' : 'bg-white',
                 )}
               >
-                <img
-                  src={swatch(p.pattern, p.colours[0].swatch || p.accent, i)}
-                  alt=""
-                  className="h-9 w-8 shrink-0 rounded-md object-cover"
-                />
+                <ProductThumb product={p} index={i} className="h-11 w-9" sizes="36px" rounded="rounded-md" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-ink">{p.name}</span>
-                  <span className="block truncate text-[12px] text-muted">
+                  <span className="block truncate text-[12px] text-muted-foreground">
                     {categoryBySlug(p.category)?.name}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs text-muted">
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {p.mode === 'quote' ? 'from ' : ''}
                   {money(p.price)}
                 </span>
@@ -303,7 +299,7 @@ export function Header() {
                             </span>
                           )}
                         </span>
-                        <span className="mt-0.5 block text-[12px] leading-snug text-muted">
+                        <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
                           {c.blurb}
                         </span>
                       </Link>
@@ -446,7 +442,7 @@ export function Header() {
                 {item.label}
               </NavLink>
             ))}
-            <p className="px-3 pt-4 pb-2 text-[11px] font-semibold tracking-[0.16em] text-muted uppercase">
+            <p className="px-3 pt-4 pb-2 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
               Categories
             </p>
             {categories.map((c) => (

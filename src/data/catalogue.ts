@@ -1,3 +1,4 @@
+import { applyEdits } from './catalogueEdits'
 import type { Category, Product, Review, Room, Variant } from './types'
 
 /*
@@ -97,7 +98,12 @@ const r = (
 
 const ALL_ROOMS: Room[] = ['Living room', 'Bedroom', 'Kitchen', 'Bathroom', 'Kids room']
 
-export const products: Product[] = [
+/**
+ * The catalogue as shipped. Read `products` below rather than this: staff can
+ * change prices, stock and copy from the console, and this array does not know
+ * about any of it.
+ */
+export const seedProducts: Product[] = [
   {
     slug: 'kitenge-blockout-curtains',
     name: 'Kitenge Blockout Curtains',
@@ -164,30 +170,6 @@ export const products: Product[] = [
     leadTimeDays: 10,
     badges: ['Free site measure', 'Fitted in Nairobi'],
     bestSeller: true,
-    photos: [
-      {
-        src: '/photos/kitenge-blockout-curtains-1.svg',
-        alt: 'A pair of kitenge blockout curtains fitted across a living room window in Kileleshwa',
-        colourId: 'warm-sand',
-      },
-      {
-        src: '/photos/kitenge-blockout-curtains-2.svg',
-        alt: 'Close view of the wave heading, showing the even fold along the ceiling track',
-        colourId: 'deep-olive',
-        caption: 'Wave heading, on a ceiling track',
-      },
-      {
-        src: '/photos/kitenge-blockout-curtains-3.svg',
-        alt: 'The 10cm double hem and weighted corner that keeps the drop hanging straight',
-        caption: 'A 10cm double hem with weighted corners',
-      },
-      {
-        src: '/photos/kitenge-blockout-curtains-4.svg',
-        alt: 'The same curtains drawn closed at night, with no light leaking around the edges',
-        colourId: 'midnight',
-        wide: true,
-      },
-    ],
   },
   {
     slug: 'sheer-linen-voile',
@@ -311,6 +293,7 @@ export const products: Product[] = [
       r('Faith W.', 'Westlands', 4, 'May 2026', 'Lovely colour, though the wine reads darker than on screen. Get the cutting.'),
     ],
     stock: 240,
+    reorderAt: 80,
     leadTimeDays: 1,
     badges: ['Cuttings available'],
     bestSeller: true,
@@ -344,6 +327,7 @@ export const products: Product[] = [
       r('Joseph K.', 'Nakuru', 5, 'June 2026', 'Bought 30 metres for a guesthouse. Cut in one piece as promised.'),
     ],
     stock: 480,
+    reorderAt: 100,
     leadTimeDays: 1,
     bestSeller: true,
   },
@@ -373,6 +357,7 @@ export const products: Product[] = [
     reviewCount: 29,
     reviews: [r('Lucy R.', 'Kilimani', 5, 'April 2026', 'Gorgeous texture. Ordered a cutting first and glad I did.')],
     stock: 165,
+    reorderAt: 60,
     leadTimeDays: 1,
     badges: ['Cuttings available'],
   },
@@ -422,26 +407,10 @@ export const products: Product[] = [
       r('Halima S.', 'Mombasa', 4, 'May 2026', 'Lovely, but order the insert one size up as they advise.'),
     ],
     stock: 62,
+    reorderAt: 25,
     leadTimeDays: 0,
     badges: ['Ships same day'],
     bestSeller: true,
-    photos: [
-      {
-        src: '/photos/embroidered-cushion-cover-1.svg',
-        alt: 'Three embroidered cushion covers arranged along a natural linen sofa',
-        colourId: 'brick',
-      },
-      {
-        src: '/photos/embroidered-cushion-cover-2.svg',
-        alt: 'Close view of the hand-guided embroidery on the cotton canvas face',
-        caption: 'Hand-guided embroidery on 280 gsm canvas',
-      },
-      {
-        src: '/photos/embroidered-cushion-cover-3.svg',
-        alt: 'The concealed zip along the bottom edge, open to show the bias-cut piping',
-        wide: true,
-      },
-    ],
   },
   {
     slug: 'geometric-cushion-cover',
@@ -470,6 +439,7 @@ export const products: Product[] = [
     reviewCount: 41,
     reviews: [r('Kevin M.', 'Ruaka', 4, 'June 2026', 'Sturdy and the weave feels premium. Ochre is a strong colour, be sure.')],
     stock: 38,
+    reorderAt: 25,
     leadTimeDays: 0,
     badges: ['Ships same day'],
   },
@@ -580,6 +550,7 @@ export const products: Product[] = [
       r('Tom M.', 'Nairobi', 5, 'June 2026', 'Delivered same day within Nairobi. Impressed.'),
     ],
     stock: 24,
+    reorderAt: 15,
     leadTimeDays: 0,
     badges: ['Ships same day'],
     bestSeller: true,
@@ -610,6 +581,7 @@ export const products: Product[] = [
     reviewCount: 31,
     reviews: [r('Ruth K.', 'Athi River', 4, 'May 2026', 'Looks expensive. One piece arrived chipped but they replaced it in two days.')],
     stock: 19,
+    reorderAt: 10,
     leadTimeDays: 1,
   },
   {
@@ -639,6 +611,7 @@ export const products: Product[] = [
     reviewCount: 54,
     reviews: [r('Esther M.', 'Nakuru', 5, 'June 2026', 'Second set. The first lasted four years of daily use.')],
     stock: 47,
+    reorderAt: 20,
     leadTimeDays: 0,
     badges: ['Ships same day'],
   },
@@ -668,6 +641,7 @@ export const products: Product[] = [
     reviewCount: 22,
     reviews: [r('Caroline N.', 'Ngong', 5, 'April 2026', 'Bought as a housewarming gift. The monogram was perfect.')],
     stock: 33,
+    reorderAt: 15,
     leadTimeDays: 1,
     badges: ['Monogram available'],
   },
@@ -706,18 +680,6 @@ export const products: Product[] = [
     leadTimeDays: 12,
     badges: ['Made to span', 'Fitted in Nairobi'],
     bestSeller: true,
-    photos: [
-      {
-        src: '/photos/wrought-iron-curtain-rail-1.svg',
-        alt: 'A curtain rail being forged over the anvil in the Katani Road workshop',
-        caption: 'Forged in our own workshop on Katani Road',
-      },
-      {
-        src: '/photos/wrought-iron-curtain-rail-2.svg',
-        alt: 'A finished scroll finial in matte black, fitted to the end of a rail',
-        colourId: 'matte-black',
-      },
-    ],
   },
   {
     slug: 'wrought-iron-wall-bracket',
@@ -810,6 +772,18 @@ export const products: Product[] = [
   },
 ]
 
+/**
+ * The live catalogue: the seed with whatever staff have changed folded in.
+ *
+ * Everything reads through this, and `catalogueStore` keeps the contents in
+ * step by rewriting them in place rather than by handing out a new array. That
+ * is deliberate. Nineteen files reach for `products` or `bySlug` during a
+ * render, and swapping the binding under them would leave whichever ones held
+ * a reference showing yesterday's prices. Components that need to re-render on
+ * a change subscribe through `useCatalogue()`.
+ */
+export const products: Product[] = applyEdits(seedProducts)
+
 export const bySlug = (slug: string) => products.find((p) => p.slug === slug)
 
 export const categoryBySlug = (slug: string) => categories.find((c) => c.slug === slug)
@@ -822,6 +796,17 @@ export const categoryBySlug = (slug: string) => categories.find((c) => c.slug ==
  */
 export const stockCapOf = (product: Product | undefined): number =>
   product && product.mode === 'buy' ? product.stock : Infinity
+
+/**
+ * The advertised saving, or 0 when there is not one.
+ *
+ * Guarded rather than trusting `compareAt` to be present only when it is
+ * higher. Staff can move a price from the console, and a price raised past the
+ * old "was" would otherwise print a struck-through figure below the live one
+ * and a saving with a minus sign in front of it.
+ */
+export const savingOf = (product: Product) =>
+  product.compareAt && product.compareAt > product.price ? product.compareAt - product.price : 0
 
 export const priceOf = (product: Product, colourId?: string, sizeId?: string) => {
   const c = product.colours.find((v) => v.id === colourId)

@@ -4,17 +4,48 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#a11c20" />
+
+    <!--
+      Defaults only. `src/lib/seo.ts` rewrites the title, description and every
+      og:/twitter: tag per route once React mounts, because a single set of tags
+      for thirty routes is what makes a product link pasted into WhatsApp show
+      no image, no name and no price.
+    -->
+    <title>Kipekee Creations | Curtains, Hotel Linen &amp; Interior Decor, Nairobi</title>
     <meta
       name="description"
-      content="Kipekee Creations: made-to-measure curtains, blinds and interior decor for homes and hotels in Kenya. Free measuring in Nairobi, M-Pesa accepted."
+      content="Made-to-measure curtains, blinds, cushions and hotel linen from our Nairobi workshop. Free measuring across Nairobi, M-Pesa accepted, delivery countrywide."
     />
+    <link rel="canonical" href="https://kipekee-creations.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kipekee Creations" />
+    <meta property="og:locale" content="en_KE" />
+    <meta property="og:title" content="Kipekee Creations | Curtains, Hotel Linen &amp; Interior Decor, Nairobi" />
+    <meta
+      property="og:description"
+      content="Made-to-measure curtains, blinds, cushions and hotel linen from our Nairobi workshop. Free measuring across Nairobi, M-Pesa accepted."
+    />
+    <meta property="og:url" content="https://kipekee-creations.vercel.app/" />
+    <meta property="og:image" content="https://kipekee-creations.vercel.app/photos/og-default-1600.jpg" />
+    <meta property="og:image:width" content="1600" />
+    <meta property="og:image:height" content="900" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Fraunces carries the headings (variable, optical sizing 9..144 so a 14px
+      label and a 80px hero headline are drawn as different shapes rather than
+      the same shape scaled). Poppins is demoted to UI furniture at 400-600, and
+      its 700 weight is dropped because nothing wears it now that headings are
+      serif. Open Sans still carries body copy.
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Open+Sans:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>Kipekee Creations | Interior Decor, Curtains &amp; Hotel Linen</title>
   </head>
   <body>
     <div id="root"></div>

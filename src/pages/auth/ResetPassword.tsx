@@ -48,7 +48,7 @@ export function ResetPassword() {
           title="That link is incomplete"
           intro="Reset links carry a one-time token, and this one arrived without it."
         >
-          <p className="mt-6 text-[13px] leading-relaxed text-muted">
+          <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
             Copy the link straight from the email rather than retyping it, or ask for a fresh one.
           </p>
           <AuthFooter>

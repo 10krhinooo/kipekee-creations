@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { bySlug, categoryBySlug, priceOf, products, rooms } from '../data/catalogue'
+import { bySlug, categoryBySlug, priceOf, products, rooms, savingOf } from '../data/catalogue'
 import type { Room } from '../data/types'
 import { swatch } from '../lib/swatch'
 import { leadTime, money } from '../lib/format'
@@ -8,6 +8,7 @@ import { useBasket } from '../store/basket'
 import { usePhotos } from '../store/photos'
 import { useSaved } from '../store/saved'
 import { ProductCard } from '../components/ProductCard'
+import { Reviews, reviewSummary, useProductReviews } from '../components/product/Reviews'
 import { PhotoGrid } from '../components/PhotoGrid'
 import { Lightbox } from '../components/Lightbox'
 import { RecentlyViewed } from '../components/RecentlyViewed'
@@ -31,6 +32,8 @@ import {
   whatsappLink,
 } from '../components/ui'
 import { quoteWhatsAppLink } from '../lib/whatsapp'
+import { productJsonLd, useSeo } from '../lib/seo'
+import { fullSizeSrc, galleryFor } from '../lib/productImage'
 
 type Tab = 'overview' | 'specs' | 'care' | 'delivery' | 'reviews'
 
@@ -55,8 +58,65 @@ function ProductDetail({ slug }: { slug: string }) {
   const [size, setSize] = useState(product?.sizes?.[0].id ?? '')
   const [qty, setQty] = useState(1)
   const [tab, setTab] = useState<Tab>('overview')
+
+  /*
+   * Fetched here rather than inside the tab panel, because the header stars
+   * and the tab label have to show the same number the list does. Above the
+   * not-found return, and keyed on the route's slug rather than the product's,
+   * because a hook cannot sit behind a conditional.
+   */
+  const reviews = useProductReviews(slug)
+
+  /*
+   * Route metadata, called before the not-found return because a hook cannot
+   * sit behind a conditional. A missing product gets a `noindex` card rather
+   * than nothing, so a stale link that reaches this page does not get indexed
+   * under the brand title.
+   */
+  const seoPhotos = product ? galleryFor(product, photosFor(product)) : []
+  const seoRatings = product
+    ? reviewSummary(product, reviews.submitted)
+    : { count: 0, average: 0 }
+
+  useSeo(
+    product
+      ? {
+          title: `${product.name} | Kipekee Creations`,
+          description: product.summary,
+          path: `/product/${product.slug}`,
+          type: 'product',
+          image: seoPhotos[0] ? fullSizeSrc(seoPhotos[0]) : undefined,
+          jsonLd: productJsonLd({
+            name: product.name,
+            description: product.summary,
+            slug: product.slug,
+            price: product.price,
+            images: seoPhotos.slice(0, 4).map(fullSizeSrc).filter(Boolean),
+            inStock: product.stock > 0,
+            rating:
+              seoRatings.count > 0
+                ? { value: seoRatings.average, count: seoRatings.count }
+                : undefined,
+          }),
+        }
+      : {
+          title: 'Product not found | Kipekee Creations',
+          description: 'That product may have been renamed or retired.',
+          noIndex: true,
+        },
+  )
   const [activeImage, setActiveImage] = useState(0)
-  const [view, setView] = useState<'room' | 'photos' | 'fabric'>('room')
+  /*
+   * Photographs lead where there are any.
+   *
+   * The visualiser used to open first on every product, which made a shop
+   * selling real cloth introduce itself with a rendering. It is the better
+   * feature and nothing else on the market has it, but it argues a case a
+   * photograph has already won: a shopper wants to see the thing, then see it
+   * in their room. So it moves to second, and stays the default only for a
+   * product whose photography has not landed.
+   */
+  const [view, setView] = useState<'room' | 'photos' | 'fabric'>('photos')
   /** Which swatch the lightbox is showing, or null when it is closed. */
   const [zoom, setZoom] = useState<number | null>(null)
   const [drawn, setDrawn] = useState(true)
@@ -85,13 +145,14 @@ function ProductDetail({ slug }: { slug: string }) {
     return (
       <Container className="py-24 text-center">
         <h1 className="font-display text-2xl font-semibold">Product not found</h1>
-        <p className="mt-3 mb-6 text-muted">It may have been renamed or retired.</p>
+        <p className="mt-3 mb-6 text-muted-foreground">It may have been renamed or retired.</p>
         <Button to="/shop">Back to shop</Button>
       </Container>
     )
   }
 
   const isQuote = product.mode === 'quote'
+  const saving = savingOf(product)
   const selectedColour = product.colours.find((c) => c.id === colour) ?? product.colours[0]
   const selectedSize = product.sizes?.find((s) => s.id === size)
   const unitPrice = priceOf(product, colour, size)
@@ -190,7 +251,25 @@ function ProductDetail({ slug }: { slug: string }) {
    * proves the colour and the drape; only a photograph proves the stitching, so
    * where photos exist they earn their own tab.
    */
-  const photos = photosFor(product)
+  /*
+   * Shipped photography merged with staff uploads.
+   *
+   * This read `photosFor(product)` alone, which covers uploads and the
+   * catalogue's own `photos` list. Those catalogue entries were the nine
+   * "photograph pending" placeholders, and removing them left this returning
+   * an empty array on every product, so the Photos tab silently stopped
+   * existing. `galleryFor` is the function that knows about the manifest.
+   */
+  const photos = seoPhotos
+
+  /*
+   * `view` is what the shopper picked; this is what is actually shown. They
+   * differ for exactly one product: the state defaults to `photos` so
+   * photography leads, and a product whose shoot has not happened falls back
+   * to the visualiser rather than opening onto an empty panel.
+   */
+  const shownView = view === 'photos' && photos.length === 0 ? 'room' : view
+  const ratings = seoRatings
 
   /** The swatches as lightbox items, so the fabric view zooms too. */
   const fabricItems = gallery.map((src, i) => ({
@@ -203,12 +282,12 @@ function ProductDetail({ slug }: { slug: string }) {
     { id: 'specs', label: 'Specifications' },
     { id: 'care', label: 'Care' },
     { id: 'delivery', label: 'Delivery & returns' },
-    { id: 'reviews', label: `Reviews (${product.reviewCount})` },
+    { id: 'reviews', label: `Reviews (${ratings.count})` },
   ]
 
   return (
     <Container className="py-6 sm:py-10">
-      <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
+      <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
         <Link to="/" className="hover:text-brand">Home</Link>
         <span>/</span>
         <Link to="/shop" className="hover:text-brand">Shop</Link>
@@ -232,10 +311,10 @@ function ProductDetail({ slug }: { slug: string }) {
                     onto "no photos yet" is worse than no tab, and most of the
                     catalogue has none until the shoot happens. */}
                 {([
-                  { id: 'room' as const, label: sceneTabLabel[scene] },
                   ...(photos.length
                     ? [{ id: 'photos' as const, label: `Photos (${photos.length})` }]
                     : []),
+                  { id: 'room' as const, label: sceneTabLabel[scene] },
                   { id: 'fabric' as const, label: 'Fabric' },
                 ]).map((v) => (
                   <button
@@ -243,7 +322,7 @@ function ProductDetail({ slug }: { slug: string }) {
                     onClick={() => setView(v.id)}
                     className={cx(
                       'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-                      view === v.id ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink',
+                      shownView === v.id ? 'bg-white text-ink shadow-sm' : 'text-muted-foreground hover:text-ink',
                     )}
                   >
                     {v.label}
@@ -252,20 +331,20 @@ function ProductDetail({ slug }: { slug: string }) {
               </div>
               {/* Only meaningful while the room is on screen. Offering a
                   renderer choice next to a flat swatch would be noise. */}
-              {view === 'room' && showTierToggle && <TierToggle />}
+              {shownView === 'room' && showTierToggle && <TierToggle />}
             </div>
           )}
 
           <div className="relative overflow-hidden rounded-2xl bg-sand">
-            {view === 'photos' ? (
-              <div className="p-2">
+            {shownView === 'photos' ? (
+              <div className="p-3">
                 <PhotoGrid
                   photos={photos}
                   colourId={selectedColour.id}
                   label={`${product.name} photographs`}
                 />
               </div>
-            ) : scene && view === 'room' ? (
+            ) : scene && shownView === 'room' ? (
               <div className="aspect-4/5 w-full">
                 <RoomView
                   colour={selectedColour.swatch || product.accent}
@@ -301,16 +380,16 @@ function ProductDetail({ slug }: { slug: string }) {
               same thing as the panel beside them and covered the very corner of
               the room the customer is trying to look at.
             */}
-            {product.compareAt && (
+            {saving > 0 && (
               <div className="absolute top-4 left-4">
-                <Badge tone="brand">Save {money(product.compareAt - product.price)}</Badge>
+                <Badge tone="brand">Save {money(saving)}</Badge>
               </div>
             )}
 
             {/* Scene controls. Drawing them closed at night is the clearest way
                 to show what a blockout lining actually buys you, so both
                 controls belong to the curtain scene and nowhere else. */}
-            {canDraw && view === 'room' && (
+            {canDraw && shownView === 'room' && (
               <div className="absolute right-4 bottom-4 left-4 flex flex-wrap justify-center gap-2">
                 <button
                   onClick={() => setDrawn((d) => !d)}
@@ -328,12 +407,12 @@ function ProductDetail({ slug }: { slug: string }) {
             )}
           </div>
 
-          {view === 'photos' ? (
-            <p className="mt-3 text-center text-[12px] text-muted">
+          {shownView === 'photos' ? (
+            <p className="mt-3 text-center text-[12px] text-muted-foreground">
               Photographs of the finished piece. Tap any one to see it full size.
             </p>
-          ) : scene && view === 'room' ? (
-            <p className="mt-3 text-center text-[12px] text-muted">
+          ) : scene && shownView === 'room' ? (
+            <p className="mt-3 text-center text-[12px] text-muted-foreground">
               Showing {selectedColour.label}
               {product.sizes && selectedSize ? `, ${selectedSize.label.toLowerCase()}` : ''}. Change
               the colour or style to update the room.
@@ -374,10 +453,10 @@ function ProductDetail({ slug }: { slug: string }) {
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-4">
-            <Stars rating={product.rating} count={product.reviewCount} />
+            <Stars rating={ratings.average} count={ratings.count} />
             <button
               onClick={() => setTab('reviews')}
-              className="text-[13px] text-muted underline hover:text-brand"
+              className="text-[13px] text-muted-foreground underline hover:text-brand"
             >
               Read reviews
             </button>
@@ -386,18 +465,18 @@ function ProductDetail({ slug }: { slug: string }) {
           <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{product.summary}</p>
 
           <div className="mt-6 flex flex-wrap items-baseline gap-3 border-y border-line py-5">
-            {isQuote && <span className="text-sm text-muted">From</span>}
+            {isQuote && <span className="text-sm text-muted-foreground">From</span>}
             <span className="font-display text-3xl font-bold text-ink">{money(unitPrice)}</span>
-            {product.compareAt && (
-              <span className="text-lg text-muted line-through">{money(product.compareAt)}</span>
+            {saving > 0 && (
+              <span className="text-lg text-muted-foreground line-through">{money(product.compareAt!)}</span>
             )}
-            <span className="text-sm text-muted">{product.unit}</span>
+            <span className="text-sm text-muted-foreground">{product.unit}</span>
           </div>
 
           {/* Colour */}
           <div className="mt-6">
             <p className="mb-2.5 text-sm font-medium">
-              Colour: <span className="text-muted">{selectedColour.label}</span>
+              Colour: <span className="text-muted-foreground">{selectedColour.label}</span>
               {!selectedColour.inStock && (
                 <span className="ml-2 text-[12px] text-brand">Out of stock, 3 week lead time</span>
               )}
@@ -432,7 +511,7 @@ function ProductDetail({ slug }: { slug: string }) {
             <div className="mt-6">
               <p className="mb-2.5 text-sm font-medium">
                 {isQuote ? 'Style' : 'Size'}:{' '}
-                <span className="text-muted">{selectedSize?.label}</span>
+                <span className="text-muted-foreground">{selectedSize?.label}</span>
               </p>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((s) => (
@@ -449,7 +528,7 @@ function ProductDetail({ slug }: { slug: string }) {
                   >
                     {s.label}
                     {s.delta ? (
-                      <span className="ml-1.5 text-[12px] text-muted">
+                      <span className="ml-1.5 text-[12px] text-muted-foreground">
                         {s.delta > 0 ? '+' : ''}
                         {money(s.delta)}
                       </span>
@@ -465,7 +544,7 @@ function ProductDetail({ slug }: { slug: string }) {
                optional so an unmeasured visitor is never blocked. */
             <div className="mt-7 rounded-2xl border border-line bg-shell p-5">
               <h2 className="font-display text-base font-semibold">Get your fixed price</h2>
-              <p className="mt-1 mb-4 text-[13px] leading-relaxed text-muted">
+              <p className="mt-1 mb-4 text-[13px] leading-relaxed text-muted-foreground">
                 Fill in what you know. Leave the rest. Our fitter measures for free across Nairobi.
               </p>
 
@@ -520,11 +599,11 @@ function ProductDetail({ slug }: { slug: string }) {
 
               {width && (
                 <div className="mt-4 rounded-xl border border-line bg-white px-4 py-3">
-                  <p className="text-[12px] text-muted">Indicative estimate</p>
+                  <p className="text-[12px] text-muted-foreground">Indicative estimate</p>
                   <p className="font-display text-xl font-semibold text-ink">
                     ~{money(Math.round(estimate))}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted">
+                  <p className="mt-1 text-[12px] text-muted-foreground">
                     Based on {width} cm × {windows} {windows === 1 ? 'window' : 'windows'}. Your
                     written quote confirms the final price.
                   </p>
@@ -570,7 +649,7 @@ function ProductDetail({ slug }: { slug: string }) {
                 </Button>
               </div>
 
-              <p className="mt-4 text-center text-[12px] text-muted">
+              <p className="mt-4 text-center text-[12px] text-muted-foreground">
                 Written quote within 1 working day · No obligation · {leadTime(product.leadTimeDays)}{' '}
                 once approved
               </p>
@@ -596,7 +675,7 @@ function ProductDetail({ slug }: { slug: string }) {
                     +
                   </button>
                 </div>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   Total <strong className="text-ink">{money(estimate)}</strong>
                 </p>
               </div>
@@ -660,7 +739,7 @@ function ProductDetail({ slug }: { slug: string }) {
                 'shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors',
                 tab === t.id
                   ? 'border-brand text-brand'
-                  : 'border-transparent text-muted hover:text-ink',
+                  : 'border-transparent text-muted-foreground hover:text-ink',
               )}
             >
               {t.label}
@@ -736,53 +815,19 @@ function ProductDetail({ slug }: { slug: string }) {
               ].map((x) => (
                 <div key={x.h}>
                   <h3 className="mb-2 font-display text-base font-semibold">{x.h}</h3>
-                  <p className="text-[14px] leading-relaxed text-muted">{x.b}</p>
+                  <p className="text-[14px] leading-relaxed text-muted-foreground">{x.b}</p>
                 </div>
               ))}
             </div>
           )}
 
           {tab === 'reviews' && (
-            <div className="max-w-3xl">
-              <div className="mb-8 flex flex-wrap items-center gap-6 rounded-2xl bg-shell p-6">
-                <div className="text-center">
-                  <p className="font-display text-4xl font-bold text-ink">{product.rating}</p>
-                  <Stars rating={product.rating} />
-                  <p className="mt-1 text-[12px] text-muted">{product.reviewCount} reviews</p>
-                </div>
-                <div className="min-w-48 flex-1 space-y-1.5">
-                  {[5, 4, 3, 2, 1].map((star) => {
-                    const share =
-                      star === 5 ? 78 : star === 4 ? 16 : star === 3 ? 4 : star === 2 ? 1 : 1
-                    return (
-                      <div key={star} className="flex items-center gap-2 text-[12px]">
-                        <span className="w-3 text-muted">{star}</span>
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
-                          <div className="h-full bg-[#e0a422]" style={{ width: `${share}%` }} />
-                        </div>
-                        <span className="w-8 text-right text-muted">{share}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <ul className="divide-y divide-line">
-                {product.reviews.map((rev) => (
-                  <li key={rev.author + rev.date} className="py-5">
-                    <div className="mb-2 flex flex-wrap items-center gap-3">
-                      <Stars rating={rev.rating} />
-                      <span className="text-sm font-semibold">{rev.author}</span>
-                      <span className="text-[12px] text-muted">
-                        {rev.location} · {rev.date}
-                      </span>
-                      <Badge tone="stock">Verified purchase</Badge>
-                    </div>
-                    <p className="text-[15px] leading-relaxed text-ink-soft">{rev.body}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <Reviews
+              product={product}
+              submitted={reviews.submitted}
+              loading={reviews.loading}
+              reload={reviews.reload}
+            />
           )}
         </div>
       </div>
@@ -816,7 +861,7 @@ function Field({
     <label className="block">
       <span className="mb-1.5 block text-[13px] font-medium text-ink">
         {label}
-        {hint && <span className="ml-1 font-normal text-muted">({hint})</span>}
+        {hint && <span className="ml-1 font-normal text-muted-foreground">({hint})</span>}
       </span>
       {children}
     </label>

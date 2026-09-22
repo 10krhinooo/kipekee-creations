@@ -1,3 +1,5 @@
+import { addDays, startOfWeek, toDateKey } from './calendar'
+
 /**
  * Mock operational data for the admin prototype.
  *
@@ -100,17 +102,6 @@ export interface Fitting {
   fitter: string
   quoteId?: string
   windows: number
-}
-
-export interface StockRow {
-  slug: string
-  name: string
-  category: string
-  mode: 'buy' | 'quote'
-  price: number
-  stock: number
-  reorderAt: number
-  unit: string
 }
 
 export const orders: Order[] = [
@@ -469,31 +460,30 @@ export const quotes: Quote[] = [
   },
 ]
 
-export const fittings: Fitting[] = [
-  { id: 'F-01', kind: 'measure', customer: 'Mercy Atieno', area: 'Kitengela', date: '2026-08-18', time: '10:00', fitter: 'Peter K.', quoteId: 'Q-0910', windows: 2 },
-  { id: 'F-02', kind: 'measure', customer: 'Wanjiru Maina', area: 'Kileleshwa', date: '2026-08-18', time: '14:00', fitter: 'Peter K.', quoteId: 'Q-0912', windows: 3 },
-  { id: 'F-03', kind: 'fitting', customer: 'Peter Ochieng', area: 'Syokimau', date: '2026-08-19', time: '09:00', fitter: 'John M.', quoteId: 'Q-0906', windows: 2 },
-  { id: 'F-04', kind: 'measure', customer: 'Michael Achieng', area: 'Karen', date: '2026-08-19', time: '15:30', fitter: 'Peter K.', quoteId: 'Q-0911', windows: 3 },
-  { id: 'F-05', kind: 'fitting', customer: 'Zainab Hassan', area: 'Nyali', date: '2026-08-20', time: '11:00', fitter: 'John M.', quoteId: 'Q-0905', windows: 4 },
-  { id: 'F-06', kind: 'measure', customer: 'Beatrice Kilonzo', area: 'Runda', date: '2026-08-21', time: '10:30', fitter: 'Peter K.', quoteId: 'Q-0909', windows: 1 },
-  { id: 'F-07', kind: 'fitting', customer: 'Grace Njoki', area: 'Lavington', date: '2026-08-22', time: '13:00', fitter: 'John M.', quoteId: 'Q-0905', windows: 2 },
+/*
+ * The fitters' diary, anchored to whatever week it is now.
+ *
+ * These were fixed dates in August 2026, so the schedule showed an empty week
+ * from the moment that week passed. `weekday` is an offset from Monday, and
+ * the date is resolved when the module loads, which keeps the demo populated
+ * and, more usefully, keeps the seed honest about what a live diary looks
+ * like: visits clustered near today rather than in a fossilised week.
+ */
+const bookings: (Omit<Fitting, 'date'> & { weekday: number })[] = [
+  { id: 'F-01', kind: 'measure', customer: 'Mercy Atieno', area: 'Kitengela', weekday: 0, time: '10:00', fitter: 'Peter K.', quoteId: 'Q-0910', windows: 2 },
+  { id: 'F-02', kind: 'measure', customer: 'Wanjiru Maina', area: 'Kileleshwa', weekday: 0, time: '14:00', fitter: 'Peter K.', quoteId: 'Q-0912', windows: 3 },
+  { id: 'F-03', kind: 'fitting', customer: 'Peter Ochieng', area: 'Syokimau', weekday: 1, time: '09:00', fitter: 'John M.', quoteId: 'Q-0906', windows: 2 },
+  { id: 'F-04', kind: 'measure', customer: 'Michael Achieng', area: 'Karen', weekday: 1, time: '15:30', fitter: 'Peter K.', quoteId: 'Q-0911', windows: 3 },
+  { id: 'F-05', kind: 'fitting', customer: 'Zainab Hassan', area: 'Nyali', weekday: 2, time: '11:00', fitter: 'John M.', quoteId: 'Q-0905', windows: 4 },
+  { id: 'F-06', kind: 'measure', customer: 'Beatrice Kilonzo', area: 'Runda', weekday: 3, time: '10:30', fitter: 'Peter K.', quoteId: 'Q-0909', windows: 1 },
+  { id: 'F-07', kind: 'fitting', customer: 'Grace Njoki', area: 'Lavington', weekday: 4, time: '13:00', fitter: 'John M.', quoteId: 'Q-0905', windows: 2 },
 ]
 
-export const stock: StockRow[] = [
-  { slug: 'embroidered-cushion-cover', name: 'Embroidered Cushion Cover', category: 'Cushion Covers', mode: 'buy', price: 1250, stock: 62, reorderAt: 25, unit: 'each' },
-  { slug: 'geometric-cushion-cover', name: 'Geometric Woven Cushion Cover', category: 'Cushion Covers', mode: 'buy', price: 1100, stock: 38, reorderAt: 25, unit: 'each' },
-  { slug: 'velvet-upholstery-fabric', name: 'Cotton Velvet, by the Metre', category: 'Fabrics', mode: 'buy', price: 2650, stock: 240, reorderAt: 80, unit: 'per metre' },
-  { slug: 'blockout-lining-fabric', name: 'Triple-Weave Blockout Lining', category: 'Fabrics', mode: 'buy', price: 950, stock: 48, reorderAt: 100, unit: 'per metre' },
-  { slug: 'embroidered-sheer-fabric', name: 'Embroidered Sheer, by the Metre', category: 'Fabrics', mode: 'buy', price: 1450, stock: 165, reorderAt: 60, unit: 'per metre' },
-  { slug: 'egyptian-cotton-towel-set', name: 'Egyptian Cotton Towel Set', category: 'Towels', mode: 'buy', price: 3900, stock: 9, reorderAt: 15, unit: 'set of 4' },
-  { slug: 'ceramic-bathroom-set', name: 'Ceramic Bathroom Accessory Set', category: 'Towels', mode: 'buy', price: 2750, stock: 19, reorderAt: 10, unit: 'set of 4' },
-  { slug: 'woven-table-mats', name: 'Woven Table Mat Set', category: 'Household', mode: 'buy', price: 1650, stock: 47, reorderAt: 20, unit: 'set of 6' },
-  { slug: 'decor-towel-pair', name: 'Embroidered Decor Towel Pair', category: 'Household', mode: 'buy', price: 1350, stock: 12, reorderAt: 15, unit: 'pair' },
-  { slug: 'kitenge-blockout-curtains', name: 'Kitenge Blockout Curtains', category: 'Curtains', mode: 'quote', price: 3200, stock: 0, reorderAt: 0, unit: 'per metre' },
-  { slug: 'sheer-linen-voile', name: 'Sheer Linen Voile Curtains', category: 'Curtains', mode: 'quote', price: 1850, stock: 0, reorderAt: 0, unit: 'per metre' },
-  { slug: 'wrought-iron-curtain-rail', name: 'Hand-Forged Curtain Rail', category: 'Wrought Iron', mode: 'quote', price: 2900, stock: 0, reorderAt: 0, unit: 'per metre' },
-  { slug: 'four-poster-bed-canopy', name: 'Four-Poster Bed Canopy', category: 'Bed Canopies', mode: 'quote', price: 8500, stock: 0, reorderAt: 0, unit: 'per bed' },
-]
+export const fittings: Fitting[] = bookings.map(({ weekday, ...rest }) => ({
+  ...rest,
+  date: toDateKey(addDays(startOfWeek(), weekday)),
+}))
+
 
 /** Revenue for the last 14 days, used by the dashboard chart. */
 export const revenueSeries = [

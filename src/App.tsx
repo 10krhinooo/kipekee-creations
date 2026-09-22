@@ -13,6 +13,10 @@ import { Footer } from './components/Footer'
 import { BasketDrawer } from './components/BasketDrawer'
 import { Button, WhatsAppIcon, whatsappLink } from './components/ui'
 import { Home } from './pages/Home'
+import { NotFound } from './pages/NotFound'
+import { Terms } from './pages/legal/Terms'
+import { Privacy } from './pages/legal/Privacy'
+import { Returns } from './pages/legal/Returns'
 import { Shop } from './pages/Shop'
 import { ProductPage } from './pages/ProductPage'
 import { Checkout } from './pages/Checkout'
@@ -173,7 +177,13 @@ export default function App() {
               <Route path="profile" element={<AccountProfile />} />
             </Route>
 
-            <Route path="*" element={<Home />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/returns" element={<Returns />} />
+
+            {/* A real 404. This used to render `Home`, which answered every
+                dead URL with a 200 and the homepage. */}
+            <Route path="*" element={<NotFound />} />
           </Route>
 
           {/* One set of auth screens for everybody. The role on the account

@@ -1,9 +1,13 @@
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
+import { savingOf } from '../data/catalogue'
 import type { Product } from '../data/types'
-import { swatch } from '../lib/swatch'
+import { heroImageFor } from '../lib/productImage'
 import { money } from '../lib/format'
 import { Badge, Button, Stars, cx } from './ui'
+import { Photo } from './Photo'
 import { useBasket } from '../store/basket'
+import { usePhotos } from '../store/photos'
 import { COMPARE_LIMIT, useSaved } from '../store/saved'
 
 /**
@@ -11,14 +15,46 @@ import { COMPARE_LIMIT, useSaved } from '../store/saved'
  * straight to the cart; a `quote` product shows an honest "from" price and
  * routes into the quote basket. Neither ever shows a blank price, which is the
  * failure mode of the current site.
+ *
+ * This is the most-rendered component in the app: the shop grid, best sellers,
+ * search, wishlist, compare and recently-viewed all come through here. It is
+ * therefore the one place where switching from a generated swatch to a real
+ * photograph changes how the whole site reads.
  */
-export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
+export function ProductCard({
+  product,
+  index = 0,
+  sizes = '(min-width: 1280px) 22vw, (min-width: 768px) 30vw, (min-width: 640px) 45vw, 92vw',
+}: {
+  product: Product
+  index?: number
+  /** The slot this card occupies, so the browser downloads the right width. */
+  sizes?: string
+}) {
   const { addToCart, addToQuote } = useBasket()
+  const { photosFor } = usePhotos()
   const { isSaved, toggleSaved, isComparing, toggleCompare, compare } = useSaved()
+
   const isQuote = product.mode === 'quote'
   const saved = isSaved(product.slug)
   const comparing = isComparing(product.slug)
   const compareFull = !comparing && compare.length >= COMPARE_LIMIT
+
+  const uploads = photosFor(product)
+
+  /*
+   * One photograph per card, and it moves on hover rather than being replaced.
+   *
+   * There was a cross-fade to a second shot. It went for two reasons: a second
+   * <img> inside a card already on screen is in the viewport too, so
+   * `loading="lazy"` does nothing and every grid pulled twice the photography
+   * it showed; and on a phone, which is most of this audience, there is no
+   * hover to reveal it with, so the cost was being paid for an effect half the
+   * traffic could never see. The slow zoom below gives the same feeling of the
+   * card being alive under the cursor for one composited transform and no
+   * extra bytes.
+   */
+  const hero = heroImageFor(product, uploads, index)
 
   const quickAdd = () => {
     if (isQuote) {
@@ -38,39 +74,69 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
     }
   }
 
+  const saving = savingOf(product)
+
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-white transition-shadow duration-300 hover:shadow-[0_18px_40px_-24px_rgba(23,24,26,0.45)]">
+    <article
+      /*
+       * The card's place in the cascade, wrapped every eighth rather than
+       * clamped there.
+       *
+       * Clamping looked equivalent and was not: callers offset `index` to vary
+       * the procedural fallback - `Home` passes `i + 8` for its second grid and
+       * `ProductPage` passes `i + 3` - so every card in those grids clamped to
+       * the same 7 and the cascade collapsed into one block. Wrapping keeps the
+       * offset harmless, and a ninth card arriving with the first is invisible
+       * because they are rows apart by then.
+       *
+       * Cast through `CSSProperties` because a custom property is not in
+       * React's style type.
+       */
+      style={{ '--i': index % 8 } as CSSProperties}
+      className={cx(
+        'group animate-rise-stagger relative flex flex-col overflow-hidden rounded-card border border-line bg-white',
+        /* Lift, shadow and border on hover, shared with the category and room
+           tiles so the whole homepage responds the same way. */
+        'card-lift',
+      )}
+    >
       <Link
         to={`/product/${product.slug}`}
-        className="relative block aspect-4/5 overflow-hidden bg-sand"
+        className="relative block overflow-hidden bg-sand"
         aria-label={product.name}
       >
-        <img
-          src={swatch(product.pattern, product.colours[0].swatch || product.accent, index)}
-          alt={`${product.name} in ${product.colours[0].label}`}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+        <Photo
+          name={hero.name}
+          src={hero.src}
+          alt={hero.alt}
+          aspect={4 / 5}
+          sizes={sizes}
+          className="w-full"
+          imgClassName="card-zoom"
         />
 
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-          {product.compareAt && (
-            <Badge tone="brand">Save {money(product.compareAt - product.price)}</Badge>
-          )}
-          {isQuote ? <Badge tone="quote">Made to measure</Badge> : null}
-          {!isQuote && product.leadTimeDays === 0 && <Badge tone="stock">In stock</Badge>}
-        </div>
+        {/* Depth on hover. Without it the zoom reads as the image simply
+            getting bigger; with it the card looks lit. */}
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/30 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+        {/*
+          Only the discount stays on the photograph. Everything else moved into
+          the body below: a stack of pills over a product shot is the thing that
+          made the old grid read as a template rather than a shop.
+        */}
+        {saving > 0 && (
+          <span className="absolute top-3 left-3">
+            <Badge tone="brand">Save {money(saving)}</Badge>
+          </span>
+        )}
       </Link>
 
       {/*
         Outside the <Link> and lifted above it. The title link below stretches
         an ::after pseudo-element across the whole card to make it clickable, so
         anything interactive has to clear that overlay or the card swallows the
-        click.
-      */}
-      {/*
-        Same shape, same row: a text pill stacked under the heart used to read
-        as two different controls fighting for the corner. Both are now
-        circular icon buttons side by side, so the corner reads as one group.
+        click. Same shape, same row: both are circular icon buttons side by
+        side, so the corner reads as one group.
       */}
       <div className="absolute top-3 right-3 z-10 flex items-start gap-1.5">
         <button
@@ -79,7 +145,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
           aria-label={saved ? `Remove ${product.name} from saved` : `Save ${product.name}`}
           title={saved ? 'Remove from saved' : 'Save for later'}
           className={cx(
-            'rounded-full bg-white/92 p-2 shadow-sm backdrop-blur transition-colors hover:bg-white',
+            'rounded-full bg-white/92 p-2 shadow-raise backdrop-blur transition-colors hover:bg-white',
             saved ? 'text-brand' : 'text-ink/55 hover:text-brand',
           )}
         >
@@ -107,7 +173,7 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
                 : 'Add to compare'
           }
           className={cx(
-            'rounded-full p-2 shadow-sm backdrop-blur transition-colors',
+            'rounded-full p-2 shadow-raise backdrop-blur transition-colors',
             comparing
               ? 'bg-ink text-white'
               : 'bg-white/92 text-ink/55 hover:bg-white hover:text-brand',
@@ -121,23 +187,31 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <div className="mb-2 flex items-start justify-between gap-3">
-          <h3 className="font-display text-[15px] leading-snug font-semibold text-ink">
-            <Link to={`/product/${product.slug}`} className="after:absolute after:inset-0 after:content-['']">
-              {product.name}
-            </Link>
-          </h3>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-2.5 flex items-center gap-2">
+          {isQuote ? (
+            <span className="eyebrow text-brass-deep">Made to measure</span>
+          ) : product.leadTimeDays === 0 ? (
+            <span className="eyebrow text-stock-ink">In stock</span>
+          ) : (
+            <span className="eyebrow text-muted-foreground">{product.leadTimeDays} day lead time</span>
+          )}
         </div>
 
-        <p className="mb-3 line-clamp-2 text-[13px] leading-relaxed text-muted">{product.summary}</p>
+        <h3 className="mb-2 font-display text-[17px] leading-snug font-semibold text-ink transition-colors duration-200 group-hover:text-brand">
+          <Link to={`/product/${product.slug}`} className="after:absolute after:inset-0 after:content-['']">
+            {product.name}
+          </Link>
+        </h3>
 
-        <div className="mb-3 flex items-center gap-2">
+        <p className="mb-3.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{product.summary}</p>
+
+        <div className="mb-3.5">
           <Stars rating={product.rating} count={product.reviewCount} />
         </div>
 
         {/* Colour swatches double as a signal that the product is real and configurable. */}
-        <div className="mb-4 flex items-center gap-1.5">
+        <div className="mb-5 flex items-center gap-1.5">
           {product.colours.slice(0, 5).map((c) => (
             <span
               key={c.id}
@@ -150,18 +224,20 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
             />
           ))}
           {product.colours.length > 5 && (
-            <span className="text-[11px] text-muted">+{product.colours.length - 5}</span>
+            <span className="font-ui text-[11px] text-muted-foreground">+{product.colours.length - 5}</span>
           )}
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-3">
-          <div>
-            {isQuote && <span className="block text-[11px] text-muted">From</span>}
-            <span className="font-display text-lg font-semibold text-ink">{money(product.price)}</span>
-            {product.compareAt && (
-              <span className="ml-2 text-sm text-muted line-through">{money(product.compareAt)}</span>
+        <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-4">
+          <div className="font-ui">
+            {isQuote && <span className="block text-[11px] text-muted-foreground">From</span>}
+            <span className="text-lg font-semibold text-ink tabular">{money(product.price)}</span>
+            {saving > 0 && (
+              <span className="ml-2 text-sm text-muted-foreground line-through tabular">
+                {money(product.compareAt!)}
+              </span>
             )}
-            <span className="block text-[11px] text-muted">{product.unit}</span>
+            <span className="block text-[11px] text-muted-foreground">{product.unit}</span>
           </div>
 
           <Button

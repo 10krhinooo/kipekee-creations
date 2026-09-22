@@ -1,10 +1,31 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* shadcn ships its dark palette behind a `.dark` class rather than a media
+   query, so Tailwind has to be told that is the signal. */
+@custom-variant dark (&:is(.dark *));
 
 /*
-  Brand tokens lifted from the existing kipekeecreations.co.ke stylesheet so the
-  brand stays consistent across the storefront and the workshop app.
+  Kipekee design tokens.
+
+  One source of truth for the whole storefront and the admin console. Tailwind
+  v4 reads this `@theme` block directly, so there is no `tailwind.config.js` to
+  keep in step. `emails/theme.ts` restates the same values for the transactional
+  templates and carries a comment saying so; change a colour here and change it
+  there in the same edit.
+
+  Three rules the palette follows:
+  - The brand red is fixed. `#a11c20` came off the client's own stylesheet and
+    is not ours to reinterpret.
+  - Red is for action and emphasis only. Buttons, prices, eyebrows, the active
+    state. A page that is red everywhere reads cheap; a page that is warm
+    neutral with red in the right four places reads expensive.
+  - Brass is the secondary. It was already in the codebase, hardcoded in the
+    curtain rail gradient, and it is the colour that does the premium work
+    alongside the red.
 */
 @theme {
+  /* --- Brand red. Do not restyle. --- */
   --color-brand-50: #fdf3f3;
   --color-brand-100: #fbe4e5;
   --color-brand-200: #f6cdcf;
@@ -14,17 +35,256 @@
   --color-brand-700: #85171b;
   --color-brand-900: #4d0d0f;
 
-  --color-ink: #17181a;
-  --color-ink-soft: #323232;
-  --color-muted: #888888;
-  --color-line: #e5e5e5;
-  --color-shell: #faf8f6;
-  --color-sand: #f3ede7;
+  /* --- Warm neutrals. The old set was pure grey, which is what made the
+     prototype read as a dashboard rather than a decor brand. --- */
+  --color-ink: #191512;
+  --color-ink-soft: #3a332e;
+  /* `muted-foreground`, the secondary text colour, is not here: it lives in
+     the semantic layer below with the rest of the shadcn vocabulary. It is
+     named that rather than `muted` because shadcn uses `muted` for a light
+     *surface*, and sharing the word rather than forking it is what lets a
+     generated component and a hand-written one sit in the same page. */
+  --color-line: #e7e0d8;
+  --color-line-strong: #d6cabb;
+  --color-shell: #faf7f3;
+  --color-sand: #f0e8de;
+  --color-linen: #f7f1e8;
 
-  --font-display: 'Poppins', sans-serif;
-  --font-sans: 'Open Sans', sans-serif;
+  /* --- Brass, the secondary accent. Lifted out of `components/Curtains.tsx`,
+     where these three values were inline in the rail gradient. --- */
+  --color-brass: #c9a15e;
+  --color-brass-deep: #8d6a34;
+  --color-brass-dark: #5d4520;
+
+  /* --- Support colours, previously hardcoded in `components/ui.tsx`. --- */
+  --color-whatsapp: #1da851;
+  --color-whatsapp-deep: #179145;
+  --color-stock-bg: #e8f5ec;
+  --color-stock-ink: #1a6b39;
+  --color-stock-line: #bde2c9;
+  --color-star: #e0a422;
+  --color-star-empty: #d8d5cf;
+
+  /* --- Type.
+
+     `--font-display` is now a serif, which is the single largest visual change
+     in this redesign: every `font-display` class already in the codebase picks
+     it up without being touched. Poppins keeps the UI furniture, where a serif
+     would be wrong: buttons, eyebrows, badges, nav, prices, table headers. Open
+     Sans still carries body copy. --- */
+  --font-display: 'Fraunces', 'Georgia', 'Times New Roman', serif;
+  --font-ui: 'Poppins', 'Segoe UI', sans-serif;
+  --font-sans: 'Open Sans', 'Segoe UI', sans-serif;
+
+  /* --- Fluid type scale. The old hero headline was a fixed `text-4xl
+     sm:text-6xl`, which left a gap at tablet width and never filled a 1600px
+     container. These interpolate instead. --- */
+  --text-hero: clamp(2.5rem, 1.45rem + 4.4vw, 5rem);
+  --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.02em;
+
+  --text-display: clamp(2rem, 1.35rem + 2.7vw, 3.5rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.018em;
+
+  --text-title: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+  --text-title--line-height: 1.14;
+  --text-title--letter-spacing: -0.014em;
+
+  --text-subtitle: clamp(1.125rem, 1.02rem + 0.45vw, 1.5rem);
+  --text-subtitle--line-height: 1.25;
+
+  --text-lede: clamp(1rem, 0.96rem + 0.22vw, 1.1875rem);
+  --text-lede--line-height: 1.6;
+
+  /* Letterspaced small caps, used for every eyebrow and badge. */
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.18em;
+
+  /* --- Radius. Cards were `rounded-2xl` by habit; this names the intent. --- */
+  --radius-card: 1rem;
+  --radius-panel: 1.5rem;
+  --radius-media: 1.25rem;
+
+  /* --- Elevation. Three steps, replacing the one-off shadow strings. Warm
+     rather than neutral, so a raised card does not go grey against sand. --- */
+  --shadow-raise: 0 1px 2px rgba(25, 21, 18, 0.05), 0 2px 8px -4px rgba(25, 21, 18, 0.08);
+  --shadow-card: 0 18px 40px -24px rgba(25, 21, 18, 0.45);
+  --shadow-float: 0 28px 60px -28px rgba(25, 21, 18, 0.5);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+  The semantic layer, and the contract with shadcn/ui.
+
+  Everything above is Kipekee's own palette: literal values, named for what
+  they are. This block is named for what things *do* — a background, a border,
+  a destructive action — and every value resolves back up into the ramp above.
+  That direction matters. The brand ramp is the source; this is a view onto it.
+  Nothing here introduces a colour of its own.
+
+  It exists because shadcn components arrive hardcoded against these names.
+  Without this block, `npx shadcn add button` would install its own slate
+  palette beside ours and the site would quietly have two design systems. With
+  it, a generated component comes out in Kipekee's colours on the first render
+  and never needs its classes rewritten.
+
+  The split into plain `:root` custom properties plus an `@theme inline` map is
+  the shape Tailwind v4 wants: `inline` makes each utility resolve to the
+  variable rather than to its value, which is what lets `.dark` below override
+  a palette that has already been compiled into classes.
+*/
+:root {
+  --radius: 0.75rem;
+
+  --background: #ffffff;
+  --foreground: var(--color-ink);
+
+  /* A raised surface. White on white is invisible, so cards keep their border
+     and the shell tint is reserved for section bands. */
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+
+  /* Primary is the brand red, which makes every shadcn primary button the
+     same red as the hand-written ones without touching a single class. */
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+
+  /* Secondary is sand rather than brass. Brass is an accent for detail and
+     emphasis; a full brass button surface reads as a warning, not a choice. */
+  --secondary: var(--color-sand);
+  --secondary-foreground: var(--color-ink);
+
+  --muted: var(--color-shell);
+  --muted-foreground: #6f665e;
+
+  --accent: var(--color-linen);
+  --accent-foreground: var(--color-ink);
+
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+
+  --border: var(--color-line);
+  --input: var(--color-line-strong);
+  /* The focus ring already set in the base layer, restated so shadcn's
+     `ring-ring` lands on the same colour as `:focus-visible`. */
+  --ring: var(--color-brand);
+
+  /* The admin console's nav, for when it takes shadcn's Sidebar. Darker than
+     the storefront on purpose: an operations chrome should recede. */
+  --sidebar: var(--color-shell);
+  --sidebar-foreground: var(--color-ink);
+  --sidebar-primary: var(--color-brand);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-sand);
+  --sidebar-accent-foreground: var(--color-ink);
+  --sidebar-border: var(--color-line);
+  --sidebar-ring: var(--color-brand);
+}
+
+/*
+  Dark mode is not shipped. Nothing sets `.dark`, and no storefront surface is
+  designed for it.
+
+  It is defined anyway because shadcn components emit `dark:` classes whether
+  or not anyone uses them, and a half-defined palette is how you get a black
+  button on a black panel the first time somebody does flip the class. Warm
+  rather than neutral, to stay in the same family as the light set.
+*/
+.dark {
+  --background: #14110f;
+  --foreground: #f5efe7;
+  --card: #1d1916;
+  --card-foreground: #f5efe7;
+  --popover: #1d1916;
+  --popover-foreground: #f5efe7;
+  --primary: var(--color-brand-400);
+  --primary-foreground: #14110f;
+  --secondary: #2a2420;
+  --secondary-foreground: #f5efe7;
+  --muted: #241f1b;
+  --muted-foreground: #a9a096;
+  --accent: #2a2420;
+  --accent-foreground: #f5efe7;
+  --destructive: #e05a52;
+  --destructive-foreground: #14110f;
+  --border: #322b26;
+  --input: #3d3630;
+  --ring: var(--color-brand-400);
+  --sidebar: #1d1916;
+  --sidebar-foreground: #f5efe7;
+  --sidebar-primary: var(--color-brand-400);
+  --sidebar-primary-foreground: #14110f;
+  --sidebar-accent: #2a2420;
+  --sidebar-accent-foreground: #f5efe7;
+  --sidebar-border: #322b26;
+  --sidebar-ring: var(--color-brand-400);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* shadcn's radius scale hangs off one value. Kept separate from
+     `--radius-card` and friends above, which name a component rather than a
+     step, so the two can disagree without either being wrong. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/*
+  Section rhythm and the page gutter, as custom properties rather than theme
+  keys because they are referenced in `calc()` as often as they are applied.
+*/
+:root {
+  --section-y: 3.5rem;
+  --gutter: 1rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --section-y: 5rem;
+    --gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --section-y: 6.5rem;
+    --gutter: 2.5rem;
+  }
 }
 
 @layer base {
@@ -37,6 +297,7 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1,
@@ -44,7 +305,24 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    /*
+      Fraunces ships two stylistic axes. SOFT rounds the terminals and WONK
+      swaps in the splayed alternates; both are charming at poster size and
+      noisy at 20px, so they stay at zero and the face does its work through
+      optical sizing instead.
+    */
+    font-variation-settings:
+      'SOFT' 0,
+      'WONK' 0;
+    /* A serif needs far less negative tracking than Poppins did at -0.02em. */
+    letter-spacing: -0.012em;
+  }
+
+  /* Numbers should not wobble in a price column or an admin table. */
+  .tabular,
+  td,
+  th {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Keyboard users get a visible, on-brand focus ring. */
@@ -53,6 +331,89 @@
     outline-offset: 2px;
     border-radius: 2px;
   }
+
+  /*
+    Every photograph sits in an aspect-ratio box that reserves its space before
+    the bytes arrive, so a slow connection scrolls smoothly instead of jumping.
+    The tint is the product's own accent, which means the placeholder reads as
+    the product rather than as a grey hole.
+  */
+  img {
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+}
+
+/*
+  One hover behaviour for every card-shaped thing on the site.
+
+  It was written inline on `ProductCard` first and immediately drifted: the
+  category tiles and the room tiles are cards too, and they had picked up only
+  the shadow, so half the homepage lifted under the cursor and half sat still.
+  Declared once here instead, and applied by name.
+
+  All three properties are composited or cheap, so a grid of twelve costs the
+  same as one, and the reduced-motion block at the foot of this file collapses
+  the duration for anyone who asked for less movement.
+*/
+@utility card-lift {
+  transition-property: transform, box-shadow, border-color;
+  transition-timing-function: var(--ease-out-soft);
+  transition-duration: 300ms;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card);
+    border-color: color-mix(in oklab, var(--color-brand) 30%, transparent);
+  }
+}
+
+/*
+  The photograph inside a `card-lift`, which grows a little as the card rises.
+  Separate because it goes on the `<img>` while the lift goes on the card, and
+  because it needs the card to be a `group`.
+*/
+@utility card-zoom {
+  transition: transform 700ms var(--ease-out-soft);
+
+  .group:hover & {
+    transform: scale(1.06);
+  }
+}
+
+/*
+  Long-form policy copy. Declared once here rather than as a class on every
+  heading and paragraph in three files, because these pages are all prose and
+  nothing else.
+*/
+@utility legal {
+  & h2 {
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  & h2:first-child {
+    margin-top: 0;
+  }
+  & p,
+  & li {
+    margin-bottom: 0.875rem;
+    line-height: 1.7;
+    color: var(--color-ink-soft);
+  }
+  & ul {
+    margin-bottom: 0.875rem;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+  & strong {
+    color: var(--color-ink);
+  }
+  & a {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 @utility no-scrollbar {
@@ -60,6 +421,24 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Vertical rhythm for a page section, driven by the `--section-y` step above. */
+@utility section {
+  padding-block: var(--section-y);
+}
+
+/*
+  An eyebrow: Poppins, letterspaced, uppercase. Used above every section
+  heading. Declared once here because it appeared as the same four utility
+  classes in eleven different files.
+*/
+@utility eyebrow {
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  text-transform: uppercase;
 }
 
 @keyframes kc-rise {
@@ -78,15 +457,81 @@
 }
 
 /*
+  The same rise, offset by the item's position in its grid.
+
+  A grid that arrives as one block reads as a page being revealed; the same
+  grid arriving as a short cascade reads as a page being laid out, which is
+  the more expensive of the two feelings for the price of one custom property.
+
+  `--i` is the item's index, and the caller caps it. Uncapped, the twelfth card
+  in a shop grid would wait half a second after the first, which stops being a
+  cascade and starts being a queue. Capping at around the eighth means the tail
+  of a long grid all arrives together and nobody notices, because by then the
+  eye has stopped watching the pattern and started reading the products.
+*/
+@utility animate-rise-stagger {
+  /*
+    `backwards`, not `both`, and the difference matters.
+
+    `both` keeps an animation's final frame applied forever, and an animated
+    property outranks a declared one - so `transform: none` from the last
+    keyframe would sit on the card permanently and quietly kill every hover
+    lift on the grid. `backwards` holds the opening frame through the delay,
+    which is the part actually needed here, and then hands the element back to
+    its own stylesheet once it has finished arriving.
+  */
+  animation: kc-rise 0.5s var(--ease-out-soft) calc(var(--i, 0) * 45ms) backwards;
+}
+
+/*
+  A photograph arriving.
+
+  The tint behind a `Photo` already holds the space and carries the product's
+  own colour, so this is not a skeleton dissolving into content: it is the last
+  50ms of a download being made to look deliberate rather than abrupt. One
+  composited property, so it costs nothing on a mid-range Android.
+
+  Applied by `Photo` once the image reports `complete`, never at mount, or a
+  slow connection would fade in an empty box and then snap the photograph in
+  behind it. The reduced-motion block at the foot of this file collapses the
+  duration, which leaves the image simply present.
+
+  Opacity only, deliberately. `both` keeps an animation's final value applied
+  after it ends, and an animated property outranks a declared one, so a
+  `transform` in here would sit on the image forever and quietly kill the
+  hover zoom on every product card.
+*/
+@keyframes kc-photo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-photo-in {
+  animation: kc-photo-in 0.45s var(--ease-out-soft) both;
+}
+
+/*
   The same rise, held back until `PageCurtain` has drawn the cloth off the page.
   `both` keeps the content at opacity 0 through the delay, which is what lets it
   arrive as the curtain clears rather than being revealed already in place.
+
+  The delay is not a constant. `PageCurtain` writes `--page-rise-delay` on the
+  root element before each navigation commits, because the right answer differs
+  per navigation: past half the open for a normal page change, the full length
+  of the rail lift on the motorised first load, and zero when no curtain is
+  drawn at all. The fallback here is 0ms deliberately - if that variable ever
+  goes missing, content appearing immediately is a far smaller failure than a
+  page held blank waiting for a curtain that is not coming.
   Applied to a layout's `<main>` and never to an ancestor of the fixed header,
   drawer or FAB: an animated `transform` makes its element a containing block,
   and `position: fixed` inside one stops being fixed to the viewport.
 */
 @utility animate-page-rise {
-  animation: kc-rise 0.62s var(--ease-out-soft) 0.42s both;
+  animation: kc-rise 0.62s var(--ease-out-soft) var(--page-rise-delay, 0ms) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

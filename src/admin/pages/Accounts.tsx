@@ -109,7 +109,7 @@ export function Accounts() {
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink">Workshop accounts</h1>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+          <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">
             Who can sign in to the console, and what they can do once they are in.
           </p>
         </div>
@@ -163,7 +163,7 @@ export function Accounts() {
             </select>
           </label>
 
-          <p className="self-end text-[12.5px] leading-relaxed text-muted sm:pb-3">
+          <p className="self-end text-[12.5px] leading-relaxed text-muted-foreground sm:pb-3">
             They get a link that lets them choose their own password. The account cannot be signed
             into until they do, and the link stops working after a week.
           </p>
@@ -180,7 +180,7 @@ export function Accounts() {
       )}
 
       {accounts === null ? (
-        <p className="rounded-2xl bg-white px-4 py-8 text-center text-[13.5px] text-muted">
+        <p className="rounded-2xl bg-white px-4 py-8 text-center text-[13.5px] text-muted-foreground">
           Loading accounts…
         </p>
       ) : (
@@ -201,7 +201,7 @@ export function Accounts() {
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 font-display text-[15px] font-semibold text-ink">
                       {account.name}
-                      {isSelf && <span className="text-[12px] font-normal text-muted">(you)</span>}
+                      {isSelf && <span className="text-[12px] font-normal text-muted-foreground">(you)</span>}
                       <span
                         className={cx(
                           'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase',
@@ -211,7 +211,7 @@ export function Accounts() {
                         {ROLE_LABEL[account.role]}
                       </span>
                       {!account.isActive && (
-                        <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase">
+                        <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
                           Suspended
                         </span>
                       )}
@@ -221,7 +221,7 @@ export function Accounts() {
                         </span>
                       )}
                     </p>
-                    <p className="mt-1 text-[13px] text-muted">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                       {account.email}
                       {account.invitedBy && ` · added by ${account.invitedBy}`}
                     </p>
@@ -307,7 +307,7 @@ export function Accounts() {
                           )
                         }
                         title="Remove this account permanently"
-                        className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-muted transition-colors hover:bg-brand-50 hover:text-brand"
+                        className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-brand-50 hover:text-brand"
                       >
                         Delete
                       </button>
@@ -320,7 +320,7 @@ export function Accounts() {
         </ul>
       )}
 
-      <p className="mt-6 text-[12.5px] leading-relaxed text-muted">
+      <p className="mt-6 text-[12.5px] leading-relaxed text-muted-foreground">
         Suspending is usually the right answer when somebody leaves. Their name stays attached to
         the quotes and fittings they worked on, which deleting the account would take with it.
       </p>

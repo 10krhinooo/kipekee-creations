@@ -127,7 +127,8 @@ made-to-measure work.
 ## Stack
 
 React 19, TypeScript, Vite 8, Tailwind CSS v4, React Router 7, anime.js 4, Three.js 0.185,
-React Three Fiber 9, and Drei 10. No runtime data fetching.
+React Three Fiber 9, and Drei 10. shadcn/ui on Radix for the interaction primitives. No runtime
+data fetching.
 
 ## Running it
 
@@ -169,9 +170,12 @@ src/
   lib/           KSh formatting, and the shared fabric pattern definitions
   store/         The dual cart and quote basket, persisted to localStorage
   components/    Header, footer, product card, basket drawer, room visualiser
+    shadcn/      Generated Radix primitives. See "UI kit" below before editing
   pages/         One file per storefront route
   admin/         The staff app: its own layout, auth, data and pages
 emails/          React Email templates, rendered to Qute templates at build time
+scripts/photos/  The photography manifest and the script that fetches it
+public/photos/   The images themselves, committed, plus generated credits
 ```
 
 ## Routes
@@ -207,13 +211,53 @@ behaves.
 
 ## Brand
 
-| Token | Value |
-| --- | --- |
-| Brand red | `#A11C20` |
-| Ink | `#17181A` |
-| Muted | `#888888` |
-| Display face | Poppins |
-| Body face | Open Sans |
+Every token lives in one `@theme` block at the top of `src/index.css`. There is no
+`tailwind.config.js`; Tailwind v4 reads that file directly. `emails/theme.ts` restates the same
+values for the transactional templates and says so in a comment, so a colour change is an edit in
+two files or it is a bug.
+
+| Token | Value | |
+| --- | --- | --- |
+| Brand red | `#a11c20` | Action and emphasis only. Off the client's own stylesheet, not ours to reinterpret |
+| Brass | `#c9a15e` | The secondary accent, and what does the premium work next to the red |
+| Ink | `#191512` | Warm, not neutral |
+| Muted foreground | `#6f665e` | Secondary body text |
+| Line | `#e7e0d8` | Borders |
+| Shell / sand / linen | `#faf7f3` / `#f0e8de` / `#f7f1e8` | The warm neutral grounds |
+| Display face | Fraunces | Variable serif, optical sizing on, SOFT and WONK at zero |
+| UI face | Poppins | Buttons, eyebrows, badges, nav, prices, table headers |
+| Body face | Open Sans | |
+
+## UI kit
+
+Two layers, and the boundary between them is deliberate.
+
+**Ours.** `src/components/ui.tsx` holds `Button`, `Badge`, `SectionHeading`, `Stars`, `Container`
+and the `cx()` joiner. These carry the brand: the pill buttons, the serif headings, the brass
+variant. Anything with a Kipekee opinion in it belongs here.
+
+**Generated.** `src/components/shadcn/` holds shadcn/ui components, which exist for the
+interaction behaviour we would otherwise be hand-rolling badly: focus traps, roving tabindex,
+portals, dismissable layers. Add them with:
+
+```bash
+npx shadcn@latest add <component>
+```
+
+Three rules keep the two from becoming two design systems:
+
+1. **No second Button.** shadcn's `button` is not installed and should not be. `dialog.tsx` has had
+   its import repointed at `@/components/ui`; re-apply that after any `shadcn add dialog`.
+2. **No second palette.** The semantic block in `src/index.css` maps shadcn's names
+   (`--primary`, `--border`, `--muted`) onto the brand ramp above it, so a generated component
+   arrives in Kipekee's colours on the first render. Nothing in that block introduces a colour of
+   its own. `baseColor` in `components.json` is never applied.
+3. **`cn` and `cx` are not interchangeable.** `cn` resolves Tailwind conflicts and costs more;
+   generated components need it, hand-written ones compose rather than override and use `cx`.
+
+One name was renamed to make this work: `text-muted` is now `text-muted-foreground` throughout,
+because shadcn uses `muted` for a light surface and `muted-foreground` for secondary text. Sharing
+the vocabulary beat forking it.
 
 ## Deployment
 
@@ -227,5 +271,8 @@ Client-side routes are served by the SPA rewrite in the same file, so deep links
 ## Not yet built
 
 The prototype stops at the boundary of the backend. Still to come: the API and catalogue data,
-working payments, transactional email and SMS, product photography, authentication on `/admin`, and
-per-route SEO metadata.
+working payments, transactional email and SMS, authentication on `/admin`, and per-route SEO
+metadata.
+
+Photography is in, but it is licensed stock standing in for the client's own shoot. See
+`public/photos/README.md` for how to swap the real thing in without touching a component.

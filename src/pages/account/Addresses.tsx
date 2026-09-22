@@ -1,31 +1,16 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AccountPanel, EmptyNote } from './AccountLayout'
-import { AuthField, Notice } from '../../components/auth/AuthUI'
+import { Notice } from '../../components/auth/AuthUI'
+import {
+  type AddressBody,
+  AddressForm,
+  type SavedAddress,
+  blankAddress,
+  fieldsOf,
+} from '../../components/account/AddressForm'
 import { Button, cx } from '../../components/ui'
+import { countyName } from '../../data/kenya'
 import { api } from '../../lib/api'
-import { KENYA_COUNTIES } from '../../data/kenya'
-import { isValidKenyanPhone } from '../../lib/validate'
-
-interface Address {
-  id: number
-  label: string | null
-  recipient: string
-  phone: string | null
-  line1: string
-  county: string | null
-  notes: string | null
-  isDefault: boolean
-}
-
-const blank = {
-  label: '',
-  recipient: '',
-  phone: '',
-  line1: '',
-  county: 'Nairobi',
-  notes: '',
-  isDefault: false,
-}
 
 /**
  * Delivery addresses.
@@ -33,19 +18,18 @@ const blank = {
  * More than one, with a label and a named recipient, because the customer this
  * is built for is the hotel that delivers to a front office, a laundry and a
  * site office at different times, and whoever signs for it is rarely the person
- * holding the account.
+ * holding the account. A customer who only ever has one can enter it on the
+ * details page instead and never come here.
  */
 export function AccountAddresses() {
-  const [addresses, setAddresses] = useState<Address[] | null>(null)
+  const [addresses, setAddresses] = useState<SavedAddress[] | null>(null)
   const [editing, setEditing] = useState<number | 'new' | null>(null)
-  const [form, setForm] = useState(blank)
   const [saving, setSaving] = useState(false)
-  const [touched, setTouched] = useState(false)
   const [notice, setNotice] = useState<{ tone: 'error' | 'good'; text: string } | null>(null)
   const clearNotice = useCallback(() => setNotice(null), [])
 
   const load = useCallback(async () => {
-    const result = await api.get<Address[]>('/api/account/addresses')
+    const result = await api.get<SavedAddress[]>('/api/account/addresses')
     if (result.ok) setAddresses(result.data)
     else {
       setAddresses([])
@@ -57,42 +41,9 @@ export function AccountAddresses() {
     load()
   }, [load])
 
-  const recipientProblem = form.recipient.trim() ? undefined : 'Who should we ask for on arrival?'
-  const line1Problem = form.line1.trim() ? undefined : 'Enter the street, estate or building'
-  const phoneProblem =
-    form.phone.trim() && !isValidKenyanPhone(form.phone)
-      ? 'Enter a Kenyan number, e.g. 07XX XXX XXX'
-      : undefined
-  const canSave = !recipientProblem && !line1Problem && !phoneProblem
-
-  function startNew() {
-    setForm(blank)
-    setTouched(false)
-    setEditing('new')
-  }
-
-  function startEdit(address: Address) {
-    setForm({
-      label: address.label ?? '',
-      recipient: address.recipient,
-      phone: address.phone ?? '',
-      line1: address.line1,
-      county: address.county ?? 'Nairobi',
-      notes: address.notes ?? '',
-      isDefault: address.isDefault,
-    })
-    setTouched(false)
-    setEditing(address.id)
-  }
-
-  async function save(e: FormEvent) {
-    e.preventDefault()
-    setTouched(true)
-    if (!canSave || saving) return
-
+  async function save(body: AddressBody) {
     setNotice(null)
     setSaving(true)
-    const body = { ...form, phone: form.phone.trim() || null, notes: form.notes.trim() || null }
     const result =
       editing === 'new'
         ? await api.post('/api/account/addresses', body)
@@ -117,14 +68,12 @@ export function AccountAddresses() {
     await load()
   }
 
-  async function makeDefault(address: Address) {
+  async function makeDefault(address: SavedAddress) {
+    // The route replaces the whole address, so everything it already had has
+    // to go back with it. Sending only `isDefault` would blank the rest.
+    const { id: _id, ...rest } = address
     const result = await api.put(`/api/account/addresses/${address.id}`, {
-      label: address.label,
-      recipient: address.recipient,
-      phone: address.phone,
-      line1: address.line1,
-      county: address.county,
-      notes: address.notes,
+      ...rest,
       isDefault: true,
     })
     if (!result.ok) {
@@ -134,13 +83,24 @@ export function AccountAddresses() {
     await load()
   }
 
+  const beingEdited =
+    typeof editing === 'number' ? addresses?.find((a) => a.id === editing) : undefined
+  const current =
+    editing === 'new'
+      ? // The first address saved is the default, since there is nothing else
+        // for checkout to choose and an account with no default fills in nothing.
+        blankAddress(addresses?.length === 0)
+      : beingEdited
+        ? fieldsOf(beingEdited)
+        : null
+
   return (
     <AccountPanel
       title="Delivery addresses"
       intro="The default is the one checkout fills in for you."
       action={
         editing === null ? (
-          <Button size="sm" onClick={startNew}>
+          <Button size="sm" onClick={() => setEditing('new')}>
             Add an address
           </Button>
         ) : undefined
@@ -154,96 +114,18 @@ export function AccountAddresses() {
         </div>
       )}
 
-      {editing !== null && (
-        <form
-          onSubmit={save}
-          noValidate
-          className="mb-6 grid gap-4 rounded-xl border border-line bg-shell p-4 sm:grid-cols-2 sm:p-5"
-        >
-          <AuthField
-            label="Label"
-            hint="Optional"
-            disabled={saving}
-            value={form.label}
-            onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-            placeholder="Home, Lodge main gate, Laundry"
+      {current && (
+        <div className="mb-6">
+          {/* Keyed on the row so switching which address is being edited
+              reloads the fields rather than carrying the last one's over. */}
+          <AddressForm
+            key={String(editing)}
+            initial={current}
+            saving={saving}
+            onSubmit={save}
+            onCancel={() => setEditing(null)}
           />
-          <AuthField
-            label="Who signs for it"
-            required
-            disabled={saving}
-            value={form.recipient}
-            onChange={(e) => setForm((f) => ({ ...f, recipient: e.target.value }))}
-            error={touched ? recipientProblem : undefined}
-            placeholder="Front office"
-          />
-          <div className="sm:col-span-2">
-            <AuthField
-              label="Street, estate or building"
-              required
-              disabled={saving}
-              value={form.line1}
-              onChange={(e) => setForm((f) => ({ ...f, line1: e.target.value }))}
-              error={touched ? line1Problem : undefined}
-              placeholder="12 Riverside Drive, Apt 4B"
-            />
-          </div>
-          <AuthField
-            label="Phone on arrival"
-            hint="Optional"
-            type="tel"
-            disabled={saving}
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            error={touched ? phoneProblem : undefined}
-            placeholder="07XX XXX XXX"
-          />
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium text-ink-soft">County</span>
-            <select
-              value={form.county}
-              disabled={saving}
-              onChange={(e) => setForm((f) => ({ ...f, county: e.target.value }))}
-              className="rounded-xl border border-line bg-white px-4 py-3 text-sm outline-none focus:border-brand"
-            >
-              {KENYA_COUNTIES.map((county) => (
-                <option key={county.id} value={county.name}>
-                  {county.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="sm:col-span-2">
-            <AuthField
-              label="Notes for the rider"
-              hint="Optional"
-              disabled={saving}
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              placeholder="Ask for the duty manager, gate closes at 6pm"
-            />
-          </div>
-
-          <label className="flex items-center gap-2.5 sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={form.isDefault}
-              disabled={saving}
-              onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
-              className="h-4 w-4 accent-[#a11c20]"
-            />
-            <span className="text-[13px] text-ink-soft">Use this one by default at checkout</span>
-          </label>
-
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save address'}
-            </Button>
-            <Button variant="ghost" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-          </div>
-        </form>
+        </div>
       )}
 
       {addresses === null ? (
@@ -274,11 +156,17 @@ export function AccountAddresses() {
                       </span>
                     )}
                   </p>
-                  <p className="mt-1 text-[13px] leading-relaxed text-muted">
-                    {address.recipient}
-                    <br />
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                    {/* The heading already shows the recipient when there is no
+                        label, and printing it twice reads as a mistake. */}
+                    {address.label && (
+                      <>
+                        {address.recipient}
+                        <br />
+                      </>
+                    )}
                     {address.line1}
-                    {address.county && `, ${address.county}`}
+                    {address.county && `, ${countyName(address.county)}`}
                     {address.phone && (
                       <>
                         <br />
@@ -305,7 +193,7 @@ export function AccountAddresses() {
                     </button>
                   )}
                   <button
-                    onClick={() => startEdit(address)}
+                    onClick={() => setEditing(address.id)}
                     title="Edit this address"
                     className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-sand hover:text-brand"
                   >
@@ -314,7 +202,7 @@ export function AccountAddresses() {
                   <button
                     onClick={() => remove(address.id)}
                     title="Delete this address"
-                    className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-muted transition-colors hover:bg-sand hover:text-brand"
+                    className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-sand hover:text-brand"
                   >
                     Delete
                   </button>

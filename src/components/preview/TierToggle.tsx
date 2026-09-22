@@ -36,14 +36,14 @@ export function TierToggle({ className }: { className?: string }) {
             aria-pressed={tier === option.id}
             className={cx(
               'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
-              tier === option.id ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink',
+              tier === option.id ? 'bg-white text-ink shadow-sm' : 'text-muted-foreground hover:text-ink',
             )}
           >
             {option.label}
           </button>
         ))}
       </div>
-      {tier === '2d' && <span className="text-[12px] text-muted">Uses less data</span>}
+      {tier === '2d' && <span className="text-[12px] text-muted-foreground">Uses less data</span>}
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { Button } from '../../components/ui'
 import { api } from '../../lib/api'
 import { bySlug } from '../../data/catalogue'
 import { money } from '../../lib/format'
-import { swatch } from '../../lib/swatch'
+import { ProductThumb } from '../../components/ProductThumb'
 
 export function AccountSaved() {
   const [slugs, setSlugs] = useState<string[] | null>(null)
@@ -67,11 +67,7 @@ export function AccountSaved() {
             >
               {product ? (
                 <>
-                  <img
-                    src={swatch(product.pattern, product.accent)}
-                    alt=""
-                    className="h-16 w-14 shrink-0 rounded-lg object-cover"
-                  />
+                  <ProductThumb product={product} className="h-16 w-14" sizes="56px" />
                   <div className="min-w-0 flex-1">
                     <Link
                       to={`/product/${product.slug}`}
@@ -79,7 +75,7 @@ export function AccountSaved() {
                     >
                       {product.name}
                     </Link>
-                    <p className="text-[13px] text-muted">
+                    <p className="text-[13px] text-muted-foreground">
                       {product.mode === 'quote'
                         ? `Made to measure, from ${money(product.price)} ${product.unit}`
                         : `${money(product.price)} ${product.unit}`}
@@ -92,7 +88,7 @@ export function AccountSaved() {
                 // clear it themselves.
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-medium text-ink">{slug}</p>
-                  <p className="text-[13px] text-muted">No longer in the catalogue</p>
+                  <p className="text-[13px] text-muted-foreground">No longer in the catalogue</p>
                 </div>
               )}
 
@@ -100,7 +96,7 @@ export function AccountSaved() {
                 onClick={() => remove(slug)}
                 title="Remove from your saved list"
                 aria-label={`Remove ${product?.name ?? slug} from your saved list`}
-                className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-sand hover:text-brand"
+                className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-sand hover:text-brand"
               >
                 <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />

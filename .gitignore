@@ -27,6 +27,17 @@ dist-ssr
 # a snapshot, and it goes stale the moment somebody fixes something in it.
 FINDINGS.md
 
+# The same, for the photographic storefront redesign. A plan being worked
+# through, not documentation, so it is nobody's business but the branch's.
+REDESIGN_PLAN.md
+BACKEND_WIRING_PLAN.md
+
+# Written by `npm run seo:sitemap`, which prebuild runs on every build. Neither
+# is imported, so a clean checkout does not need them, and tracking them means
+# every local build leaves the working tree dirty.
+public/sitemap.xml
+public/robots.txt
+
 # Local env. .env.example is the committed one.
 .env
 .env.local
