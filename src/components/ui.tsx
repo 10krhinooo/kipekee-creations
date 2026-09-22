@@ -124,7 +124,7 @@ export function Badge({
     neutral: 'bg-white/92 text-ink border-line backdrop-blur',
     brand: 'bg-brand text-white border-brand',
     quote: 'bg-ink text-white border-ink',
-    stock: 'bg-stock-bg text-stock-ink border-stock-line',
+    stock: 'bg-ok-bg text-ok-ink border-ok-line',
     brass: 'bg-brass/18 text-brass-dark border-brass/45',
   }
   return (
@@ -146,11 +146,14 @@ export function Eyebrow({
   className,
 }: {
   children: ReactNode
-  tone?: 'brand' | 'muted' | 'brass' | 'light'
+  tone?: 'brand' | 'brandLight' | 'muted' | 'brass' | 'light'
   className?: string
 }) {
   const tones = {
     brand: 'text-brand',
+    // The brand red at full strength disappears into `bg-ink`. This is the
+    // same eyebrow for a section sitting on the dark ground.
+    brandLight: 'text-brand-400',
     muted: 'text-muted-foreground',
     brass: 'text-brass-deep',
     light: 'text-white/70',

@@ -109,7 +109,7 @@ export function Accounts() {
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink">Workshop accounts</h1>
-          <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-console leading-relaxed text-muted-foreground">
             Who can sign in to the console, and what they can do once they are in.
           </p>
         </div>
@@ -151,7 +151,7 @@ export function Accounts() {
             placeholder="amina@kipekeecreations.co.ke"
           />
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium text-ink-soft">Role</span>
+            <span className="text-console font-medium text-ink-soft">Role</span>
             <select
               value={form.role}
               disabled={sending}
@@ -163,7 +163,7 @@ export function Accounts() {
             </select>
           </label>
 
-          <p className="self-end text-[12.5px] leading-relaxed text-muted-foreground sm:pb-3">
+          <p className="self-end text-console-sm leading-relaxed text-muted-foreground sm:pb-3">
             They get a link that lets them choose their own password. The account cannot be signed
             into until they do, and the link stops working after a week.
           </p>
@@ -180,7 +180,7 @@ export function Accounts() {
       )}
 
       {accounts === null ? (
-        <p className="rounded-2xl bg-white px-4 py-8 text-center text-[13.5px] text-muted-foreground">
+        <p className="rounded-2xl bg-white px-4 py-8 text-center text-console text-muted-foreground">
           Loading accounts…
         </p>
       ) : (
@@ -199,29 +199,29 @@ export function Accounts() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 font-display text-[15px] font-semibold text-ink">
+                    <p className="flex flex-wrap items-center gap-2 font-display text-console-lg font-semibold text-ink">
                       {account.name}
-                      {isSelf && <span className="text-[12px] font-normal text-muted-foreground">(you)</span>}
+                      {isSelf && <span className="text-console-sm font-normal text-muted-foreground">(you)</span>}
                       <span
                         className={cx(
-                          'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase',
+                          'rounded-full px-2 py-0.5 text-console-2xs font-bold tracking-wide uppercase',
                           account.role === 'ADMIN' ? 'bg-brand text-white' : 'bg-sand text-ink-soft',
                         )}
                       >
                         {ROLE_LABEL[account.role]}
                       </span>
                       {!account.isActive && (
-                        <span className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                        <span className="rounded-full border border-line px-2 py-0.5 text-console-2xs font-bold tracking-wide text-muted-foreground uppercase">
                           Suspended
                         </span>
                       )}
                       {account.invitePending && (
-                        <span className="rounded-full bg-[#fdf1dc] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#8a6512] uppercase">
+                        <span className="rounded-full bg-warn-bg px-2 py-0.5 text-console-2xs font-bold tracking-wide text-warn-ink uppercase">
                           Invite pending
                         </span>
                       )}
                     </p>
-                    <p className="mt-1 text-[13px] text-muted-foreground">
+                    <p className="mt-1 text-console text-muted-foreground">
                       {account.email}
                       {account.invitedBy && ` · added by ${account.invitedBy}`}
                     </p>
@@ -246,7 +246,7 @@ export function Accounts() {
                           )
                         }
                         title="Change what this person can do"
-                        className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12.5px] outline-none focus:border-brand"
+                        className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-console-sm outline-none focus:border-brand"
                       >
                         <option value="STAFF">Staff</option>
                         <option value="ADMIN">Admin</option>
@@ -271,7 +271,7 @@ export function Accounts() {
                             ? 'Suspend this account and end their sessions'
                             : 'Let this person sign in again'
                         }
-                        className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-sand hover:text-brand"
+                        className="rounded-lg px-2.5 py-1.5 text-console-sm text-ink-soft transition-colors hover:bg-sand hover:text-brand"
                       >
                         {account.isActive ? 'Suspend' : 'Reactivate'}
                       </button>
@@ -291,7 +291,7 @@ export function Accounts() {
                             )
                           }
                           title="Email a fresh invite link, and retire the old one"
-                          className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-sand hover:text-brand"
+                          className="rounded-lg px-2.5 py-1.5 text-console-sm text-ink-soft transition-colors hover:bg-sand hover:text-brand"
                         >
                           Resend invite
                         </button>
@@ -307,7 +307,7 @@ export function Accounts() {
                           )
                         }
                         title="Remove this account permanently"
-                        className="rounded-lg px-2.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-brand-50 hover:text-brand"
+                        className="rounded-lg px-2.5 py-1.5 text-console-sm text-muted-foreground transition-colors hover:bg-brand-50 hover:text-brand"
                       >
                         Delete
                       </button>
@@ -320,7 +320,7 @@ export function Accounts() {
         </ul>
       )}
 
-      <p className="mt-6 text-[12.5px] leading-relaxed text-muted-foreground">
+      <p className="mt-6 text-console-sm leading-relaxed text-muted-foreground">
         Suspending is usually the right answer when somebody leaves. Their name stays attached to
         the quotes and fittings they worked on, which deleting the account would take with it.
       </p>

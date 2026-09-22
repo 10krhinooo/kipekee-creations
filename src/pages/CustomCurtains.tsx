@@ -3,13 +3,7 @@ import { products } from '../data/catalogue'
 import { Photo } from '../components/Photo'
 import { money } from '../lib/format'
 import { ProductCard } from '../components/ProductCard'
-import {
-  Button,
-  Container,
-  SectionHeading,
-  WhatsAppIcon,
-  whatsappLink,
-} from '../components/ui'
+import { Button, Container, Eyebrow, SectionHeading, WhatsAppIcon, whatsappLink } from '../components/ui'
 import { useSeo } from '../lib/seo'
 
 const faqs = [
@@ -80,12 +74,10 @@ export function CustomCurtains() {
 
   return (
     <>
-      <section className="bg-shell">
-        <Container className="grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
+      <section className="section bg-shell">
+        <Container className="grid items-center gap-10 lg:grid-cols-2">
           <div>
-            <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
-              Made to measure
-            </p>
+            <Eyebrow className="mb-4">Made to measure</Eyebrow>
             <h1 className="font-display text-4xl leading-[1.1] font-bold text-ink sm:text-5xl">
               Curtains cut to your window, fitted by the people who sewed them
             </h1>
@@ -141,7 +133,7 @@ export function CustomCurtains() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container>
           <SectionHeading
             eyebrow="How it works"
@@ -160,7 +152,7 @@ export function CustomCurtains() {
         </Container>
       </section>
 
-      <section className="bg-sand py-14 sm:py-20">
+      <section className="section bg-sand">
         <Container>
           <SectionHeading
             eyebrow="What it costs"
@@ -216,7 +208,7 @@ export function CustomCurtains() {
         </Container>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="section">
         <Container>
           <SectionHeading
             eyebrow="The range"
@@ -235,7 +227,7 @@ export function CustomCurtains() {
         </Container>
       </section>
 
-      <section className="pb-14 sm:pb-20">
+      <section className="section-b">
         <Container className="max-w-3xl">
           <SectionHeading eyebrow="Questions" title="The things people actually ask" center />
           <div className="divide-y divide-line rounded-2xl border border-line">

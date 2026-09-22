@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cx } from '../components/ui'
-import { NOW, fittings } from './data/operations'
+import { fittings } from './data/operations'
 import { isLow, useStock } from './data/stock'
 import { useOperations } from './data/store'
 import { NotificationsPanel, useAlerts } from './components/Notifications'
@@ -148,7 +148,7 @@ function ConsoleSearch() {
       {open && term !== '' && (
         <div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-line bg-white shadow-xl">
           {hits.length === 0 ? (
-            <p className="px-4 py-3 text-[13px] text-muted-foreground">
+            <p className="px-4 py-3 text-console text-muted-foreground">
               Nothing matches &ldquo;{q.trim()}&rdquo;.
             </p>
           ) : (
@@ -158,14 +158,14 @@ function ConsoleSearch() {
                 onClick={() => go(hit.to)}
                 className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-shell"
               >
-                <span className="shrink-0 rounded-full bg-sand px-2 py-0.5 font-ui text-[10px] font-semibold tracking-wide text-ink uppercase">
+                <span className="shrink-0 rounded-full bg-sand px-2 py-0.5 font-ui text-console-2xs font-semibold tracking-wide text-ink uppercase">
                   {hit.kind}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium text-ink">
+                  <span className="block truncate text-console font-medium text-ink">
                     {hit.title}
                   </span>
-                  <span className="block truncate text-[12px] text-muted-foreground">
+                  <span className="block truncate text-console-sm text-muted-foreground">
                     {hit.detail}
                   </span>
                 </span>
@@ -240,7 +240,7 @@ export function AdminLayout() {
     <>
       <Link to="/admin" className="mb-7 block px-3">
         <span className="font-display text-lg leading-none font-bold text-white">Kipekee</span>
-        <span className="mt-0.5 block text-[10px] tracking-[0.24em] text-brand-400 uppercase">
+        <span className="mt-0.5 block text-console-2xs tracking-[0.24em] text-brand-400 uppercase">
           Workshop
         </span>
       </Link>
@@ -274,7 +274,7 @@ export function AdminLayout() {
             {item.badge ? (
               <span
                 className={cx(
-                  'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold',
+                  'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-console-xs font-bold',
                   item.urgent ? 'bg-brand text-white' : 'bg-white/15 text-white',
                 )}
               >
@@ -296,12 +296,12 @@ export function AdminLayout() {
           View storefront
         </Link>
         <div className="flex items-center gap-3 rounded-xl px-3 py-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-console-sm font-bold text-white">
             {initialsOf(adminName)}
           </span>
           <Link to="/admin/profile" className="min-w-0 flex-1" title="Your details">
-            <span className="block truncate text-[13px] font-medium text-white">{adminName}</span>
-            <span className="block text-[11px] text-white/50">
+            <span className="block truncate text-console font-medium text-white">{adminName}</span>
+            <span className="block text-console-xs text-white/50">
               {isAdmin ? 'Admin' : 'Staff'} · your details
             </span>
           </Link>
@@ -371,8 +371,11 @@ export function AdminLayout() {
           <ConsoleSearch />
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden text-[13px] text-muted-foreground sm:inline">
-              {NOW.toLocaleDateString('en-KE', {
+            <span className="hidden text-console text-muted-foreground sm:inline">
+              {/* The real date. This read off the seed's frozen clock, so the
+                  console told whoever was using it that today was the 16th of
+                  August, every day, forever. */}
+              {new Date().toLocaleDateString('en-KE', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',

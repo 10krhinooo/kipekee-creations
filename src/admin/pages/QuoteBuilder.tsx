@@ -109,7 +109,7 @@ export function QuoteBuilder() {
 
   return (
     <>
-      <nav className="mb-4 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+      <nav className="mb-4 flex items-center gap-1.5 text-console text-muted-foreground">
         <Link to="/admin/quotes" className="hover:text-brand">
           Quotes
         </Link>
@@ -151,8 +151,8 @@ export function QuoteBuilder() {
                 <div className="flex items-center gap-2">
                   <span
                     className={cx(
-                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
-                      done && 'bg-[#e8f5ec] text-[#1a6b39]',
+                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-console-xs font-bold',
+                      done && 'bg-ok-bg text-ok-ink',
                       current && 'bg-brand text-white',
                       !done && !current && 'bg-shell text-muted-foreground',
                     )}
@@ -161,7 +161,7 @@ export function QuoteBuilder() {
                   </span>
                   <span
                     className={cx(
-                      'text-[12px] whitespace-nowrap',
+                      'text-console-sm whitespace-nowrap',
                       current ? 'font-semibold text-ink' : 'text-muted-foreground',
                     )}
                   >
@@ -169,7 +169,7 @@ export function QuoteBuilder() {
                   </span>
                 </div>
                 {i < quotePipeline.length - 1 && (
-                  <span className={cx('mx-2 h-px w-6', done ? 'bg-[#1a6b39]' : 'bg-line')} />
+                  <span className={cx('mx-2 h-px w-6', done ? 'bg-ok-ink' : 'bg-line')} />
                 )}
               </li>
             )
@@ -192,13 +192,13 @@ export function QuoteBuilder() {
                 <li key={i} className="p-5">
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-display text-[15px] font-semibold">{item.product}</h3>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      <h3 className="font-display text-console-lg font-semibold">{item.product}</h3>
+                      <p className="mt-0.5 text-console text-muted-foreground">
                         {item.colour} · {item.room} · {item.windows}{' '}
                         {item.windows === 1 ? 'window' : 'windows'}
                       </p>
                     </div>
-                    <span className="rounded-lg bg-shell px-3 py-1.5 text-[12px] font-medium">
+                    <span className="rounded-lg bg-shell px-3 py-1.5 text-console-sm font-medium">
                       {item.widthCm && item.dropCm
                         ? `${item.widthCm} x ${item.dropCm} cm`
                         : item.widthCm
@@ -208,16 +208,16 @@ export function QuoteBuilder() {
                   </div>
 
                   {item.notes && (
-                    <p className="mb-3 rounded-lg border-l-2 border-brand bg-shell px-3 py-2 text-[13px] leading-relaxed text-ink-soft">
+                    <p className="mb-3 rounded-lg border-l-2 border-brand bg-shell px-3 py-2 text-console leading-relaxed text-ink-soft">
                       <strong className="text-ink">Customer note:</strong> {item.notes}
                     </p>
                   )}
 
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-medium">Price for this line</span>
+                      <span className="mb-1.5 block text-console-sm font-medium">Price for this line</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] text-muted-foreground">KSh</span>
+                        <span className="text-console text-muted-foreground">KSh</span>
                         <input
                           type="number"
                           value={item.pricedTotal ?? ''}
@@ -235,14 +235,14 @@ export function QuoteBuilder() {
                         onClick={() =>
                           setPrice(i, Math.round((item.widthCm! / 100) * 3200 * item.windows))
                         }
-                        className="rounded-full border border-line px-3.5 py-2 text-[12px] font-medium hover:border-brand hover:text-brand"
+                        className="rounded-full border border-line px-3.5 py-2 text-console-sm font-medium hover:border-brand hover:text-brand"
                       >
                         Use list rate
                       </button>
                     )}
 
                     {item.pricedTotal ? (
-                      <span className="ml-auto text-[12px] text-muted-foreground">
+                      <span className="ml-auto text-console-sm text-muted-foreground">
                         {money(Math.round(item.pricedTotal / item.windows))} per window
                       </span>
                     ) : null}
@@ -271,7 +271,7 @@ export function QuoteBuilder() {
         <aside className="h-fit space-y-4 lg:sticky lg:top-24">
           <Card>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-[15px] font-semibold">Quote total</h2>
+              <h2 className="font-display text-console-lg font-semibold">Quote total</h2>
               <StatusPill kind="quote" status={quote.status} label={quoteStatusLabel[quote.status]} />
             </div>
 
@@ -284,7 +284,7 @@ export function QuoteBuilder() {
                     type="checkbox"
                     checked={includeFitting}
                     onChange={(e) => setIncludeFitting(e.target.checked)}
-                    className="h-4 w-4 accent-[#a11c20]"
+                    className="h-4 w-4 accent-brand"
                   />
                   Fitting, {windows} windows
                 </span>
@@ -300,7 +300,7 @@ export function QuoteBuilder() {
                     max={30}
                     value={discount}
                     onChange={(e) => setDiscount(Math.min(30, Math.max(0, Number(e.target.value))))}
-                    className="w-16 rounded-lg border border-line px-2 py-1 text-[13px] outline-none focus:border-brand"
+                    className="w-16 rounded-lg border border-line px-2 py-1 text-console outline-none focus:border-brand"
                   />
                   %
                 </span>
@@ -313,7 +313,7 @@ export function QuoteBuilder() {
                 <span>Total</span>
                 <span>{money(total)}</span>
               </div>
-              <p className="text-[12px] text-muted-foreground">Inclusive of VAT. Valid 30 days.</p>
+              <p className="text-console-sm text-muted-foreground">Inclusive of VAT. Valid 30 days.</p>
             </div>
 
             <div className="mt-5 space-y-2.5">
@@ -326,12 +326,12 @@ export function QuoteBuilder() {
             </div>
 
             {!priced && (
-              <p className="mt-3 text-center text-[12px] text-brand">
+              <p className="mt-3 text-center text-console-sm text-brand">
                 Every line needs a price before this can be sent.
               </p>
             )}
             {sent && (
-              <p className="mt-3 text-center text-[12px] text-[#1a6b39]">
+              <p className="mt-3 text-center text-console-sm text-ok-ink">
                 Sent by SMS and email. Prototype only, nothing left the building.
               </p>
             )}
@@ -347,9 +347,10 @@ export function QuoteBuilder() {
 
           <Card>
             <CardHeader title="History" />
-            <ol className="space-y-3 text-[13px]">
+            <ol className="space-y-3 text-console">
               {[
                 { t: 'Request received', d: new Date(quote.requestedAt).toLocaleString('en-KE') },
+                quote.preferredTime ? { t: 'Customer asked for', d: quote.preferredTime } : null,
                 quote.measureSlot ? { t: 'Measure booked', d: quote.measureSlot } : null,
                 quote.sentAt ? { t: 'Quote sent', d: new Date(quote.sentAt).toLocaleString('en-KE') } : null,
               ]
@@ -359,7 +360,7 @@ export function QuoteBuilder() {
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                     <span>
                       <span className="block font-medium">{e.t}</span>
-                      <span className="block text-[12px] text-muted-foreground">{e.d}</span>
+                      <span className="block text-console-sm text-muted-foreground">{e.d}</span>
                     </span>
                   </li>
                 ))}

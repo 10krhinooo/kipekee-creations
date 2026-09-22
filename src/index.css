@@ -59,11 +59,37 @@
   /* --- Support colours, previously hardcoded in `components/ui.tsx`. --- */
   --color-whatsapp: #1da851;
   --color-whatsapp-deep: #179145;
-  --color-stock-bg: #e8f5ec;
-  --color-stock-ink: #1a6b39;
-  --color-stock-line: #bde2c9;
   --color-star: #e0a422;
   --color-star-empty: #d8d5cf;
+
+  /* --- Status.
+
+     Four meanings, each a text colour, a tinted ground and a border to sit on
+     it. The console had these as raw hex in six files and had already drifted:
+     two different ambers, and one of them written `#8a6512` where every other
+     copy said `#8a6a12`. Red and neutral are not here because a status that
+     needs action takes the brand red and a closed one takes `shell`/`line`,
+     both of which are above.
+
+     `ok` is the same green the storefront's "In stock" badge uses; that badge
+     reads these now rather than keeping its own copy of the value. --- */
+  --color-ok-bg: #e8f5ec;
+  --color-ok-ink: #1a6b39;
+  --color-ok-line: #bde2c9;
+
+  --color-warn-bg: #fdf6e3;
+  --color-warn-ink: #8a6a12;
+  --color-warn-line: #f0e0b8;
+
+  --color-info-bg: #eef3fb;
+  --color-info-ink: #2f5596;
+  --color-info-line: #cfdcf2;
+
+  /* Work in progress: made, not yet delivered. Purple so it cannot be mistaken
+     for either "waiting on us" or "finished". */
+  --color-work-bg: #f0edfa;
+  --color-work-ink: #54419b;
+  --color-work-line: #dbd3f2;
 
   /* --- Type.
 
@@ -101,6 +127,23 @@
   --text-eyebrow: 0.6875rem;
   --text-eyebrow--line-height: 1;
   --text-eyebrow--letter-spacing: 0.18em;
+
+  /* --- Console type.
+
+     Denser than the storefront's scale, and deliberately fixed rather than
+     fluid: the console is read at a desk on one screen size, and a heading
+     that grows with the viewport only costs rows in a table.
+
+     Named because the six steps below were written as arbitrary pixel values
+     in every admin file, and one screen had quietly invented its own half
+     sizes: `Accounts.tsx` was alone in using 12.5px and 13.5px where the rest
+     of the console used 12 and 13. --- */
+  --text-console-lg: 0.9375rem;
+  --text-console-md: 0.875rem;
+  --text-console: 0.8125rem;
+  --text-console-sm: 0.75rem;
+  --text-console-xs: 0.6875rem;
+  --text-console-2xs: 0.625rem;
 
   /* --- Radius. Cards were `rounded-2xl` by habit; this names the intent. --- */
   --radius-card: 1rem;
@@ -426,6 +469,15 @@
 /* Vertical rhythm for a page section, driven by the `--section-y` step above. */
 @utility section {
   padding-block: var(--section-y);
+}
+
+/*
+  Bottom-only, for the last block on a page. It already has the preceding
+  section's padding above it, so a full `section` would stack two of them and
+  leave a dead band down the middle.
+*/
+@utility section-b {
+  padding-block-end: var(--section-y);
 }
 
 /*

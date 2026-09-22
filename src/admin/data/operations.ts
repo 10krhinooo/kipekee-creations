@@ -1,4 +1,4 @@
-import { addDays, startOfWeek, toDateKey } from './calendar'
+import { addDays, slotLabel, startOfWeek, toDateKey } from './calendar'
 
 /**
  * Mock operational data for the admin prototype.
@@ -10,22 +10,31 @@ import { addDays, startOfWeek, toDateKey } from './calendar'
  */
 
 /**
- * The prototype's "now".
+ * A seeded timestamp, as hours before whenever the console is opened.
  *
- * The data below is fixed, so anything that reads as elapsed time has to be
- * measured against a fixed clock or the screens drift further out of step with
- * it every day. Three places had their own copy of this date; they share this
- * one instead.
+ * The seed used to carry fixed dates in August 2026 and measure elapsed time
+ * against a fixed "now" beside them. That works for exactly as long as nothing
+ * real arrives. The moment a customer submitted a quote, it was timestamped by
+ * the actual clock, measured against the frozen one, and the queue reported
+ * its age as -884h.
+ *
+ * Offsets rather than dates, so the seeded rows keep their story - this one
+ * came in two hours ago, that one eleven days ago - and live submissions sit
+ * among them in the right order on any day the console is opened.
  */
-export const NOW = new Date('2026-08-16T13:00:00')
+const hoursAgo = (hours: number) =>
+  new Date(Date.now() - hours * 3.6e6).toISOString()
 
 /**
- * How long something has been waiting, against the fixed clock above. Shared
- * so the dashboard, the quote queue and the notifications panel cannot report
- * different ages for the same row.
+ * How long something has been waiting. Shared so the dashboard, the quote
+ * queue and the notifications panel cannot report different ages for the same
+ * row.
+ *
+ * Clamped at zero. A timestamp in the future is a clock-skew problem, not a
+ * negative age, and "-3h waiting" on a work queue reads as a broken screen.
  */
 export const since = (iso: string) => {
-  const hours = Math.round((NOW.getTime() - new Date(iso).getTime()) / 3.6e6)
+  const hours = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 3.6e6))
   return hours < 24 ? `${hours}h` : `${Math.round(hours / 24)}d`
 }
 
@@ -94,7 +103,14 @@ export interface Quote {
   /** Who owns this quote in the workshop. */
   owner: string
   items: QuoteLineItem[]
+  /** A slot staff have actually booked with a fitter. */
   measureSlot?: string
+  /**
+   * When the customer said they would like to be visited. Their wish, not a
+   * booking: the console used to file it under `measureSlot`, so a quote
+   * nobody had touched showed "Measure booked: As soon as possible".
+   */
+  preferredTime?: string
   sentAt?: string
   source: 'website' | 'whatsapp' | 'phone' | 'showroom'
 }
@@ -117,7 +133,7 @@ export const orders: Order[] = [
     customer: 'Njeri Gathoni',
     phone: '0722 418 902',
     town: 'Nairobi',
-    placedAt: '2026-08-16T09:12:00',
+    placedAt: hoursAgo(3.8),
     status: 'new',
     pay: 'mpesa',
     paid: true,
@@ -132,7 +148,7 @@ export const orders: Order[] = [
     customer: 'Daniel Mwangi',
     phone: '0733 210 554',
     town: 'Nairobi',
-    placedAt: '2026-08-16T08:04:00',
+    placedAt: hoursAgo(4.93),
     status: 'packing',
     pay: 'mpesa',
     paid: true,
@@ -144,7 +160,7 @@ export const orders: Order[] = [
     customer: 'Anne Wairimu',
     phone: '0715 883 042',
     town: 'Kiambu',
-    placedAt: '2026-08-15T16:41:00',
+    placedAt: hoursAgo(20.32),
     status: 'dispatched',
     pay: 'card',
     paid: true,
@@ -157,7 +173,7 @@ export const orders: Order[] = [
     customer: 'Joseph Kariuki',
     phone: '0701 337 118',
     town: 'Nakuru',
-    placedAt: '2026-08-15T11:20:00',
+    placedAt: hoursAgo(25.67),
     status: 'dispatched',
     pay: 'mpesa',
     paid: true,
@@ -172,7 +188,7 @@ export const orders: Order[] = [
     customer: 'Halima Said',
     phone: '0729 004 761',
     town: 'Mombasa',
-    placedAt: '2026-08-14T14:55:00',
+    placedAt: hoursAgo(46.08),
     status: 'delivered',
     pay: 'mpesa',
     paid: true,
@@ -188,7 +204,7 @@ export const orders: Order[] = [
     customer: 'Kevin Mutiso',
     phone: '0768 552 190',
     town: 'Nairobi',
-    placedAt: '2026-08-14T10:02:00',
+    placedAt: hoursAgo(50.97),
     status: 'delivered',
     pay: 'cod',
     paid: true,
@@ -203,7 +219,7 @@ export const orders: Order[] = [
     customer: 'Faith Wambui',
     phone: '0711 620 337',
     town: 'Nairobi',
-    placedAt: '2026-08-13T15:33:00',
+    placedAt: hoursAgo(69.45),
     status: 'cancelled',
     pay: 'mpesa',
     paid: false,
@@ -215,7 +231,7 @@ export const orders: Order[] = [
     customer: 'Esther Muthoni',
     phone: '0745 118 209',
     town: 'Nakuru',
-    placedAt: '2026-08-13T09:18:00',
+    placedAt: hoursAgo(75.7),
     status: 'delivered',
     pay: 'card',
     paid: true,
@@ -231,7 +247,7 @@ export const quotes: Quote[] = [
     customer: 'Wanjiru Maina',
     phone: '0721 445 118',
     area: 'Kileleshwa',
-    requestedAt: '2026-08-16T10:41:00',
+    requestedAt: hoursAgo(2.32),
     status: 'new',
     owner: 'Unassigned',
     source: 'website',
@@ -262,7 +278,7 @@ export const quotes: Quote[] = [
     customer: 'Michael Achieng',
     phone: '0700 918 220',
     area: 'Karen',
-    requestedAt: '2026-08-16T08:55:00',
+    requestedAt: hoursAgo(4.08),
     status: 'new',
     owner: 'Unassigned',
     source: 'whatsapp',
@@ -283,11 +299,12 @@ export const quotes: Quote[] = [
     customer: 'Mercy Atieno',
     phone: '0736 552 004',
     area: 'Kitengela',
-    requestedAt: '2026-08-15T14:12:00',
+    requestedAt: hoursAgo(22.8),
     status: 'measure_booked',
     owner: 'Peter K.',
     source: 'website',
-    measureSlot: 'Mon 18 Aug, 10:00',
+    // Booked, not yet visited, so the slot has to be ahead of today.
+    measureSlot: slotLabel(2, '10:00'),
     items: [
       {
         product: 'Kids Cloud Print Curtains',
@@ -303,11 +320,12 @@ export const quotes: Quote[] = [
     customer: 'Beatrice Kilonzo',
     phone: '0723 771 890',
     area: 'Runda',
-    requestedAt: '2026-08-15T09:30:00',
+    requestedAt: hoursAgo(27.5),
     status: 'measured',
     owner: 'Peter K.',
     source: 'showroom',
-    measureSlot: 'Fri 15 Aug, 14:00',
+    // Already measured, so the visit is behind us.
+    measureSlot: slotLabel(-1, '14:00'),
     items: [
       {
         product: 'Four-Poster Bed Canopy',
@@ -334,11 +352,11 @@ export const quotes: Quote[] = [
     customer: 'Grace Njoki',
     phone: '0708 224 561',
     area: 'Lavington',
-    requestedAt: '2026-08-14T11:05:00',
+    requestedAt: hoursAgo(49.92),
     status: 'sent',
     owner: 'Alice W.',
     source: 'website',
-    sentAt: '2026-08-15T09:00:00',
+    sentAt: hoursAgo(28),
     items: [
       {
         product: 'Sheer Linen Voile Curtains',
@@ -356,11 +374,11 @@ export const quotes: Quote[] = [
     customer: 'Naivasha Lodge',
     phone: '0790 118 442',
     area: 'Naivasha',
-    requestedAt: '2026-08-13T16:20:00',
+    requestedAt: hoursAgo(68.67),
     status: 'sent',
     owner: 'Alice W.',
     source: 'phone',
-    sentAt: '2026-08-14T17:30:00',
+    sentAt: hoursAgo(43.5),
     items: [
       {
         product: 'Contract Hotel Bed Linen Set',
@@ -384,11 +402,11 @@ export const quotes: Quote[] = [
     customer: 'Peter Ochieng',
     phone: '0741 009 233',
     area: 'Syokimau',
-    requestedAt: '2026-08-12T10:44:00',
+    requestedAt: hoursAgo(98.27),
     status: 'approved',
     owner: 'Alice W.',
     source: 'website',
-    sentAt: '2026-08-13T11:00:00',
+    sentAt: hoursAgo(74),
     items: [
       {
         product: 'Kitenge Blockout Curtains',
@@ -406,11 +424,11 @@ export const quotes: Quote[] = [
     customer: 'Zainab Hassan',
     phone: '0712 883 447',
     area: 'Nyali',
-    requestedAt: '2026-08-10T13:15:00',
+    requestedAt: hoursAgo(143.75),
     status: 'in_production',
     owner: 'Peter K.',
     source: 'whatsapp',
-    sentAt: '2026-08-11T09:20:00',
+    sentAt: hoursAgo(123.67),
     items: [
       {
         product: 'Hand-Forged Curtain Rail',
@@ -427,11 +445,11 @@ export const quotes: Quote[] = [
     customer: 'Sharon Muriuki',
     phone: '0729 552 118',
     area: 'Rongai',
-    requestedAt: '2026-08-06T09:02:00',
+    requestedAt: hoursAgo(243.97),
     status: 'fitted',
     owner: 'Peter K.',
     source: 'website',
-    sentAt: '2026-08-07T10:00:00',
+    sentAt: hoursAgo(219),
     items: [
       {
         product: 'Kids Play Canopy',
@@ -447,11 +465,11 @@ export const quotes: Quote[] = [
     customer: 'Samuel Kiprop',
     phone: '0703 118 990',
     area: 'Runda',
-    requestedAt: '2026-08-04T15:48:00',
+    requestedAt: hoursAgo(285.2),
     status: 'lost',
     owner: 'Alice W.',
     source: 'website',
-    sentAt: '2026-08-05T16:00:00',
+    sentAt: hoursAgo(261),
     items: [
       {
         product: 'Sheer Linen Voile Curtains',

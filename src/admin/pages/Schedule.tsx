@@ -75,16 +75,16 @@ export function Schedule() {
             <path d="M9 5l7 7-7 7" />
           </svg>
         </Button>
-        <span className="ml-1 font-ui text-[13px] text-muted-foreground">{weekLabel(monday)}</span>
+        <span className="ml-1 font-ui text-console text-muted-foreground">{weekLabel(monday)}</span>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-4 text-[13px]">
+      <div className="mb-5 flex flex-wrap gap-4 text-console">
         <span className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm bg-brand-50 ring-1 ring-brand-200" />
           Measure visit
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm bg-[#e8f5ec] ring-1 ring-[#bde2c9]" />
+          <span className="h-3 w-3 rounded-sm bg-ok-bg ring-1 ring-ok-line" />
           Fitting
         </span>
       </div>
@@ -97,15 +97,15 @@ export function Schedule() {
           return (
             <Card key={day.date} padded={false} className="flex flex-col">
               <div className="border-b border-line px-4 py-3">
-                <p className="font-display text-[14px] font-semibold">
+                <p className="font-display text-console-md font-semibold">
                   {day.label}
                   {day.isToday && (
-                    <span className="ml-2 rounded-full bg-brand px-2 py-0.5 align-middle font-ui text-[10px] font-semibold tracking-wide text-white uppercase">
+                    <span className="ml-2 rounded-full bg-brand px-2 py-0.5 align-middle font-ui text-console-2xs font-semibold tracking-wide text-white uppercase">
                       Today
                     </span>
                   )}
                 </p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-console-sm text-muted-foreground">
                   {dayJobs.length === 0
                     ? 'Nothing booked'
                     : `${dayJobs.length} ${dayJobs.length === 1 ? 'visit' : 'visits'}`}
@@ -120,19 +120,19 @@ export function Schedule() {
                       'rounded-xl border p-3',
                       f.kind === 'measure'
                         ? 'border-brand-200 bg-brand-50'
-                        : 'border-[#bde2c9] bg-[#e8f5ec]',
+                        : 'border-ok-line bg-ok-bg',
                     )}
                   >
-                    <p className="text-[12px] font-bold">{f.time}</p>
-                    <p className="mt-0.5 text-[13px] leading-snug font-medium">{f.customer}</p>
-                    <p className="mt-0.5 text-[12px] text-ink-soft">{f.area}</p>
-                    <p className="mt-1.5 text-[11px] text-ink-soft">
+                    <p className="text-console-sm font-bold">{f.time}</p>
+                    <p className="mt-0.5 text-console leading-snug font-medium">{f.customer}</p>
+                    <p className="mt-0.5 text-console-sm text-ink-soft">{f.area}</p>
+                    <p className="mt-1.5 text-console-xs text-ink-soft">
                       {f.fitter} · {f.windows} {f.windows === 1 ? 'window' : 'windows'}
                     </p>
                     {f.quoteId && (
                       <Link
                         to={`/admin/quotes/${f.quoteId}`}
-                        className="mt-1.5 inline-block text-[11px] font-medium underline"
+                        className="mt-1.5 inline-block text-console-xs font-medium underline"
                       >
                         {f.quoteId}
                       </Link>
@@ -141,7 +141,7 @@ export function Schedule() {
                 ))}
 
                 {dayJobs.length === 0 && (
-                  <button className="w-full rounded-xl border border-dashed border-line py-6 text-[12px] text-muted-foreground hover:border-brand hover:text-brand">
+                  <button className="w-full rounded-xl border border-dashed border-line py-6 text-console-sm text-muted-foreground hover:border-brand hover:text-brand">
                     Add a visit
                   </button>
                 )}
@@ -162,7 +162,7 @@ export function Schedule() {
                 .reduce((n, f) => n + f.windows, 0)
               return (
                 <li key={fitter}>
-                  <div className="mb-1 flex justify-between text-[13px]">
+                  <div className="mb-1 flex justify-between text-console">
                     <span className="font-medium">{fitter}</span>
                     <span className="text-muted-foreground">
                       {count} visits, {windows} windows
@@ -182,7 +182,7 @@ export function Schedule() {
 
         <Card>
           <CardHeader title="Coverage" hint="Where the van is going" />
-          <ul className="space-y-2 text-[13px]">
+          <ul className="space-y-2 text-console">
             {Object.entries(
               fittings.reduce<Record<string, number>>((acc, f) => {
                 acc[f.area] = (acc[f.area] ?? 0) + 1

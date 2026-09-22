@@ -89,10 +89,10 @@ export function ProductPhotos() {
           dragOver ? 'border-brand bg-brand-50' : 'border-line bg-white',
         )}
       >
-        <p className="font-display text-[15px] font-semibold text-ink">
+        <p className="font-display text-console-lg font-semibold text-ink">
           {busy ? 'Processing…' : 'Drop photographs here'}
         </p>
-        <p className="mx-auto mt-1.5 mb-4 max-w-md text-[13px] text-muted-foreground">
+        <p className="mx-auto mt-1.5 mb-4 max-w-md text-console text-muted-foreground">
           JPEG, PNG or WebP, up to {Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB each. Each one is
           resized to 2048px and re-encoded, which also strips the location data phone cameras embed.
         </p>
@@ -112,7 +112,7 @@ export function ProductPhotos() {
       {errors.length > 0 && (
         <div className="mb-5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
           {errors.map((e) => (
-            <p key={e} className="text-[13px] text-brand">
+            <p key={e} className="text-console text-brand">
               {e}
             </p>
           ))}
@@ -120,7 +120,7 @@ export function ProductPhotos() {
       )}
 
       {incomplete > 0 && (
-        <p className="mb-4 text-[13px] text-muted-foreground">
+        <p className="mb-4 text-console text-muted-foreground">
           {incomplete} photo{incomplete > 1 ? 's' : ''} still need description text. Every generated
           image on this site has one, so an upload without it is the only image a screen reader
           cannot describe.
@@ -129,14 +129,14 @@ export function ProductPhotos() {
 
       {catalogue.length > 0 && (
         <Card className="mb-5">
-          <h2 className="mb-3 text-[13px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <h2 className="mb-3 text-console font-semibold tracking-wide text-muted-foreground uppercase">
             From the catalogue
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {catalogue.map((p) => (
               <figure key={p.src} className="overflow-hidden rounded-xl border border-line">
                 <img src={p.src} alt={p.alt} className="aspect-square w-full object-cover" />
-                <figcaption className="px-2 py-1.5 text-[11px] text-muted-foreground">
+                <figcaption className="px-2 py-1.5 text-console-xs text-muted-foreground">
                   Committed to the catalogue
                 </figcaption>
               </figure>
@@ -175,7 +175,7 @@ export function ProductPhotos() {
               </div>
 
               <label className="mb-2 block">
-                <span className="mb-1 block text-[12px] font-medium text-ink">
+                <span className="mb-1 block text-console-sm font-medium text-ink">
                   Description
                   {!u.alt.trim() && <span className="ml-1 font-normal text-brand">required</span>}
                 </span>
@@ -183,26 +183,26 @@ export function ProductPhotos() {
                   value={u.alt}
                   onChange={(e) => updatePhoto(u.id, { alt: e.target.value })}
                   placeholder="Kitenge curtains hung in a living room"
-                  className="w-full rounded-lg border border-line px-3 py-2 text-[13px] outline-none focus:border-brand"
+                  className="w-full rounded-lg border border-line px-3 py-2 text-console outline-none focus:border-brand"
                 />
               </label>
 
               <label className="mb-2 block">
-                <span className="mb-1 block text-[12px] font-medium text-ink">Caption</span>
+                <span className="mb-1 block text-console-sm font-medium text-ink">Caption</span>
                 <input
                   value={u.caption ?? ''}
                   onChange={(e) => updatePhoto(u.id, { caption: e.target.value })}
                   placeholder="Optional, shown under the enlarged photo"
-                  className="w-full rounded-lg border border-line px-3 py-2 text-[13px] outline-none focus:border-brand"
+                  className="w-full rounded-lg border border-line px-3 py-2 text-console outline-none focus:border-brand"
                 />
               </label>
 
               <label className="mb-3 block">
-                <span className="mb-1 block text-[12px] font-medium text-ink">Colourway</span>
+                <span className="mb-1 block text-console-sm font-medium text-ink">Colourway</span>
                 <select
                   value={u.colourId ?? ''}
                   onChange={(e) => updatePhoto(u.id, { colourId: e.target.value || undefined })}
-                  className="w-full rounded-lg border border-line bg-white px-3 py-2 text-[13px] outline-none focus:border-brand"
+                  className="w-full rounded-lg border border-line bg-white px-3 py-2 text-console outline-none focus:border-brand"
                 >
                   <option value="">Any colour</option>
                   {product.colours.map((c) => (
@@ -214,7 +214,7 @@ export function ProductPhotos() {
               </label>
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-[12px] text-ink-soft">
+                <label className="flex items-center gap-2 text-console-sm text-ink-soft">
                   <input
                     type="checkbox"
                     checked={Boolean(u.wide)}
@@ -226,7 +226,7 @@ export function ProductPhotos() {
                   onClick={() => {
                     if (confirm('Delete this photo? It cannot be recovered.')) removePhoto(u.id)
                   }}
-                  className="text-[12px] text-brand hover:underline"
+                  className="text-console-sm text-brand hover:underline"
                 >
                   Delete
                 </button>
@@ -236,7 +236,7 @@ export function ProductPhotos() {
         </div>
       )}
 
-      <p className="mt-6 text-[12px] text-muted-foreground">
+      <p className="mt-6 text-console-sm text-muted-foreground">
         Photos are held in this browser only. Seen on{' '}
         <Link to={`/product/${product.slug}`} className="text-brand hover:underline">
           the product page

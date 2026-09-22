@@ -68,7 +68,8 @@ const incoming = (): Pick<State, 'quotes' | 'orders'> => {
       // whoever is meant to.
       owner: 'Unassigned',
       source: 'website',
-      measureSlot: q.preferredTime,
+      // What they asked for, not a booking. Nobody has been out yet.
+      preferredTime: q.preferredTime,
       items: q.lines.map((l) => ({
         product: l.productName,
         colour: l.colour ?? '',

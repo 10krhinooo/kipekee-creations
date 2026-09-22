@@ -155,7 +155,7 @@ export function Orders() {
                     >
                       {o.id}
                     </Link>
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-console-xs text-muted-foreground">
                       {new Date(o.placedAt).toLocaleDateString('en-KE', {
                         day: 'numeric',
                         month: 'short',
@@ -163,26 +163,26 @@ export function Orders() {
                     </span>
                   </Td>
                   <Td>
-                    <span className="block text-[13px] font-medium">{o.customer}</span>
-                    <span className="block text-[12px] text-muted-foreground">{o.town}</span>
+                    <span className="block text-console font-medium">{o.customer}</span>
+                    <span className="block text-console-sm text-muted-foreground">{o.town}</span>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">
+                    <span className="text-console">
                       {(() => {
                         const n = o.lines.reduce((sum, l) => sum + l.qty, 0)
                         return `${n} ${n === 1 ? 'item' : 'items'}`
                       })()}
                     </span>
-                    <span className="block max-w-48 truncate text-[12px] text-muted-foreground">
+                    <span className="block max-w-48 truncate text-console-sm text-muted-foreground">
                       {o.lines[0].name}
                     </span>
                   </Td>
                   <Td>
-                    <span className="text-[13px]">{payLabel[o.pay]}</span>
+                    <span className="text-console">{payLabel[o.pay]}</span>
                     <span
                       className={cx(
-                        'block text-[11px] font-medium',
-                        o.paid ? 'text-[#1a6b39]' : 'text-brand',
+                        'block text-console-xs font-medium',
+                        o.paid ? 'text-ok-ink' : 'text-brand',
                       )}
                     >
                       {o.paid ? 'Paid' : 'Unpaid'}
@@ -230,7 +230,7 @@ export function OrderDetail() {
 
   return (
     <>
-      <nav className="mb-4 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+      <nav className="mb-4 flex items-center gap-1.5 text-console text-muted-foreground">
         <Link to="/admin/orders" className="hover:text-brand">
           Orders
         </Link>
@@ -277,8 +277,8 @@ export function OrderDetail() {
                 {order.lines.map((l) => (
                   <tr key={l.name + l.variant}>
                     <Td>
-                      <span className="block text-[13px] font-medium">{l.name}</span>
-                      <span className="block text-[12px] text-muted-foreground">{l.variant}</span>
+                      <span className="block text-console font-medium">{l.name}</span>
+                      <span className="block text-console-sm text-muted-foreground">{l.variant}</span>
                     </Td>
                     <Td align="right">{l.qty}</Td>
                     <Td align="right">{money(l.unitPrice)}</Td>
@@ -296,7 +296,7 @@ export function OrderDetail() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Delivery</span>
-                <span className={cx('font-medium', order.delivery === 0 && 'text-[#1a6b39]')}>
+                <span className={cx('font-medium', order.delivery === 0 && 'text-ok-ink')}>
                   {order.delivery === 0 ? 'Free' : money(order.delivery)}
                 </span>
               </div>
@@ -319,8 +319,8 @@ export function OrderDetail() {
                   >
                     <span
                       className={cx(
-                        'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold',
-                        i < stageIndex && 'bg-[#e8f5ec] text-[#1a6b39]',
+                        'flex h-6 w-6 items-center justify-center rounded-full text-console-xs font-bold',
+                        i < stageIndex && 'bg-ok-bg text-ok-ink',
                         i === stageIndex && 'bg-brand text-white',
                         i > stageIndex && 'bg-shell text-muted-foreground',
                       )}
@@ -329,7 +329,7 @@ export function OrderDetail() {
                     </span>
                     <span
                       className={cx(
-                        'text-[12px] whitespace-nowrap',
+                        'text-console-sm whitespace-nowrap',
                         i === stageIndex ? 'font-semibold text-ink' : 'text-muted-foreground',
                       )}
                     >
@@ -337,13 +337,13 @@ export function OrderDetail() {
                     </span>
                   </button>
                   {i < flow.length - 1 && (
-                    <span className={cx('mx-2 h-px w-8', i < stageIndex ? 'bg-[#1a6b39]' : 'bg-line')} />
+                    <span className={cx('mx-2 h-px w-8', i < stageIndex ? 'bg-ok-ink' : 'bg-line')} />
                   )}
                 </li>
               ))}
             </ol>
             {order.courier && (
-              <p className="mt-4 rounded-lg bg-shell px-3 py-2 text-[13px]">
+              <p className="mt-4 rounded-lg bg-shell px-3 py-2 text-console">
                 Courier reference <strong>{order.courier}</strong>
               </p>
             )}
@@ -358,8 +358,8 @@ export function OrderDetail() {
                 const blocked = doc.requiresPaid && !order.paid
                 return (
                   <li key={doc.kind}>
-                    <p className="text-[13px] font-medium text-ink">{doc.label}</p>
-                    <p className="mt-0.5 mb-2 text-[12px] leading-relaxed text-muted-foreground">
+                    <p className="text-console font-medium text-ink">{doc.label}</p>
+                    <p className="mt-0.5 mb-2 text-console-sm leading-relaxed text-muted-foreground">
                       {blocked ? doc.blockedNote : doc.note}
                     </p>
                     <div className="flex gap-2">
@@ -384,7 +384,7 @@ export function OrderDetail() {
                 )
               })}
             </ul>
-            <p className="mt-4 border-t border-line pt-3 text-[12px] leading-relaxed text-muted-foreground">
+            <p className="mt-4 border-t border-line pt-3 text-console-sm leading-relaxed text-muted-foreground">
               None of these is a tax invoice. That is issued by the backend once eTIMS is wired, and
               each document says so on its face.
             </p>
@@ -399,7 +399,7 @@ export function OrderDetail() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <span className={cx('font-medium', order.paid ? 'text-[#1a6b39]' : 'text-brand')}>
+                <span className={cx('font-medium', order.paid ? 'text-ok-ink' : 'text-brand')}>
                   {order.paid ? 'Paid in full' : 'Awaiting payment'}
                 </span>
               </div>
@@ -419,15 +419,15 @@ export function OrderDetail() {
             */}
             {order.mpesaCode && (
               <div className="mt-4 rounded-xl border border-line bg-shell p-3">
-                <span className="block text-[12px] text-muted-foreground">
+                <span className="block text-console-sm text-muted-foreground">
                   Customer reported paying with
                 </span>
-                <span className="mt-0.5 block font-ui text-[15px] font-semibold tracking-[0.08em]">
+                <span className="mt-0.5 block font-ui text-console-lg font-semibold tracking-[0.08em]">
                   {order.mpesaCode}
                 </span>
                 {!order.paid && (
                   <>
-                    <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-console-sm leading-relaxed text-muted-foreground">
                       Check it against the M-Pesa statement for {money(orderTotal(order))} before
                       marking this paid. The receipt unlocks when you do.
                     </p>
@@ -452,7 +452,7 @@ export function OrderDetail() {
 
           <Card>
             <CardHeader title="Deliver to" />
-            <address className="text-[13px] leading-relaxed not-italic">
+            <address className="text-console leading-relaxed not-italic">
               <span className="block font-medium">{order.customer}</span>
               <span className="block text-muted-foreground">{order.phone}</span>
               <span className="block text-muted-foreground">{order.town}</span>
